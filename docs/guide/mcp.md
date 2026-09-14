@@ -28,6 +28,8 @@ toc: content
 | `search_docs` | 中文关键词全文搜索组件文档与 Skills |
 | `list_skills` / `get_skill` | 浏览并读取开发技能规范 |
 | `get_codegen_rules` | 获取业务代码生成硬规则（样式导入、SFC 结构等） |
+| `get_component_schema` | 获取组件精确 JSON Schema（Props约束/枚举值/默认值/Emits/Slots），防止属性名幻觉 |
+| `get_test_coverage` | 获取组件库自动化测试覆盖率指标与单测文件清单；不传查全库大盘，传参查单模块 |
 
 > 索引由 `pnpm mcp:index` 生成（发布时自动执行），数据源与本文档站同源，含 25 个文档条目与 171+ 官方 Demo 源码。组件文档、官方 Demo、Skills 或代码生成规则变更后，发版流水线会重建索引并发布新的 `@yss-ui/mcp`。业务项目通过 `npx -y @yss-ui/mcp` 使用的是 npm 包内的离线快照，不是 yss-ui 仓库工作树。
 

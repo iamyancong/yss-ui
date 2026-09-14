@@ -203,6 +203,31 @@ function buildSkills() {
 /** 构建索引并写入 data/index.json。 */
 function main() {
   const sidebar = dumiConfig.themeConfig.sidebar || {};
+
+  // 1. 提取组件 Schema 字典
+  let schemas = {};
+  try {
+    const { generateSchemas } = require('./generate-schemas');
+    schemas = generateSchemas();
+  } catch (err) {
+    console.warn('⚠️ 生成组件 schemas 失败，尝试读取已有 schemas.json:', err.message);
+    const schemasPath = path.join(__dirname, '../data/schemas.json');
+    if (fs.existsSync(schemasPath)) {
+      schemas = JSON.parse(fs.readFileSync(schemasPath, 'utf8'));
+    }
+  }
+
+  // 2. 读取 coverage 矩阵快照
+  let coverage = null;
+  const coveragePath = path.join(__dirname, '../data/coverage-summary.json');
+  if (fs.existsSync(coveragePath)) {
+    try {
+      coverage = JSON.parse(fs.readFileSync(coveragePath, 'utf8'));
+    } catch (e) {
+      console.warn('⚠️ 读取 coverage-summary.json 快照失败:', e.message);
+    }
+  }
+
   const index = {
     generatedAt: new Date().toISOString(),
     componentsVersion: JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'packages/components/package.json'), 'utf8'))
@@ -214,6 +239,8 @@ function main() {
     ],
     skills: buildSkills(),
     codegenRules: fs.readFileSync(path.join(ROOT_DIR, '.cursorrules'), 'utf8'),
+    schemas,
+    coverage,
   };
 
   fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
@@ -221,8 +248,9 @@ function main() {
 
   const size = (fs.statSync(OUTPUT_PATH).size / 1024).toFixed(0);
   const demoCount = index.entries.reduce((sum, entry) => sum + entry.demos.length, 0);
+  const schemaCount = Object.keys(index.schemas || {}).length;
   console.log(
-    `✅ 已生成索引: ${index.entries.length} 个文档条目（${demoCount} 个 demo）、${index.skills.length} 个 skill，共 ${size} KB`
+    `✅ 已生成索引: ${index.entries.length} 个文档条目（${demoCount} 个 demo、${schemaCount} 个 Schema）、${index.skills.length} 个 skill，共 ${size} KB`
   );
   console.log(`   -> ${path.relative(ROOT_DIR, OUTPUT_PATH)}`);
 }

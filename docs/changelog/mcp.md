@@ -10,6 +10,18 @@ toc: content
 
 YSS MCP 文档服务（`@yss-ui/mcp`）的版本更新记录。
 
+## v0.2.6
+
+`2026-09-14`
+
+### ✨ Features
+
+- **get_component_schema**: 新增组件精确 JSON Schema 结构化提取工具，基于 `@vue/component-meta` 提取 Props 约束、枚举值、默认值、Emits 与 Slots，支持 core/all 两级剪枝防膨胀，防止 AI 产生属性名幻觉 (#6)。
+- **get_test_coverage**: 新增测试覆盖率查询工具，支持查看全库指标大盘与各组件独立覆盖率、单测文件列表 (#6)。
+- **list_components**: 列表输出中增强展示各组件的自动化测试覆盖率状态 (#6)。
+
+---
+
 ## v0.2.5
 
 `2026-09-12`

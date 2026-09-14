@@ -10,6 +10,16 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.4.4
+
+`2026-09-14`
+
+### ⚠️ Deprecations
+
+- **page-module-development**: 进入 Phase 1 软废弃阶段，正文与元数据增加 `[DEPRECATED]` 警示；将旧版页面模块开发触发用例收编至 `yss-ui-business-page-generation`，消除 Tier 2 词法评测碰撞与冗余重定向开销 (#6)。
+
+---
+
 ## v1.4.3
 
 `2026-09-12`

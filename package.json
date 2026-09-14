@@ -6,11 +6,12 @@
   "homepage": "https://github.com/iamyancong/yss-ui#readme",
   "license": "MIT",
   "scripts": {
-    "docs:prepare": "node scripts/generateContributors.js && node scripts/generate-home-releases.js && node scripts/sync-skills-docs.js && node scripts/generate-llms.js",
+    "docs:prepare": "node scripts/generateContributors.js && node scripts/generate-home-releases.js && node scripts/sync-skills-docs.js && node scripts/generate-coverage-matrix.js && node scripts/generate-llms.js",
     "predev": "pnpm docs:prepare",
     "dev": "dumi dev",
     "prebuild": "pnpm docs:prepare && pnpm validate:skills && pnpm validate:docs",
     "generate:contributors": "node scripts/generateContributors.js",
+    "generate:coverage-matrix": "node scripts/generate-coverage-matrix.js",
     "build": "node scripts/build-fix.js",
     "build:docs:check": "node scripts/build-fix.js",
     "build:components": "pnpm -r --filter='./packages/*' run build",
@@ -116,6 +117,7 @@
     "unplugin-auto-import": "^20.3.0",
     "unplugin-vue-components": "^30.0.0",
     "vitest": "^1.6.0",
+    "vue-component-meta": "^3.3.11",
     "vue-tsc": "^2.1.6"
   },
   "engines": {

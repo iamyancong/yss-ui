@@ -1,13 +1,17 @@
 ---
 name: page-module-development
-description: 作为兼容旧项目的 Vue3 YSS UI 页面模块开发入口，将 CRUD、列表、表单、详情和左树右表需求路由到 yss-ui-business-page-generation 及细分 skills；当用户使用“页面模块开发”等旧触发词时使用。
+description: （已废弃/Deprecated）兼容旧项目的 Vue3 YSS UI 页面模块开发指令别名；新页面统一使用 yss-ui-business-page-generation。
 toc: content
 ---
 
 # 页面模块开发 Skill
 
-> 作为兼容旧项目的 Vue3 YSS UI 页面模块开发入口，将 CRUD、列表、表单、详情和左树右表需求路由到 yss-ui-business-page-generation 及细分 skills；当用户使用“页面模块开发”等旧触发词时使用。
+> （已废弃/Deprecated）兼容旧项目的 Vue3 YSS UI 页面模块开发指令别名；新页面统一使用 yss-ui-business-page-generation。
 
+
+> ⚠️ **[DEPRECATED / 已废弃]**
+> 本 Skill 已进入软废弃（Soft Deprecated）阶段，仅作为历史指令与旧项目的兼容别名壳。
+> 新页面与业务模块开发请统一使用主规则：**[yss-ui-business-page-generation](../yss-ui-business-page-generation/SKILL.md)** 及其细分模块技能。
 
 此 skill 保留旧项目触发名。新页面开发以 `../yss-ui-business-page-generation/SKILL.md` 为主规则。
 

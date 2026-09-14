@@ -75,6 +75,10 @@ export default defineConfig({
             { title: 'LLMs.txt 全量文档', link: '/guide/llms' },
           ],
         },
+        {
+          title: '工程与质量',
+          children: [{ title: '测试覆盖矩阵', link: '/guide/test-coverage' }],
+        },
       ],
       '/components': [
         {

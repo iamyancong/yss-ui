@@ -85,6 +85,42 @@ const TOOL_DEFINITIONS = [
       '获取 YSS UI 业务代码生成硬规则（样式导入、SFC 结构、主题 Token、大数精度等强制约定）。生成任何业务代码前必读一次。',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
+  {
+    name: 'get_component_schema',
+    description:
+      '获取组件的精确结构化 JSON Schema 元数据（Props 约束、枚举值、默认值、Emits、Slots）。生成业务配置前先查此工具，杜绝属性名幻觉。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: '组件名，支持 YTable / y-table / table / Button / edit-table 等写法',
+        },
+        detail: {
+          type: 'string',
+          enum: ['core', 'all'],
+          description: '返回深度：core（默认，仅组件自有核心配置）或 all（含底层第三方库透传配置）',
+        },
+      },
+      required: ['name'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'get_test_coverage',
+    description:
+      '获取组件库自动化测试覆盖率矩阵与模块健康度。支持按组件查询覆盖率指标与单测文件清单，不传组件名时返回全库概览与待补测试清单。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        component: {
+          type: 'string',
+          description: '组件或模块名，如 table / button / useUrlState，不传则返回总体大盘',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
 ];
 
 /**
@@ -124,7 +160,11 @@ function handleToolCall(store, name, args = {}) {
         if (entries.length === 0) continue;
         lines.push('', title, '');
         for (const entry of entries) {
-          lines.push(`- ${entry.title}（id: ${entry.id}，分类: ${entry.category}，demos: ${entry.demos.length}）`);
+          const covPct = store.getComponentCoveragePct(entry.id);
+          const covTag = covPct ? `，测试覆盖: ${covPct}` : '';
+          lines.push(
+            `- ${entry.title}（id: ${entry.id}，分类: ${entry.category}，demos: ${entry.demos.length}${covTag}）`
+          );
         }
       }
       return lines.join('\n');
@@ -212,6 +252,107 @@ function handleToolCall(store, name, args = {}) {
 
     case 'get_codegen_rules': {
       return `# YSS UI 业务代码生成硬规则\n\n${store.index.codegenRules}`;
+    }
+
+    case 'get_component_schema': {
+      const schema = store.getComponentSchema(args.name);
+      if (!schema) {
+        return `未找到组件 "${args.name}" 的 Schema 定义。请先使用 list_components 确认真实存在的组件名称（支持 YTable、Button、edit-table 等）。`;
+      }
+      const isDetailAll = args.detail === 'all';
+      const props = Object.values(schema.props || {}).filter(p => isDetailAll || p.isCore);
+
+      const lines = [
+        `# ${schema.name} 组件 Schema`,
+        '',
+        `> 源码文件: \`${schema.file}\` | 总属性数: ${schema.propsCount} | 当前展示: ${props.length} 项（${isDetailAll ? '包含底层透传属性' : '仅核心自有属性，传 detail="all" 查看底层透传'}）`,
+        '',
+        '## Props 配置项',
+        '',
+        '| 属性名 | TS 类型 | 基础类型 | 默认值 | 必填 | 说明 |',
+        '| :--- | :--- | :--- | :--- | :--- | :--- |',
+      ];
+
+      for (const prop of props) {
+        const def = prop.default ? `\`${prop.default}\`` : '-';
+        const req = prop.required ? '✅ 必填' : '可选';
+        const ts = `\`${prop.tsType}\``;
+        lines.push(`| **${prop.name}** | ${ts} | \`${prop.type}\` | ${def} | ${req} | ${prop.description || '-'} |`);
+      }
+
+      if (schema.emits && schema.emits.length > 0) {
+        lines.push('', '## Emits 事件', '', '| 事件名 | 参数签名 | 说明 |', '| :--- | :--- | :--- |');
+        for (const ev of schema.emits) {
+          lines.push(`| **${ev.name}** | \`${ev.type}\` | ${ev.description || '-'} |`);
+        }
+      }
+
+      if (schema.slots && schema.slots.length > 0) {
+        lines.push('', '## Slots 插槽', '', '| 插槽名 | 参数签名 | 说明 |', '| :--- | :--- | :--- |');
+        for (const sl of schema.slots) {
+          lines.push(`| **${sl.name}** | \`${sl.type}\` | ${sl.description || '-'} |`);
+        }
+      }
+
+      return lines.join('\n');
+    }
+
+    case 'get_test_coverage': {
+      const cov = store.getCoverage(args.component);
+      if (!cov) {
+        return args.component
+          ? `未找到模块 "${args.component}" 的测试覆盖率信息。请使用 list_components 确认名称。`
+          : '暂无测试覆盖率数据。请在仓库执行 pnpm test:coverage 后重新构建索引。';
+      }
+
+      if (cov.module) {
+        const mod = cov.module;
+        const lines = [
+          `# ${mod.name} 测试覆盖率（归属：${cov.package}）`,
+          '',
+          `- **行覆盖率 (Lines)**: ${mod.lines.pct}% (${mod.lines.covered}/${mod.lines.total})`,
+          `- **分支覆盖率 (Branches)**: ${mod.branches.pct}% (${mod.branches.covered}/${mod.branches.total})`,
+          `- **函数覆盖率 (Functions)**: ${mod.functions.pct}% (${mod.functions.covered}/${mod.functions.total})`,
+          `- **单测文件数**: ${mod.testCount} 个`,
+        ];
+        if (mod.testFiles && mod.testFiles.length > 0) {
+          lines.push('', '## 测试文件列表', ...mod.testFiles.map(f => `- \`${f}\``));
+        } else {
+          lines.push('', '> ⚠️ 当前模块暂无独立单测文件，建议优先补充测试。');
+        }
+        return lines.join('\n');
+      }
+
+      const lines = ['# YSS UI 自动化测试覆盖率概览', ''];
+      if (cov.totalMetrics) {
+        lines.push(
+          `- 全库行覆盖率: **${cov.totalMetrics.lines}%**`,
+          `- 全库分支覆盖率: **${cov.totalMetrics.branches}%**`,
+          `- 全库函数覆盖率: **${cov.totalMetrics.functions}%**`,
+          `- 全库语句覆盖率: **${cov.totalMetrics.statements}%**`,
+          ''
+        );
+      }
+      lines.push('## 待补充测试或低覆盖率清单 (Backlog)', '');
+      const backlogs = [];
+      for (const pkg of cov.packages || []) {
+        for (const mod of pkg.modules || []) {
+          if (!mod.hasTest || mod.lines.pct < 50) {
+            const reason = !mod.hasTest ? '缺失单测' : `行覆盖率偏低 (${mod.lines.pct}%)`;
+            backlogs.push(`- **${mod.name}**（${pkg.title}）：${reason}`);
+          }
+        }
+      }
+      if (backlogs.length === 0) {
+        lines.push('🎉 全量组件与模块测试状态良好！');
+      } else {
+        lines.push(...backlogs);
+      }
+      lines.push(
+        '',
+        '> 提示：传入 component 参数（如 `get_test_coverage({ component: "table" })`）可查看具体组件的单测文件与明细指标。'
+      );
+      return lines.join('\n');
     }
 
     default:

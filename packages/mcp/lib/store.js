@@ -96,6 +96,93 @@ class DocStore {
   }
 
   /**
+   * 按组件名获取组件 JSON Schema。
+   *
+   * @param {string} name 组件名（支持 YTable、table、edit-table 等）
+   * @returns {object | null} 组件 Schema
+   */
+  getComponentSchema(name) {
+    if (!this.index.schemas) return null;
+    const entry = this.resolveEntry(name);
+    if (entry && this.index.schemas[entry.id]) {
+      return this.index.schemas[entry.id];
+    }
+    const clean = normalizeName(name).replace(/^y/, '');
+    for (const [key, schema] of Object.entries(this.index.schemas)) {
+      if (normalizeName(key) === clean || normalizeName(key).includes(clean)) {
+        return schema;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 获取测试覆盖率信息。
+   *
+   * @param {string} [name] 组件或模块名，不传则返回全量大盘
+   * @returns {object | null} 覆盖率数据
+   */
+  getCoverage(name) {
+    if (!this.index.coverage) return null;
+    if (!name) return this.index.coverage;
+
+    const entry = this.resolveEntry(name);
+    const targetId = entry ? entry.id : normalizeName(name).replace(/^y/, '');
+
+    // 1. 优先精确匹配
+    for (const pkg of this.index.coverage.packages || []) {
+      for (const mod of pkg.modules || []) {
+        if (mod.name.toLowerCase() === targetId.toLowerCase() || normalizeName(mod.name) === targetId) {
+          return {
+            package: pkg.title,
+            module: mod,
+            totalMetrics: this.index.coverage.totalMetrics,
+          };
+        }
+      }
+    }
+
+    // 2. 兜底模糊匹配
+    for (const pkg of this.index.coverage.packages || []) {
+      for (const mod of pkg.modules || []) {
+        if (
+          mod.name.toLowerCase().includes(targetId.toLowerCase()) ||
+          targetId.toLowerCase().includes(mod.name.toLowerCase())
+        ) {
+          return {
+            package: pkg.title,
+            module: mod,
+            totalMetrics: this.index.coverage.totalMetrics,
+          };
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 获取指定组件的测试覆盖率百分比与标签。
+   *
+   * @param {string} compId 组件 id（如 button, table）
+   * @returns {string | null} 简要状态描述
+   */
+  getComponentCoveragePct(compId) {
+    if (!this.index.coverage) return null;
+    const target = normalizeName(compId).replace(/^y/, '');
+    for (const pkg of this.index.coverage.packages || []) {
+      for (const mod of pkg.modules || []) {
+        if (normalizeName(mod.name) === target) {
+          if (this.index.coverage.hasCoverageReport) {
+            return `${mod.lines.pct}%`;
+          }
+          return mod.hasTest ? `${mod.testCount} 测` : '无单测';
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
    * 提取 markdown 的指定二级章节（如 API）。
    *
    * @param {string} doc markdown 正文

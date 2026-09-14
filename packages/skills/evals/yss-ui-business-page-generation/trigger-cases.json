@@ -6,15 +6,22 @@
       "id": "full-crud-page",
       "prompt": "生成一个完整的 CRUD 业务页",
       "should_trigger": true,
-      "accept_route_to": ["page-list-module", "page-module-development"],
+      "accept_route_to": ["page-list-module"],
       "assert": "按组件选型、模块拆分、API 对接的完整流程生成页面。"
     },
     {
       "id": "manage-module",
       "prompt": "生成用户管理的 CRUD 页面模块",
       "should_trigger": true,
-      "accept_route_to": ["page-list-module", "page-module-development"],
+      "accept_route_to": ["page-list-module"],
       "assert": "生成列表 + 表单闭环的管理模块。"
+    },
+    {
+      "id": "legacy-page-module-request",
+      "prompt": "按页面模块开发规范生成商品管理列表",
+      "should_trigger": true,
+      "accept_route_to": ["page-list-module", "page-module-development"],
+      "assert": "旧触发词直接由 yss-ui-business-page-generation 接管或中转到列表技能。"
     },
     {
       "id": "rebuild-old-page",
