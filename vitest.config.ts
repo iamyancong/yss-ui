@@ -43,6 +43,7 @@ export default defineConfig({
       'scripts/generate-home-releases.test.js',
       'scripts/lib/release-packages.test.js',
       'packages/skills-cli/lib/sync.test.js',
+      'packages/mcp/lib/tools.test.js',
     ],
   },
 });

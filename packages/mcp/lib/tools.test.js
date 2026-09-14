@@ -1,11 +1,64 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const path = require('node:path');
 const { DocStore } = require('./store');
 const { TOOL_DEFINITIONS, handleToolCall } = require('./tools');
 
 const INDEX_PATH = path.join(__dirname, '../data/index.json');
-const store = new DocStore(INDEX_PATH);
+
+const MOCK_INDEX = {
+  componentsVersion: '1.6.7',
+  generatedAt: '2026-09-14T00:00:00.000Z',
+  entries: [
+    {
+      id: 'table',
+      type: 'component',
+      title: 'Table 表格',
+      category: '数据展示',
+      description: '通用表格组件',
+      demos: [],
+    },
+  ],
+  skills: [],
+  codegenRules: '',
+  schemas: {
+    table: {
+      name: 'table',
+      file: 'packages/components/src/table/table.vue',
+      propsCount: 56,
+      props: {
+        columns: { name: 'columns', tsType: 'YTableColumn[]', type: 'Array', isCore: true },
+        actionConfig: { name: 'actionConfig', tsType: 'YTableActionConfig', type: 'Object', isCore: true },
+        extraProp: { name: 'extraProp', tsType: 'any', type: 'any', isCore: false },
+      },
+      emits: [{ name: 'current-row-change', type: '(row: any) => void', description: '当前行选中变化' }],
+      slots: [],
+    },
+  },
+  coverage: {
+    hasCoverageReport: true,
+    totalMetrics: { lines: 85.5, branches: 75, functions: 82, statements: 80 },
+    packages: [
+      {
+        title: '@yss-ui/components',
+        modules: [
+          {
+            name: 'table',
+            hasTest: true,
+            testCount: 1,
+            lines: { pct: 88, covered: 88, total: 100 },
+            branches: { pct: 80, covered: 80, total: 100 },
+            functions: { pct: 90, covered: 90, total: 100 },
+            testFiles: ['action-column.component.test.ts'],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+const store = fs.existsSync(INDEX_PATH) ? new DocStore(INDEX_PATH) : new DocStore(MOCK_INDEX);
 
 test('MCP 工具定义包含新增工具', () => {
   const toolNames = TOOL_DEFINITIONS.map(t => t.name);

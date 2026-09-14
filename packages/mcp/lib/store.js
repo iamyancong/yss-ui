@@ -46,14 +46,23 @@ function normalizeName(name) {
 /** 文档索引仓库。 */
 class DocStore {
   /**
-   * @param {string} [indexPath] 索引文件路径，默认包内 data/index.json，可用环境变量 YSS_MCP_INDEX 覆盖
+   * @param {string|object} [indexPathOrData] 索引文件路径或已解析的数据对象，默认包内 data/index.json，可用环境变量 YSS_MCP_INDEX 覆盖
    */
-  constructor(indexPath) {
-    const resolved = indexPath || process.env.YSS_MCP_INDEX || path.join(__dirname, '../data/index.json');
+  constructor(indexPathOrData) {
+    if (indexPathOrData && typeof indexPathOrData === 'object') {
+      /** @type {{generatedAt: string, componentsVersion: string, entries: Array<object>, skills: Array<object>, codegenRules: string, schemas?: object, coverage?: object}} */
+      this.index = indexPathOrData;
+      this.aliasMap = this.buildAliasMap();
+      return;
+    }
+    const resolved =
+      (typeof indexPathOrData === 'string' ? indexPathOrData : null) ||
+      process.env.YSS_MCP_INDEX ||
+      path.join(__dirname, '../data/index.json');
     if (!fs.existsSync(resolved)) {
       throw new Error(`索引文件不存在: ${resolved}，请先在 yss-ui 仓库运行 pnpm --filter @yss/mcp build:index`);
     }
-    /** @type {{generatedAt: string, componentsVersion: string, entries: Array<object>, skills: Array<object>, codegenRules: string}} */
+    /** @type {{generatedAt: string, componentsVersion: string, entries: Array<object>, skills: Array<object>, codegenRules: string, schemas?: object, coverage?: object}} */
     this.index = JSON.parse(fs.readFileSync(resolved, 'utf8'));
     this.aliasMap = this.buildAliasMap();
   }
