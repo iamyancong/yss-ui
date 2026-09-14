@@ -31,6 +31,16 @@
       "import": "./dist/echarts.mjs",
       "require": "./dist/echarts.cjs"
     },
+    "./table": {
+      "types": "./dist/table/index.d.ts",
+      "import": "./dist/table.mjs",
+      "require": "./dist/table.cjs"
+    },
+    "./formily": {
+      "types": "./dist/formily/index.d.ts",
+      "import": "./dist/formily.mjs",
+      "require": "./dist/formily.cjs"
+    },
     "./locale": {
       "types": "./dist/locale/index.d.ts",
       "import": "./dist/locale/index.mjs",
@@ -75,7 +85,6 @@
     "@yss-ui/hooks": "workspace:^",
     "@yss-ui/theme": "workspace:^",
     "@yss-ui/utils": "workspace:^",
-    "sortablejs": "^1.15.6",
     "vxe-pc-ui": "4.14.32",
     "vxe-table": "4.19.10",
     "xe-utils": "^3.7.9"

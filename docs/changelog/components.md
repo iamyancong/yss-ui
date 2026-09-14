@@ -14,6 +14,11 @@ YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
 `2026-09-14`
 
+### ⚡ Performance & Optimization
+
+- **Table & Formily Subpaths**: 拆分官方子路径 `@yss-ui/components/table`（导出 `YTable`、`YEditTable` 及专属类型与工具函数）与 `@yss-ui/components/formily`（导出 `YFormily`、`YssFormily` 及表单辅助组件与类型），强化模块化导入与类型边界；主入口与 lite 入口保持 100% 向后兼容 (#21)。
+- **Dependencies Cleanup**: 彻底剔除全库 0 引用无用依赖 `sortablejs`；切断 Monaco 编辑器对表格工具库 `xe-utils` 的跨模块隐式依赖；为 `syncVxeLanguage` 增加容错保护，防止动态加载异常阻断全局流程 (#21)。
+
 ### 🐛 Bug Fixes
 
 - **Lite Entry**: 补齐 `@yss-ui/components/lite` 遗漏的 `authority/types` 与 `file-import/types` 类型 re-export，解决从 lite 入口引入 `YFileImportProps`、`FileImportTexts`、`ImportResult`、`AuthorityDropdownProps` 时的 TypeScript 编译报错 (#20)。

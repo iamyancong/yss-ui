@@ -35,6 +35,9 @@ export interface YssFormilyProps {
   collapsedRows?: number;
 }
 
+/** YFormilyProps 标准别名。 */
+export type YFormilyProps = YssFormilyProps;
+
 /** 展开/收起触发器插槽作用域。 */
 export interface YssFormilyCollapseSlotScope {
   /** 当前是否展开。 */

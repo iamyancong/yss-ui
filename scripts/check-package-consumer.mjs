@@ -209,6 +209,8 @@ assert.match(import.meta.resolve('@yss-ui/components/lite'), /lite\.mjs$/);
 assert.match(import.meta.resolve('@yss-ui/components/sheet'), /sheet\.mjs$/);
 assert.match(import.meta.resolve('@yss-ui/components/monaco'), /monaco\.mjs$/);
 assert.match(import.meta.resolve('@yss-ui/components/echarts'), /echarts\.mjs$/);
+assert.match(import.meta.resolve('@yss-ui/components/table'), /table\.mjs$/);
+assert.match(import.meta.resolve('@yss-ui/components/formily'), /formily\.mjs$/);
 const locale = await import('@yss-ui/components/locale');
 for (const language of ['zh-CN', 'zh-TW', 'en-US']) {
   const pack = (await import('@yss-ui/components/locale/' + language)).default;
@@ -227,6 +229,8 @@ assert.match(require.resolve('@yss-ui/components/lite'), /lite\.cjs$/);
 assert.match(require.resolve('@yss-ui/components/sheet'), /sheet\.cjs$/);
 assert.match(require.resolve('@yss-ui/components/monaco'), /monaco\.cjs$/);
 assert.match(require.resolve('@yss-ui/components/echarts'), /echarts\.cjs$/);
+assert.match(require.resolve('@yss-ui/components/table'), /table\.cjs$/);
+assert.match(require.resolve('@yss-ui/components/formily'), /formily\.cjs$/);
 assert.equal(typeof require('@yss-ui/hooks').useLoading, 'function');
 assert.ok(Object.keys(require('@yss-ui/utils')).length > 0);
 assert.ok(Object.keys(require('@yss-ui/theme')).length > 0);
@@ -251,6 +255,8 @@ import {
 import { YSheet, type YSheetProps } from '@yss-ui/components/sheet';
 import { YMonaco, YMonacoDiff, type YMonacoProps } from '@yss-ui/components/monaco';
 import { YEcharts, type YEchartsProps } from '@yss-ui/components/echarts';
+import { YTable as SubpathTable, YEditTable as SubpathEditTable, type YTableProps, type YEditTableProps } from '@yss-ui/components/table';
+import { YFormily as SubpathFormily, type YFormilyProps } from '@yss-ui/components/formily';
 import { YConfigProvider, setGlobalLocale, useLocale, type YssLocale } from '@yss-ui/components/locale';
 import zhTW from '@yss-ui/components/locale/zh-TW';
 const locale: YssLocale = zhTW;
@@ -269,8 +275,11 @@ const liteImportResult: ImportResult = { total: 10, success: 10 };
 const liteFileImportProps: LiteFileImportProps = { modelValue: false, texts: liteImportTexts, importResult: liteImportResult };
 const authItem: AuthorityDropdownItem = { permissionCode: 'user:delete' };
 const authorityProps: AuthorityDropdownProps = { fallback: 'disable', dropdownItems: [authItem] };
+const subpathTableProps: Partial<YTableProps> = { data: [] };
+const subpathEditTableProps: Partial<YEditTableProps> = { data: [] };
+const subpathFormilyProps: YFormilyProps = { schema: {} };
 
-void [componentsPlugin, YButton, YFileImport, YTable, AuthorityDropdown, LiteFileImport, YSheet, YMonaco, YMonacoDiff, YEcharts, useLoading, utils, theme, fileImportProps, sheetProps, monacoProps, echartsProps, liteFileImportProps, authorityProps];
+void [componentsPlugin, YButton, YFileImport, YTable, AuthorityDropdown, LiteFileImport, YSheet, YMonaco, YMonacoDiff, YEcharts, SubpathTable, SubpathEditTable, SubpathFormily, useLoading, utils, theme, fileImportProps, sheetProps, monacoProps, echartsProps, liteFileImportProps, authorityProps, subpathTableProps, subpathEditTableProps, subpathFormilyProps];
 `;
 
   const browserSource = `
@@ -279,6 +288,8 @@ import { YTable } from '@yss-ui/components/lite';
 import { YSheet } from '@yss-ui/components/sheet';
 import { YMonaco, YMonacoDiff } from '@yss-ui/components/monaco';
 import { YEcharts } from '@yss-ui/components/echarts';
+import { YTable as SubpathTable } from '@yss-ui/components/table';
+import { YFormily as SubpathFormily } from '@yss-ui/components/formily';
 import { useLoading } from '@yss-ui/hooks';
 import * as utils from '@yss-ui/utils';
 import * as theme from '@yss-ui/theme';

@@ -8,7 +8,20 @@ import { tryFormatSql } from '../utils/sqlFormat';
 import { useMonacoLoader } from './useMonacoLoader';
 import { useFullscreen } from './useFullscreen';
 import * as Diff from 'diff';
-import { debounce } from 'xe-utils';
+
+/**
+ * 内部轻量防抖函数，避免 Monaco 跨域依赖外部重型表格工具库 (xe-utils)
+ */
+const debounce = <T extends (...args: any[]) => void>(fn: T, delay = 200): T => {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  return ((...args: Parameters<T>) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      fn(...args);
+    }, delay);
+  }) as T;
+};
 
 /**
  * useDiffEditor - 管理 Monaco DiffEditor 的按需加载与实例生命周期
