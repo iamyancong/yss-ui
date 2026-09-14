@@ -1,6 +1,6 @@
 {
   "name": "@yss-ui/mcp",
-  "version": "0.2.6",
+  "version": "0.2.5",
   "description": "YSS UI 文档 MCP Server：让 coding agent 精准查询组件 API、Demo 源码、Skills 与代码生成规则",
   "keywords": ["yss-ui", "mcp", "model-context-protocol", "ai", "docs"],
   "license": "MIT",
