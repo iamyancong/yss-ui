@@ -94,10 +94,15 @@ pnpm add @yss-ui/components @yss-ui/hooks @yss-ui/utils @yss-ui/theme
 
 在组件中引入并使用：
 
+#### 方案 A：微前端 / 样式敏感工程推荐（纯净入口 + 显式统一基础样式）
+
+为了规避顶层隐式全局样式污染，微前端子应用首选 `@yss-ui/components/lite` 纯净入口：
+
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue';
-import { YTable, YButton } from '@yss-ui/components';
+// 纯净导入：无全局样式副作用，与主入口共享同一组件与语言单例
+import { YTable, YButton } from '@yss-ui/components/lite';
 import { useTableHeight } from '@yss-ui/hooks';
 import { formatDate } from '@yss-ui/utils';
 
@@ -128,6 +133,32 @@ const tableData = ref([
   </div>
 </template>
 ```
+
+并在微应用入口 `main.ts` 中显式按需引入统一样式：
+```ts
+import '@yss-ui/components/style.css';
+```
+
+#### 方案 B：常规单体项目快速开始（开箱即用）
+
+单体独立工程可直接从默认根入口引入（内置基础样式副作用注入）：
+
+```ts
+import { YTable, YButton, YFormily } from '@yss-ui/components';
+import '@yss-ui/components/style.css';
+```
+
+#### 💡 重型组件解耦与官方子路径
+
+对于 Monaco 代码编辑器、ECharts 图表、Univer 电子表格等巨型引擎（合计可达 8MB~10MB+），组件库已实现按需异步加载与官方独立子路径支持：
+
+| 官方子路径 | 导出组件 / 能力 | 适用场景 |
+| :--- | :--- | :--- |
+| `@yss-ui/components/monaco` | `YMonaco`, `YMonacoDiff`, `ensureMonacoCss` 及相关类型 | 代码编辑、SQL / Nginx 配置比对 |
+| `@yss-ui/components/echarts` | `YEcharts` 及相关类型 | 大屏图表、数据可视化 |
+| `@yss-ui/components/sheet` | `YSheet`, `LocaleType` 及 Univer 配置接口 | 在线协同表格、电子表格工作簿 |
+
+> 业务代码从主入口、`lite` 或上述子路径引入均保持向前兼容；未渲染对应重型组件的页面在生产构建中会自动剔除其引擎代码与核心 CSS。
 
 ---
 

@@ -238,7 +238,16 @@ import componentsPlugin, {
   YFileImport,
   type YFileImportProps,
 } from '@yss-ui/components';
-import { YTable } from '@yss-ui/components/lite';
+import {
+  YTable,
+  AuthorityDropdown,
+  YFileImport as LiteFileImport,
+  type AuthorityDropdownProps,
+  type AuthorityDropdownItem,
+  type YFileImportProps as LiteFileImportProps,
+  type FileImportTexts,
+  type ImportResult,
+} from '@yss-ui/components/lite';
 import { YSheet, type YSheetProps } from '@yss-ui/components/sheet';
 import { YMonaco, YMonacoDiff, type YMonacoProps } from '@yss-ui/components/monaco';
 import { YEcharts, type YEchartsProps } from '@yss-ui/components/echarts';
@@ -255,8 +264,13 @@ const fileImportProps: YFileImportProps = { modelValue: false, multiple: true };
 const sheetProps: YSheetProps = { modelValue: null, locale: 'zh-CN' };
 const monacoProps: YMonacoProps = { modelValue: 'select 1;' };
 const echartsProps: YEchartsProps = { options: {} };
+const liteImportTexts: FileImportTexts = { cancel: '取消' };
+const liteImportResult: ImportResult = { total: 10, success: 10 };
+const liteFileImportProps: LiteFileImportProps = { modelValue: false, texts: liteImportTexts, importResult: liteImportResult };
+const authItem: AuthorityDropdownItem = { permissionCode: 'user:delete' };
+const authorityProps: AuthorityDropdownProps = { fallback: 'disable', dropdownItems: [authItem] };
 
-void [componentsPlugin, YButton, YFileImport, YTable, YSheet, YMonaco, YMonacoDiff, YEcharts, useLoading, utils, theme, fileImportProps, sheetProps, monacoProps, echartsProps];
+void [componentsPlugin, YButton, YFileImport, YTable, AuthorityDropdown, LiteFileImport, YSheet, YMonaco, YMonacoDiff, YEcharts, useLoading, utils, theme, fileImportProps, sheetProps, monacoProps, echartsProps, liteFileImportProps, authorityProps];
 `;
 
   const browserSource = `

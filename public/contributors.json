@@ -51,7 +51,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 1,
+      "commits": 2,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     }
@@ -60,7 +60,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 4,
+      "commits": 5,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     },
@@ -292,7 +292,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 1,
+      "commits": 2,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     }
@@ -316,6 +316,15 @@
     }
   ],
   "/guide/table-perf-handbook": [
+    {
+      "name": "iamyancong",
+      "email": "wangyancong@ysstech.com",
+      "commits": 1,
+      "avatar": "https://github.com/iamyancong.png?size=64",
+      "url": "https://github.com/iamyancong"
+    }
+  ],
+  "/guide/test-coverage": [
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
@@ -578,7 +587,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 1,
+      "commits": 2,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     }

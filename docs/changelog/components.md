@@ -10,6 +10,20 @@ toc: content
 
 YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
+## v1.6.7
+
+`2026-09-14`
+
+### 🐛 Bug Fixes
+
+- **Lite Entry**: 补齐 `@yss-ui/components/lite` 遗漏的 `authority/types` 与 `file-import/types` 类型 re-export，解决从 lite 入口引入 `YFileImportProps`、`FileImportTexts`、`ImportResult`、`AuthorityDropdownProps` 时的 TypeScript 编译报错 (#20)。
+
+### 📝 Documentation
+
+- **Quick Start**: 对齐根目录 `README.md` 快速开始指南，补充微前端/样式隔离推荐的 `@yss-ui/components/lite` 纯净模式指引与重型组件官方子路径导航表格 (#20)。
+
+---
+
 ## v1.6.6
 
 `2026-09-12`
