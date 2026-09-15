@@ -1,0 +1,42 @@
+[
+  {
+    "name": "旧版本",
+    "version": "1.6.6",
+    "code": "import { YButton } from '@yss-ui/components';",
+    "config": "legacyAdapter()",
+    "expected": ["@yss-ui/components"],
+    "plugin": false
+  },
+  {
+    "name": "新模板 Button-only",
+    "version": "1.7.0",
+    "code": "import { YButton, YCard } from '@yss-ui/components';",
+    "config": "import { yssUi } from '@yss-ui/components/vite'; yssUi();",
+    "expected": ["entries/YButton", "entries/YCard"],
+    "plugin": true
+  },
+  {
+    "name": "混合历史入口",
+    "version": "1.7.0",
+    "code": "import { YButton } from '@yss-ui/components'; import { YTable } from '@yss-ui/components/table'; import { YFormily } from 'virtual:yss-heavy-components';",
+    "config": "import { yssUi } from '@yss-ui/components/vite'; yssUi();",
+    "expected": ["entries/YButton", "@yss-ui/components/table", "entries/YFormily"],
+    "plugin": true
+  },
+  {
+    "name": "表格表单页",
+    "version": "1.7.0",
+    "code": "import { YTable as Table, YFormily } from '@yss-ui/components';",
+    "config": "import { yssUi } from '@yss-ui/components/vite'; yssUi();",
+    "expected": ["entries/YTable", "entries/YFormily"],
+    "plugin": true
+  },
+  {
+    "name": "未知版本",
+    "version": "9.9.9",
+    "code": "import { YTable } from '@yss-ui/components';",
+    "config": "/* 读取已安装 exports 后再决定插件 */",
+    "expected": ["@yss-ui/components"],
+    "plugin": false
+  }
+]

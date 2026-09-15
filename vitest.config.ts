@@ -39,6 +39,7 @@ export default defineConfig({
     /** 这些脚本使用 Node.js 原生 test runner，由各自的 package script 执行。 */
     exclude: [
       ...configDefaults.exclude,
+      'scripts/consumption-plugin.test.mjs',
       'scripts/check-registry-artifacts.test.mjs',
       'scripts/generate-home-releases.test.js',
       'scripts/lib/release-packages.test.js',

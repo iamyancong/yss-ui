@@ -98,7 +98,7 @@ const validatePackedManifest = packageDirectory => {
   const targets = new Set([manifest.main, manifest.module, manifest.types, ...collectExportTargets(manifest.exports)]);
 
   for (const target of targets) {
-    if (!target) continue;
+    if (!target || target.includes('*')) continue;
     const resolved = path.resolve(packageDirectory, target);
     assert.ok(
       resolved.startsWith(`${path.resolve(packageDirectory)}${path.sep}`),
@@ -108,6 +108,15 @@ const validatePackedManifest = packageDirectory => {
   }
 
   if (manifest.name === '@yss-ui/components') {
+    /** 新公开路径切换后仍保留旧插件读取的每个历史 JS 产物。 */
+    for (const name of ['index', 'lite', 'sheet', 'monaco', 'echarts', 'table', 'formily']) {
+      for (const extension of ['mjs', 'cjs']) {
+        assert.ok(
+          fs.existsSync(path.join(packageDirectory, `dist/${name}.${extension}`)),
+          `缺少历史产物 ${name}.${extension}`
+        );
+      }
+    }
     assert.equal(manifest.yssUi?.treeShakableRoot, true);
     assert.notEqual(manifest.module, 'dist/index.mjs', '公开根入口仍指向传统公共构建');
     assert.deepEqual(
