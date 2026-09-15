@@ -65,6 +65,7 @@ export default defineConfig({
           children: [
             { title: '快速开始', link: '/guide' },
             { title: '安装', link: '/guide/installation' },
+            { title: '统一入口与 Vite 消费契约', link: '/guide/unified-consumption' },
           ],
         },
         {

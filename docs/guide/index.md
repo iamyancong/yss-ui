@@ -40,77 +40,39 @@ pnpm add @yss-ui/components
 npm install @yss-ui/components
 ```
 
-## 全局引入（你的微应用当前方案）
+## 默认接入：根入口具名导入
 
-在 main.ts 中：
-
-```typescript
-import { createApp } from 'vue';
-import YSSUI from '@yss-ui/components';
-import '@yss-ui/components/dist/style.css';
-import App from './App.vue';
-
-const app = createApp(App);
-app.use(YSSUI);
-app.mount('#app');
-```
-
-## 按需引入（适用于独立项目或极限体积优化）
-
-为了减小包体积，推荐按需引入组件：
+Vue 3 微应用与独立项目都默认在页面局部导入，不在 main.ts 全量注册：
 
 <code id="guide-on-demand-import-button" src="./main/Button.vue" ></code>
 
-## 根入口按需裁剪
-
-自 `@yss-ui/components@1.6.0` 起，组件库已正式支持根入口按需裁剪。业务升级后继续使用原来的公开根入口即可，不需要增加构建插件或修改为专用轻量路径：
-
 ```ts
 import { YCard, YTable, YFormily } from '@yss-ui/components';
-import '@yss-ui/components/dist/style.css';
 ```
 
-组件实现按职责保留构建边界，全量安装代码独立成模块。支持 tree-shaking 的生产构建会自动裁剪未使用的组件与安装代码。历史 `YssFormily` 别名、组件 Props/事件/类型、`lite`、`sheet`、locale 子路径和旧 CSS 路径保持兼容；根入口与 lite 共用组件，语言入口仍共用单例。
+自 1.6.0 起根入口支持生产 tree-shaking。新的同包官方 Vite 插件（目标版本 1.7.0，支持 Vite 6）进一步处理开发预构建和组件 CSS 关联，详见[统一入口与 Vite 消费契约](/guide/unified-consumption)。当前安装版本未公开 `./vite` 时保留已有适配配置；不要把未发布能力当作 1.6.6/1.6.7 已有能力。
 
-```ts
-// 重型组件仍使用相同根入口，放在懒加载的业务页面中。
-import { YEcharts } from '@yss-ui/components';
-```
+默认安装和动态整包导入仍可用于历史兼容，明确引用全部组件时会保留全量语义。`app.use(YSSUI)` 不是新微应用的默认方案。旧 dist 文件和全量 CSS 路径继续保留，不批量重写旧业务页面。
 
-`app.use(YSSUI)` 全量安装继续可用，但它明确引用了全部注册组件，因此不能获得局部具名导入的体积收益。开发模式的依赖预构建与生产 tree-shaking 口径不同，不能将开发资源量当作生产加载量。
+### 样式策略
 
-旧隔离插件可能直接读取 `dist/index.mjs` 等内部文件，这些传统产物保留以兼容存量工具。标准包导入通过 package exports/module/main 进入优化后的根入口；新版模板在生产构建中仅为历史虚拟模块名保留兼容映射，不再改写根入口 import，开发模式继续复用依赖预构建优化。存量项目若用别名强制指向传统内部文件，仍按其别名加载，不能视为标准根入口消费。
+- 接入官方插件后，组件 CSS 随实际实现入口加载；官方全量 style.css 导入会转换为公共基础样式。
+- 未接入插件时保留项目已有样式策略；全量 CSS 不会因为 JS 具名导入自动消失。
+- `lite` 是可选兼容入口，与根入口共享组件和语言状态。它不是微应用必改写法，也不意味着样式完全不会影响宿主。
 
-完整 `style.css` 仍有固定成本，不会根据 JavaScript 的 import 列表自动裁剪 CSS。验收必须同时检查完整页面资源、未使用的重型依赖、浏览器渲染与旧 API 兼容性，不能只比较入口文件大小。
+### 可选公开子路径
 
-### 纯净模式与样式副作用隔离（微前端推荐）
+| 子路径 | 用途 |
+| --- | --- |
+| `@yss-ui/components/table` | YTable、YEditTable 和表格类型（1.6.7 起） |
+| `@yss-ui/components/formily` | YFormily、YssFormily 和表单类型（1.6.7 起） |
+| `@yss-ui/components/monaco` | YMonaco、YMonacoDiff、ensureMonacoCss |
+| `@yss-ui/components/echarts` | YEcharts |
+| `@yss-ui/components/sheet` | YSheet 和 Univer 深度配置 |
 
-`@yss-ui/components` 根入口为了保证单体项目开箱即用，内置了基础样式副作用（`vxe-table/lib/style.css`、`vxe-pc-ui/lib/style.css` 等）。
+子路径是同一个包的可选入口，不是需要分别安装的功能包，也不会降低默认安装树。Monaco/ECharts/Sheet 保留异步组件策略，最终加载边界以真实页面 JS/CSS 和浏览器请求为准，不承诺固定减重比例。
 
-在 **微前端子应用** 或对全局样式污染高度敏感的场景下，推荐使用 `@yss-ui/components/lite` 纯净入口：
-
-```ts
-// 纯净组件导入，不注入顶层全局样式副作用
-import { YTable, YFormily, YButton } from '@yss-ui/components/lite';
-
-// 由业务工程按需在 main.ts 显式引入统一样式
-import '@yss-ui/components/style.css';
-```
-
-`lite` 入口与主入口完全共享底层组件与国际化单例，但彻底剥离了隐式全局 CSS 挂载，能够彻底规避微前端样式污染。
-
-### 重型依赖解耦与官方子路径（Monaco / ECharts / Univer）
-
-为了解决微前端首屏资源过大（Monaco+ECharts+Univer 容易占用 8MB~10MB 体积）的痛点，`@yss-ui/components` 现已实现重型依赖彻底解耦：
-
-1. **主入口/lite 入口向后兼容**：业务升级后代码写法完全不变，继续从 `@yss-ui/components` 或 `@yss-ui/components/lite` 引入 `YMonaco`、`YEcharts`、`YSheet`。重型组件在内部已转为异步组件按需加载，**未渲染对应组件的页面不会在首屏打包其庞大依赖及 Monaco 核心样式（首屏可降低 6MB~10MB）**。
-2. **官方独立子路径（推荐独立模块使用）**：
-   - `@yss-ui/components/monaco`：导出 `YMonaco`, `YMonacoDiff`, `ensureMonacoCss` 及相关类型；
-   - `@yss-ui/components/echarts`：导出 `YEcharts` 及相关类型；
-   - `@yss-ui/components/sheet`：导出 `YSheet` 及 Univer 深度配置。
-3. **依赖可选化（optionalDependencies）**：微应用如果不需要 Monaco 或 ECharts，构建打包器不会因为缺失它们而阻塞轻量页面。
-
-组件库本地开发使用 `pnpm --filter @yss-ui/components dev`，单一监听流程依次更新传统产物和新根入口。可通过 `YSS_KEEP_CONSUMER=true pnpm test:package-consumer` 保留真实打包消费项目，再执行 `python3 scripts/check-package-consumer-browser.py <控制台输出的消费项目目录>` 验证页面渲染与全量安装。
+组件库本地开发使用 `pnpm --filter @yss-ui/components dev`，监听流程依次更新旧产物、统一构建图和消费契约。真实安装验收使用 `pnpm test:consumption`；源码映射、类型检查及浏览器复现命令见统一消费报告。
 
 ## 使用 Utils 和 Hooks
 

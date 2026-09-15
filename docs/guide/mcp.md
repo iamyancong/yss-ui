@@ -27,6 +27,7 @@ toc: content
 | `get_demo` | 获取官方 Demo 完整源码（如 `formily/modes` 三态切换） |
 | `search_docs` | 中文关键词全文搜索组件文档与 Skills |
 | `list_skills` / `get_skill` | 浏览并读取开发技能规范 |
+| `get_consumption_contract` | 按 `componentsVersion?` 核对单包、入口、Vite 插件与样式契约；未知版本要求读取实际 exports |
 | `get_codegen_rules` | 获取业务代码生成硬规则（样式导入、SFC 结构等） |
 | `get_component_schema` | 获取组件精确 JSON Schema（Props约束/枚举值/默认值/Emits/Slots），防止属性名幻觉 |
 | `get_test_coverage` | 获取组件库自动化测试覆盖率指标与单测文件清单；不传查全库大盘，传参查单模块 |
@@ -88,7 +89,7 @@ npx -y @yss-ui/mcp install cursor --global         # Cursor/Antigravity 写全�
 }
 ```
 
-保存后打开 **Settings → Tools & Integrations → MCP**，看到 `yss-ui` 状态为绿色且展开有 7 个工具即接入成功。
+保存后打开 **Settings → Tools & Integrations → MCP**，看到 `yss-ui` 状态为绿色且展开有 10 个工具即接入成功。
 
 ### Codex（CLI / IDE 插件）
 
@@ -135,7 +136,7 @@ claude mcp add yss-ui -- npx -y @yss-ui/mcp
 
 ### 1. 连接层（配置后先看一次）
 
-- Cursor：Settings → MCP 中 `yss-ui` 为绿色，展开可见 7 个工具；
+- Cursor：Settings → MCP 中 `yss-ui` 为绿色，展开可见 10 个工具；
 - Codex：会话中输入 `/mcp`，列表出现 `yss-ui` 及工具清单；
 - Claude Code：`claude mcp list` 显示 `yss-ui: connected`；
 - Antigravity：MCP Servers 面板显示 `yss-ui` 及工具数量。

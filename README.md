@@ -85,68 +85,32 @@ YSS UI 采用 **pnpm Monorepo** 架构管理各个独立子包，按职责分层
 
 ### 1. 在 Vue 3 业务项目中使用
 
-直接通过 npm / pnpm 安装所需的子包：
+组件只需安装一个包；直接使用 Hooks、工具函数、主题 API 时再声明对应依赖：
 
 ```bash
-# 安装核心组件库、Hooks 与工具包
-pnpm add @yss-ui/components @yss-ui/hooks @yss-ui/utils @yss-ui/theme
+# 安装组件库
+pnpm add @yss-ui/components
+# 按业务直接使用的 API 选择安装
+pnpm add @yss-ui/hooks @yss-ui/utils @yss-ui/theme
 ```
 
 在组件中引入并使用：
 
-#### 方案 A：微前端 / 样式敏感工程推荐（纯净入口 + 显式统一基础样式）
-
-为了规避顶层隐式全局样式污染，微前端子应用首选 `@yss-ui/components/lite` 纯净入口：
+#### 默认写法：根入口具名导入与页面局部注册
 
 ```vue
 <script setup lang="ts">
-import { ref } from 'vue';
-// 纯净导入：无全局样式副作用，与主入口共享同一组件与语言单例
-import { YTable, YButton } from '@yss-ui/components/lite';
-import { useTableHeight } from '@yss-ui/hooks';
-import { formatDate } from '@yss-ui/utils';
-
-// 自适应表格高度计算
-const { tableHeight } = useTableHeight({ extraOffset: 48 });
-
-const columns = [
-  { field: 'name', title: '名称', width: 200 },
-  { 
-    field: 'createTime', 
-    title: '创建时间', 
-    formatter: ({ cellValue }) => formatDate(cellValue, 'YYYY-MM-DD HH:mm:ss') 
-  }
-];
-
-const tableData = ref([
-  { id: '1', name: 'YSS UI Enterprise', createTime: Date.now() }
-]);
+import { YButton } from '@yss-ui/components';
 </script>
 
 <template>
-  <div class="page-container">
-    <YTable
-      :columns="columns"
-      :data="tableData"
-      :height="tableHeight"
-    />
-  </div>
+  <YButton>确认</YButton>
 </template>
 ```
 
-并在微应用入口 `main.ts` 中显式按需引入统一样式：
-```ts
-import '@yss-ui/components/style.css';
-```
+Vite 6 新项目接入下方官方插件后，组件样式由插件关联加载。旧项目保留现有样式导入和兼容配置；接入官方插件后，`@yss-ui/components/style.css` 或 `@yss-ui/components/dist/style.css` 将转换为公共基础样式，并随实际组件补齐其样式。
 
-#### 方案 B：常规单体项目快速开始（开箱即用）
-
-单体独立工程可直接从默认根入口引入（内置基础样式副作用注入）：
-
-```ts
-import { YTable, YButton, YFormily } from '@yss-ui/components';
-import '@yss-ui/components/style.css';
-```
+`@yss-ui/components/lite` 仍是可选公开入口，与根入口共享组件和语言状态；已有使用方式继续兼容。业务无需统一迁移到 lite 或功能子路径。
 
 #### 💡 重型组件解耦与官方子路径
 
@@ -154,11 +118,28 @@ import '@yss-ui/components/style.css';
 
 | 官方子路径 | 导出组件 / 能力 | 适用场景 |
 | :--- | :--- | :--- |
+| `@yss-ui/components/table` | `YTable`、`YEditTable` 及表格类型 | 表格与可编辑表格（1.6.7+） |
+| `@yss-ui/components/formily` | `YFormily`、`YssFormily` 及表单类型 | Schema 表单（1.6.7+） |
 | `@yss-ui/components/monaco` | `YMonaco`, `YMonacoDiff`, `ensureMonacoCss` 及相关类型 | 代码编辑、SQL / Nginx 配置比对 |
 | `@yss-ui/components/echarts` | `YEcharts` 及相关类型 | 大屏图表、数据可视化 |
 | `@yss-ui/components/sheet` | `YSheet`, `LocaleType` 及 Univer 配置接口 | 在线协同表格、电子表格工作簿 |
 
-> 业务代码从主入口、`lite` 或上述子路径引入均保持向前兼容；未渲染对应重型组件的页面在生产构建中会自动剔除其引擎代码与核心 CSS。
+> 默认仍从 `@yss-ui/components` 具名导入，并在页面局部注册。上述子路径是可选入口，不要求迁移旧代码。`optionalDependencies` 默认仍会安装；子路径和按需打包不代表安装树减重。是否进入首屏以实际 JS/CSS 依赖闭包和浏览器请求为准。
+
+#### 同包官方 Vite 插件（新增能力，目标版本 1.7.0）
+
+```ts
+import vue from '@vitejs/plugin-vue';
+import { defineConfig } from 'vite';
+import { yssUi } from '@yss-ui/components/vite';
+
+export default defineConfig({ plugins: [vue(), yssUi()] });
+```
+
+业务继续 `import { YButton, YTable, YFormily } from '@yss-ui/components'`；不增加功能包，不全局 `app.use(YSSUI)`。插件按语法节点选择组件入口，并按组件加载样式，兼容原有官方全量 CSS 导入和历史虚拟入口。支持 Vite 6，构建工具不进入浏览器代码。
+
+旧项目仅升级组件库可保留现有配置；接入官方插件时，先确认安装包公开 `./vite`，再移除旧的 YSS 隔离/预构建插件和整包 `optimizeDeps.include`，不能同时启用。完整契约见 `@yss-ui/components/consumption.json`；AI 通过 MCP `get_consumption_contract` 查询目标版本。已发布的 1.6.6/1.6.7 不包含此新插件。实现说明、实测数据与 Issue #24/#25 评估见[统一消费报告](docs/guide/unified-consumption.md)。
+
 
 ---
 

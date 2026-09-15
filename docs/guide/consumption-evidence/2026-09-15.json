@@ -1,0 +1,363 @@
+{
+  "baseline8": {
+    "pages": {
+      "index.html": {
+        "raw": 1064413,
+        "gzip": 249581,
+        "brotli": 207269
+      },
+      "src/Table.vue": {
+        "raw": 2690112,
+        "gzip": 744608,
+        "brotli": 596996
+      },
+      "src/Form.vue": {
+        "raw": 2188223,
+        "gzip": 570887,
+        "brotli": 473261
+      },
+      "src/Chart.vue": {
+        "raw": 2193617,
+        "gzip": 629565,
+        "brotli": 515545
+      }
+    },
+    "installation": {
+      "node": "v22.17.1",
+      "pnpm": "8.10.0",
+      "diskKiB": 764948,
+      "duplicates": {
+        "nanoid": [
+          {
+            "name": "nanoid",
+            "version": "5.1.11"
+          },
+          {
+            "name": "nanoid",
+            "version": "3.3.19"
+          }
+        ],
+        "xe-utils": [
+          {
+            "name": "xe-utils",
+            "version": "4.0.13"
+          },
+          {
+            "name": "xe-utils",
+            "version": "3.9.1"
+          }
+        ],
+        "tslib": [
+          {
+            "name": "tslib",
+            "version": "2.8.1"
+          },
+          {
+            "name": "tslib",
+            "version": "2.3.0"
+          }
+        ]
+      },
+      "componentsTarballBytes": null
+    },
+    "uniqueNameVersionPairs": 340
+  },
+  "candidate8": {
+    "pages": {
+      "index.html": {
+        "raw": 385794,
+        "gzip": 128962,
+        "brotli": 110290
+      },
+      "src/Table.vue": {
+        "raw": 2555629,
+        "gzip": 713984,
+        "brotli": 574196
+      },
+      "src/Form.vue": {
+        "raw": 1526846,
+        "gzip": 455377,
+        "brotli": 380377
+      },
+      "src/Chart.vue": {
+        "raw": 1515050,
+        "gzip": 509019,
+        "brotli": 418642
+      }
+    },
+    "installation": {
+      "node": "v22.17.1",
+      "pnpm": "8.10.0",
+      "diskKiB": 766328,
+      "duplicates": {
+        "nanoid": [
+          {
+            "name": "nanoid",
+            "version": "5.1.11"
+          },
+          {
+            "name": "nanoid",
+            "version": "3.3.19"
+          }
+        ],
+        "xe-utils": [
+          {
+            "name": "xe-utils",
+            "version": "4.0.13"
+          },
+          {
+            "name": "xe-utils",
+            "version": "3.9.1"
+          }
+        ],
+        "tslib": [
+          {
+            "name": "tslib",
+            "version": "2.8.1"
+          },
+          {
+            "name": "tslib",
+            "version": "2.3.0"
+          }
+        ]
+      },
+      "componentsTarballBytes": 1119540
+    },
+    "uniqueNameVersionPairs": 340
+  },
+  "browser": [
+    {
+      "mode": "production",
+      "hmr": null,
+      "errors": [],
+      "chartSize": {
+        "x": 16,
+        "y": 148,
+        "width": 1248,
+        "height": 240
+      },
+      "initial": {
+        "requests": 3,
+        "decodedBytes": 385794,
+        "transferredBytes": 129862
+      }
+    },
+    {
+      "mode": "development",
+      "hmr": true,
+      "errors": [],
+      "chartSize": {
+        "x": 16,
+        "y": 148,
+        "width": 1248,
+        "height": 240
+      },
+      "initial": {
+        "requests": 18,
+        "decodedBytes": 5771973,
+        "transferredBytes": 5777373
+      }
+    }
+  ],
+  "strictTypes": {
+    "baseline": {
+      "errors": 189,
+      "yssErrors": []
+    },
+    "candidate": {
+      "errors": 189,
+      "yssErrors": []
+    }
+  },
+  "renderer": {
+    "native": {
+      "stats": {
+        "pluginCalls": 3,
+        "yssUpdates": 0,
+        "checkboxRenderer": false
+      },
+      "nativeRows": [
+        {
+          "name": "Native changed",
+          "bool": true,
+          "_X_ROW_KEY": "row_13"
+        }
+      ],
+      "yssRows": [
+        {
+          "name": "YSS",
+          "bool": true,
+          "_X_ROW_KEY": "row_14"
+        }
+      ]
+    },
+    "yss": {
+      "stats": {
+        "pluginCalls": 3,
+        "yssUpdates": 1,
+        "checkboxRenderer": false
+      },
+      "nativeRows": [
+        {
+          "name": "Native changed",
+          "bool": true,
+          "_X_ROW_KEY": "row_13"
+        }
+      ],
+      "yssRows": [
+        {
+          "name": "YSS changed",
+          "bool": true,
+          "_X_ROW_KEY": "row_14"
+        }
+      ]
+    },
+    "logs": [
+      {
+        "type": "debug",
+        "text": "[vite] connecting..."
+      },
+      {
+        "type": "debug",
+        "text": "[vite] connected."
+      },
+      {
+        "type": "warning",
+        "text": "[vxe v4.4.21] \"Renderer.AInput\" 的参数 \"renderTableEdit\" 重复定义，这可能会出现错误"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      }
+    ]
+  },
+  "legacyDev": [
+    {
+      "route": "batch-task/valuation-workbench",
+      "remounted": true,
+      "errors": []
+    },
+    {
+      "route": "batch-task/valuation-task",
+      "remounted": true,
+      "errors": []
+    },
+    {
+      "route": "operations/logs",
+      "remounted": true,
+      "errors": []
+    }
+  ],
+  "legacySheet": {
+    "remounted": true,
+    "size": {
+      "x": 1,
+      "y": 1,
+      "width": 1438,
+      "height": 611
+    },
+    "errors": [],
+    "logs": [
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      }
+    ]
+  },
+  "strictTypesExpanded": {
+    "baseline": {
+      "errors": 379,
+      "codes": {
+        "TS1192": 1,
+        "TS2305": 6,
+        "TS7016": 187,
+        "TS2503": 27,
+        "TS2304": 3,
+        "TS2724": 2,
+        "TS2344": 153
+      }
+    },
+    "candidate": {
+      "errors": 379,
+      "codes": {
+        "TS1192": 1,
+        "TS2305": 6,
+        "TS7016": 187,
+        "TS2503": 27,
+        "TS2304": 3,
+        "TS2724": 2,
+        "TS2344": 153
+      }
+    }
+  },
+  "legacyProduction": {
+    "official": [
+      {
+        "route": "batch-task/valuation-workbench",
+        "remounted": true,
+        "errors": []
+      },
+      {
+        "route": "batch-task/valuation-task",
+        "remounted": true,
+        "errors": []
+      },
+      {
+        "route": "operations/logs",
+        "remounted": true,
+        "errors": []
+      }
+    ],
+    "upgradeOnly": [
+      {
+        "route": "batch-task/valuation-workbench",
+        "remounted": true,
+        "errors": []
+      },
+      {
+        "route": "batch-task/valuation-task",
+        "remounted": true,
+        "errors": []
+      },
+      {
+        "route": "operations/logs",
+        "remounted": true,
+        "errors": []
+      }
+    ]
+  },
+  "templateLocale": {
+    "localeReload": true,
+    "body": "MicroApp Platform\nTest YSSUITable\nEnglish\nAdmin\nUser Type\n:\nPersonal\nCompany\n*Name\n:\nAge\n:\nStatus\n:\nSearch\nReset\nNo.\n\t\nName\n\t\nAge\n\t\nGender\n\t\nActions\n1\n\t\n张三\n\t\n28\n\t\nMale\n\t\nView\nDelete\n\n\n2\n\t\n李四\n\t\n22\n\t\nMale\n\t\nView\nEdit\nMore\n\n\n3\n\t\n王五\n\t\n26\n\t\nFemale\n\t\nView\nDelete\n\n\n4\n\t\n赵六\n\t\n30\n\t\nMale\n\t\nView\nEdit\nMore\nTotal 4 items\n1\n5 / page",
+    "errors": []
+  },
+  "lazyModal": {
+    "firstOpen": true,
+    "reopen": true,
+    "size": {
+      "x": 374.3678894042969,
+      "y": 98.56636810302734,
+      "width": 511.1251525878906,
+      "height": 172.9961929321289
+    },
+    "errors": []
+  },
+  "deliveryReview": {
+    "date": "2026-09-15",
+    "pluginTests": 8,
+    "quality": "passed",
+    "legacyDistEntrypoints": "index/lite/sheet/monaco/echarts/table/formily mjs+cjs checked in tarball",
+    "peerResolution": {
+      "packageManager": "pnpm 8.10.0",
+      "mode": "isolated lockfile-only resolution; not disk or runtime benchmark",
+      "noVite": "no Vite package in resolved lockfile",
+      "vite5": "5.4.21: original ^6 emitted unmet peer; ^5.4.10 || ^6.0.0 removed Vite warning",
+      "remainingWarning": "Formily transitive vue-frag Vue 2 peer mismatch"
+    },
+    "strictTypesRerun": {
+      "errors": 379,
+      "fixture": "previous isolated candidate; not a newly published version"
+    },
+    "pluginConflict": "reject known legacy Vite plugins and esbuild optimizer"
+  }
+}

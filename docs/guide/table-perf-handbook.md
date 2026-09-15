@@ -31,7 +31,7 @@ toc: content
 
 虚拟滚动依赖视口高度和行高来计算当前可视区域的渲染切片。如果单元格内容高度不一致或未设定固定行高，虚拟滚动引擎需要动态估算行高并频繁触发浏览器 Reflow（重排）：
 
-```vue
+```vue | pure
 <!-- ✅ 推荐：显式声明固定行高（默认推荐 36px 或 40px） -->
 <YEditTable
   :columns="columns"
@@ -54,7 +54,7 @@ toc: content
 
 针对特别多列（如宽表 30 列以上且带有复杂编辑器）的场景，可主动调低横向虚拟滚动开启阈值：
 
-```vue
+```vue | pure
 <!-- ✅ 宽表场景：提前开启横向虚拟滚动与适当预加载缓冲区 -->
 <YEditTable
   :columns="columns"
@@ -79,7 +79,7 @@ toc: content
 
 ### ❌ 反模式 1：在表格每格中循环实例化 `<YFormily>`
 
-```vue
+```vue | pure
 <!-- ❌ 严重反模式：千万不要在每一行单元格中嵌入完整 Formily 表单 -->
 <vxe-column title="信息">
   <template #default="{ row }">
@@ -94,9 +94,9 @@ toc: content
 
 ### ❌ 反模式 2：超大表格主动关闭虚拟滚动
 
-```vue
+```vue | pure
 <!-- ❌ 危险操作：为了排查某些样式直接把虚拟滚动禁用 -->
-<YEditTable :table-config="{ virtualYConfig: { enabled: false } }" :data="1000Rows" />
+<YEditTable :table-config="{ virtualYConfig: { enabled: false } }" :data="thousandRows" />
 ```
 * **危害**：1,000 行 × 20 列 = 20,000 个 DOM 节点瞬间塞满浏览器，导致白屏或掉帧。
 * **正确做法**：保持虚拟滚动开启；若有浮层样式问题，使用 `getPopupContainer: () => document.body` 解决遮挡，而不是牺牲虚拟滚动。
@@ -105,7 +105,7 @@ toc: content
 
 ### ❌ 反模式 3：在单元格插槽中进行高开销计算或深拷贝
 
-```vue
+```vue | pure
 <!-- ❌ 反模式：在插槽模板中直接调用高开销复杂过滤 -->
 <template #department="{ row }">
   <span>{{ departments.find(d => d.id === row.depId)?.deepTree?.name }}</span>

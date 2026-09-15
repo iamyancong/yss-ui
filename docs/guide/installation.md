@@ -66,6 +66,9 @@ pnpm -v
 
 ### 核心组件库
 
+`@yss-ui/components` 同包包含表格和表单能力，不需要另装 `@yss-ui/table`、`@yss-ui/formily` 或补装 VXE/Formily。新微应用采用根入口具名导入和局部注册；官方 Vite 插件及版本边界见[统一消费契约](/guide/unified-consumption)。
+
+
 ```bash
 # 使用 pnpm（推荐）
 pnpm add @yss-ui/components
