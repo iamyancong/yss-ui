@@ -148,7 +148,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 2,
+      "commits": 3,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     }
@@ -166,7 +166,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 1,
+      "commits": 2,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     }
@@ -220,7 +220,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 1,
+      "commits": 2,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     }
@@ -256,7 +256,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 6,
+      "commits": 7,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     }
@@ -265,7 +265,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 1,
+      "commits": 2,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     }
@@ -292,7 +292,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 2,
+      "commits": 3,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     }
@@ -319,12 +319,21 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 1,
+      "commits": 2,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     }
   ],
   "/guide/test-coverage": [
+    {
+      "name": "iamyancong",
+      "email": "wangyancong@ysstech.com",
+      "commits": 1,
+      "avatar": "https://github.com/iamyancong.png?size=64",
+      "url": "https://github.com/iamyancong"
+    }
+  ],
+  "/guide/unified-consumption": [
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",

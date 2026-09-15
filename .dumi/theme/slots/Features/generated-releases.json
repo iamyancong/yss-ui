@@ -2,8 +2,8 @@
   {
     "key": "components",
     "pkg": "@yss-ui/components",
-    "version": "v1.6.7",
-    "date": "2026-09-14",
+    "version": "v1.7.0",
+    "date": "2026-09-15",
     "highlight": "16 个公开组件补齐全量 API 契约，公开类型导出与文档对齐",
     "link": "/changelog/components",
     "tone": "blue"
@@ -11,8 +11,8 @@
   {
     "key": "skills",
     "pkg": "@yss-ui/skills",
-    "version": "v1.4.4",
-    "date": "2026-09-14",
+    "version": "v1.5.0",
+    "date": "2026-09-15",
     "highlight": "30 个 skill 的触发路由评测与安全扫描并入发布门禁",
     "link": "/changelog/skills",
     "tone": "purple"
@@ -20,8 +20,8 @@
   {
     "key": "mcp",
     "pkg": "@yss-ui/mcp",
-    "version": "v0.2.6",
-    "date": "2026-09-14",
+    "version": "v0.3.0",
+    "date": "2026-09-15",
     "highlight": "首发：7 个文档查询工具 + 12 个 AI 工具一键安装器",
     "link": "/changelog/mcp",
     "tone": "cyan"
