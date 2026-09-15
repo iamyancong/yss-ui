@@ -1,4 +1,4 @@
-import type { ECharts, EChartsCoreOption, EChartsInitOpts, SetOptionOpts } from 'echarts';
+import type { ECharts, EChartsCoreOption, EChartsInitOpts, SetOptionOpts } from 'echarts/core';
 
 /**
  * YEcharts 组件对外 Props 类型

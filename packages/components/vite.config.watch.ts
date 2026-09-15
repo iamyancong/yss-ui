@@ -1,4 +1,7 @@
 import { build, defineConfig } from 'vite';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { resolve } from 'node:path';
 import legacy from './vite.config';
 import rootEntry from './vite.config.root';
 
@@ -13,6 +16,8 @@ export default defineConfig({
       async writeBundle(options) {
         if (options.format !== 'cjs') return;
         await build({ ...rootEntry, configFile: false, root: __dirname });
+        /** 稳定入口、声明和插件契约必须对应同一轮源码构建。 */
+        await promisify(execFile)(process.execPath, [resolve(__dirname, '../../scripts/build-consumption.mjs')]);
       },
     },
   ],

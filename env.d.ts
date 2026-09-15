@@ -8,7 +8,7 @@ declare module '*.vue' {
 }
 
 declare module 'monaco-editor/min/vs/editor/editor.main.css';
-declare module 'monaco-editor/esm/vs/basic-languages/*/*.contribution';
+declare module 'monaco-editor/esm/vs/basic-languages/*';
 declare module 'monaco-editor/esm/vs/language/typescript/monaco.contribution';
 declare module 'monaco-editor-nls';
 declare module 'monaco-editor-nls/locale/*';

@@ -18,28 +18,28 @@
     },
     "./sheet": {
       "types": "./dist/sheet/docs-exports.d.ts",
-      "import": "./dist/sheet.mjs",
-      "require": "./dist/sheet.cjs"
+      "import": "./dist/root/sheet.mjs",
+      "require": "./dist/root/sheet.cjs"
     },
     "./monaco": {
       "types": "./dist/monaco/index.d.ts",
-      "import": "./dist/monaco.mjs",
-      "require": "./dist/monaco.cjs"
+      "import": "./dist/root/monaco.mjs",
+      "require": "./dist/root/monaco.cjs"
     },
     "./echarts": {
       "types": "./dist/echarts/index.d.ts",
-      "import": "./dist/echarts.mjs",
-      "require": "./dist/echarts.cjs"
+      "import": "./dist/root/echarts.mjs",
+      "require": "./dist/root/echarts.cjs"
     },
     "./table": {
       "types": "./dist/table/index.d.ts",
-      "import": "./dist/table.mjs",
-      "require": "./dist/table.cjs"
+      "import": "./dist/root/table.mjs",
+      "require": "./dist/root/table.cjs"
     },
     "./formily": {
       "types": "./dist/formily/index.d.ts",
-      "import": "./dist/formily.mjs",
-      "require": "./dist/formily.cjs"
+      "import": "./dist/root/formily.mjs",
+      "require": "./dist/root/formily.cjs"
     },
     "./locale": {
       "types": "./dist/locale/index.d.ts",
@@ -62,12 +62,23 @@
       "require": "./dist/locale/zh-TW.cjs"
     },
     "./style.css": "./dist/style.css",
-    "./dist/style.css": "./dist/style.css"
+    "./dist/style.css": "./dist/style.css",
+    "./vite": {
+      "types": "./dist/vite/index.d.ts",
+      "import": "./dist/vite/index.mjs",
+      "default": "./dist/vite/index.mjs"
+    },
+    "./consumption.json": "./dist/consumption.json",
+    "./entries/*": {
+      "types": "./dist/root/entries/*.d.ts",
+      "import": "./dist/root/entries/*.mjs",
+      "require": "./dist/root/entries/*.cjs"
+    }
   },
   "files": ["dist"],
   "sideEffects": ["*.css"],
   "scripts": {
-    "build": "vite build && vite build --config vite.config.root.ts",
+    "build": "vite build && vite build --config vite.config.root.ts && node ../../scripts/build-consumption.mjs",
     "dev": "vite build --config vite.config.watch.ts",
     "build:umd": "vite build -c vite.config.umd.ts"
   },
@@ -109,7 +120,8 @@
   "peerDependencies": {
     "dayjs": ">=1.11.0",
     "vue": ">=3.3.0",
-    "ant-design-vue": "^4.0.7"
+    "ant-design-vue": "^4.0.7",
+    "vite": "^5.4.10 || ^6.0.0"
   },
   "devDependencies": {
     "@univerjs/presets": "0.25.0",
@@ -135,5 +147,10 @@
   },
   "yssUi": {
     "treeShakableRoot": true
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
   }
 }

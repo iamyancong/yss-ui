@@ -22,14 +22,14 @@
     "test": "vitest",
     "test:unit": "vitest --run",
     "test:coverage": "vitest --run --coverage",
-    "test:node": "pnpm test:skills-sync && pnpm test:registry-artifacts && pnpm test:home-releases && pnpm test:release-detect && pnpm test:mcp",
+    "test:node": "pnpm test:skills-sync && pnpm test:registry-artifacts && pnpm test:home-releases && pnpm test:release-detect && pnpm test:mcp && pnpm test:consumption-plugin",
     "test:mcp": "node --test packages/mcp/lib/tools.test.js",
     "test:package-consumer": "pnpm build:packages:publishable && node scripts/check-package-consumer.mjs",
     "test:registry-artifacts": "node --test scripts/check-registry-artifacts.test.mjs",
     "test:home-releases": "node --test scripts/generate-home-releases.test.js",
     "check:registry-artifacts": "node scripts/check-registry-artifacts.mjs",
     "lint": "pnpm lint:check --fix",
-    "lint:check": "eslint packages/components/src packages/hooks/src packages/utils/src packages/theme/src packages/mcp/lib packages/mcp/scripts packages/skills-cli/lib packages/skills-cli/bin docs vitest.config.ts --ext .vue,.js,.ts,.jsx,.tsx",
+    "lint:check": "eslint packages/components/src packages/components/tools packages/components/build packages/hooks/src packages/utils/src packages/theme/src packages/mcp/lib packages/mcp/scripts packages/skills-cli/lib packages/skills-cli/bin docs vitest.config.ts --ext .vue,.js,.ts,.jsx,.tsx",
     "lint:ci": "pnpm lint:check --quiet",
     "lint:style": "pnpm lint:style:check --fix",
     "lint:style:check": "stylelint \"packages/**/*.{vue,css,less,scss}\" \"docs/**/*.{vue,css,less,scss}\"",
@@ -51,7 +51,10 @@
     "release:major": "node scripts/release-changed.js major",
     "release:smart:patch": "node scripts/release-smart.js patch",
     "release:smart:minor": "node scripts/release-smart.js minor",
-    "release:smart:major": "node scripts/release-smart.js major"
+    "release:smart:major": "node scripts/release-smart.js major",
+    "test:consumption-plugin": "node --test scripts/consumption-plugin.test.mjs",
+    "test:consumption": "pnpm build:packages:publishable && node scripts/check-consumption.mjs",
+    "test:consumption-types": "node scripts/check-consumption-types.mjs"
   },
   "dependencies": {
     "@ant-design/icons-vue": "^7.0.0",
@@ -119,7 +122,10 @@
     "unplugin-vue-components": "^30.0.0",
     "vitest": "^1.6.0",
     "vue-component-meta": "^3.3.11",
-    "vue-tsc": "^2.1.6"
+    "vue-tsc": "^2.1.6",
+    "@babel/parser": "^7.29.0",
+    "magic-string": "^0.30.21",
+    "@vue/compiler-sfc": "^3.5.29"
   },
   "engines": {
     "node": ">=22.10.0",

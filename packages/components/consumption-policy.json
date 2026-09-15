@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "packageName": "@yss-ui/components",
+  "defaultImport": "@yss-ui/components",
+  "plugin": {
+    "entry": "@yss-ui/components/vite",
+    "introducedIn": "1.7.0",
+    "vite": "^6.0.0"
+  },
+  "verifiedLegacyVersions": {
+    "1.6.6": ["monaco", "echarts", "sheet", "locale"],
+    "1.6.7": ["monaco", "echarts", "sheet", "table", "formily", "locale"]
+  },
+  "installation": "单包安装；VXE/Formily 保持配套依赖。子路径与插件不减少默认安装树。",
+  "styles": "插件自动按组件引入样式；未使用插件时保留原全量 CSS。",
+  "legacy": "旧项目保留根入口、lite、功能子路径和既有兼容插件；接入官方插件时移除旧插件，禁止同时启用。",
+  "agentRules": [
+    "业务页面默认从 @yss-ui/components 具名导入，script setup 局部注册；不全局安装 YSSUI。",
+    "不拆功能包，不要求业务补装 VXE/Formily；业务直接导入第三方 API 时仍声明直接依赖。",
+    "功能子路径可选，先核对目标版本 exports；禁止把所有旧项目改成子路径。",
+    "新模板采用同包官方 Vite 插件；旧项目先检查已安装版本、exports 和当前构建插件。",
+    "未知版本不推断插件能力；禁止同时启用旧产物解析插件与官方插件。",
+    "路由和重弹窗按功能懒加载；不把 YSS/Formily/VXE 合并为全量 vendor。",
+    "文档站 Demo 的样式导入只用于文档环境，业务样式保持 scoped。"
+  ]
+}

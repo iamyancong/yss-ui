@@ -1,3 +1,4 @@
+import type { Component } from 'vue';
 import { isVoidField } from '@formily/core';
 import { FormItem as AntdvFormItem } from '@formily/antdv';
 import { connect, mapProps } from '@formily/vue';
@@ -6,7 +7,7 @@ import { resolveFormItemFeedbackText } from './formItemFeedback';
 /**
  * 修复 @formily/antdv FormItem 多消息重复拼接，并统一必填反馈展示语义。
  */
-export const CompatibleFormilyFormItem = Object.assign(
+export const CompatibleFormilyFormItem: Component & { BaseItem: any } = Object.assign(
   connect(
     AntdvFormItem.BaseItem,
     mapProps(
