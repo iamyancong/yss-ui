@@ -7,6 +7,17 @@ const { DocStore } = require('./store');
 /** 工具定义（tools/list 返回的 JSON Schema）。 */
 const TOOL_DEFINITIONS = [
   {
+    name: 'get_consumption_contract',
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    description:
+      '查询单包安装、根入口导入、样式与官方 Vite 插件契约。传 componentsVersion 核对目标版本；未知版本不推断新能力。',
+    inputSchema: {
+      type: 'object',
+      properties: { componentsVersion: { type: 'string', description: '目标项目实际安装的 components 精确版本' } },
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'list_components',
     description:
       '列出 YSS UI 全部组件、Hooks 与工具函数（名称、说明、文档路径）。生成业务代码前先用它确认组件真实存在，禁止虚构 Y 前缀组件。',
@@ -138,6 +149,10 @@ function renderDemo(demo) {
   return parts.join('\n');
 }
 
+/** 返回索引版本和业务消费说明，避免把文档站 Demo 当作业务构建配置。 */
+const consumptionNotice = store =>
+  `> 索引组件版本：${store.index.componentsVersion || '未知'}。业务默认单包、根入口具名导入与局部注册；子路径可选。文档站 Demo 样式不等于业务配置。新插件能力请用 get_consumption_contract 核对目标安装版本及 exports。\n\n`;
+
 /**
  * 执行工具调用。
  *
@@ -170,6 +185,30 @@ function handleToolCall(store, name, args = {}) {
       return lines.join('\n');
     }
 
+    case 'get_consumption_contract': {
+      const contract = store.index.consumptionContract;
+      if (!contract) return '当前索引未包含消费契约，请升级 MCP 并核对已安装组件库 exports；不要推断新插件可用。';
+      const version = args.componentsVersion;
+      if (!version) return consumptionNotice(store) + JSON.stringify(contract, null, 2);
+      const legacy = contract.verifiedLegacyVersions?.[version];
+      if (legacy)
+        return JSON.stringify(
+          {
+            componentsVersion: version,
+            defaultImport: contract.defaultImport,
+            subpaths: legacy,
+            pluginAvailable: false,
+            guidance: contract.legacy,
+            agentRules: contract.agentRules,
+          },
+          null,
+          2
+        );
+      if (version === contract.componentsVersion && contract.subpaths?.includes('./vite'))
+        return JSON.stringify(contract, null, 2);
+      return `版本 ${version} 未经当前索引验证；请读取目标 package.json 的 exports 与 consumption.json，不自动迁移或推荐新插件。`;
+    }
+
     case 'get_component_docs': {
       const entry = store.resolveEntry(args.name);
       if (!entry) {
@@ -179,13 +218,16 @@ function handleToolCall(store, name, args = {}) {
         ? `\n\n---\n可用 Demo（用 get_demo 获取源码）:\n${entry.demos.map(demo => `- ${demo.id}${demo.title ? `: ${demo.title}` : ''}`).join('\n')}`
         : '';
       if ((args.section || 'api') === 'full') {
-        return `# ${entry.title}\n\n${entry.doc}${demoList}`;
+        return consumptionNotice(store) + `# ${entry.title}\n\n${entry.doc}${demoList}`;
       }
       const api = DocStore.extractSection(entry.doc, 'API');
       if (!api) {
-        return `# ${entry.title}\n\n（该文档没有独立 API 章节，返回完整文档）\n\n${entry.doc}${demoList}`;
+        return (
+          consumptionNotice(store) +
+          `# ${entry.title}\n\n（该文档没有独立 API 章节，返回完整文档）\n\n${entry.doc}${demoList}`
+        );
       }
-      return `# ${entry.title}\n\n${api}${demoList}`;
+      return consumptionNotice(store) + `# ${entry.title}\n\n${api}${demoList}`;
     }
 
     case 'get_demo': {
@@ -195,7 +237,10 @@ function handleToolCall(store, name, args = {}) {
       }
       if (!args.demo) {
         if (entry.demos.length === 0) return `${entry.title} 没有独立 Demo，请用 get_component_docs 查看文档内示例。`;
-        return `${entry.title} 的可用 Demo:\n${entry.demos.map(demo => `- ${demo.id}${demo.title ? `: ${demo.title}` : ''}`).join('\n')}`;
+        return (
+          consumptionNotice(store) +
+          `${entry.title} 的可用 Demo:\n${entry.demos.map(demo => `- ${demo.id}${demo.title ? `: ${demo.title}` : ''}`).join('\n')}`
+        );
       }
       const wanted = String(args.demo).toLowerCase();
       const demo =
@@ -204,7 +249,7 @@ function handleToolCall(store, name, args = {}) {
       if (!demo) {
         return `未找到 Demo "${args.demo}"。可用: ${entry.demos.map(item => item.id).join(', ') || '（无）'}`;
       }
-      return renderDemo(demo);
+      return consumptionNotice(store) + renderDemo(demo);
     }
 
     case 'search_docs': {
@@ -251,7 +296,7 @@ function handleToolCall(store, name, args = {}) {
     }
 
     case 'get_codegen_rules': {
-      return `# YSS UI 业务代码生成硬规则\n\n${store.index.codegenRules}`;
+      return consumptionNotice(store) + `# YSS UI 业务代码生成硬规则\n\n${store.index.codegenRules}`;
     }
 
     case 'get_component_schema': {

@@ -239,6 +239,14 @@ function main() {
     ],
     skills: buildSkills(),
     codegenRules: fs.readFileSync(path.join(ROOT_DIR, '.cursorrules'), 'utf8'),
+    consumptionContract: {
+      ...JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'packages/components/consumption-policy.json'), 'utf8')),
+      componentsVersion: JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'packages/components/package.json'), 'utf8'))
+        .version,
+      subpaths: Object.keys(
+        JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'packages/components/package.json'), 'utf8')).exports
+      ),
+    },
     schemas,
     coverage,
   };

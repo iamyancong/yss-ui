@@ -43,6 +43,15 @@ description: 指导 YSS UI 业务页面使用 @yss-ui/components 的 YEditTable 
   - **虚拟滚动合理阈值**：组件默认启用 `virtualXConfig: { enabled: true, gt: 50 }` 与 `virtualYConfig: { enabled: true, gt: 100 }`，不可随意关闭；宽表可主动调低 `gt` 阈值。
   - **分页优先**：超过 100 行且交互复杂时，优先采用 `pageable: true` 分页，而非全量挂载上千行可编辑 DOM。
 
+
+### 统一消费与构建契约
+
+- 默认单包安装，从 `@yss-ui/components` 具名导入并局部注册；不全局安装 YSSUI，不拆新的功能包。
+- `@yss-ui/components/table`、`@yss-ui/components/formily` 自 1.6.7 起公开，是可选入口；旧版本先核对 exports，禁止批量改写根入口。
+- 子路径与插件改善加载边界，不减少默认安装依赖；VXE/Formily 仍由组件库配套安装。
+- 官方 `@yss-ui/components/vite` 插件目标版本 1.7.0，Vite 6 模板统一接入。旧项目先读取实际安装版本、exports 和现有插件，禁止与旧隔离插件同时运行。
+- 生成代码前用 MCP `get_consumption_contract` 核对版本；未知版本不得假设新插件可用。文档站 Demo 的样式导入不能直接复制为业务全局样式策略。
+
 ## 标准代码骨架
 
 ```typescript

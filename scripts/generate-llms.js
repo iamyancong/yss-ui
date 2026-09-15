@@ -285,6 +285,15 @@ import { useXxx } from './hooks/useXxx';
 `;
 
   // 先添加 LLM 代码生成规范
+  const consumption = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '../packages/components/consumption-policy.json'), 'utf8')
+  );
+  lines.push(
+    '## 统一消费契约\n\n' +
+      consumption.agentRules.map(rule => '- ' + rule).join('\n') +
+      '\n\n插件最低版本：' +
+      consumption.plugin.introducedIn
+  );
   lines.push(codeGenGuidelines.trim());
   lines.push('');
 

@@ -6,7 +6,7 @@
       "id": "fictional-component",
       "prompt": "这个 Y 前缀组件是不是虚构的,从哪导入",
       "should_trigger": true,
-      "assert": "对照真实导出清单判定组件是否存在，给出正确导入来源。"
+      "assert": "对照真实导出清单判定组件是否存在，给出正确导入来源。 消费方案保持单包根入口具名导入，先核对目标版本的 get_consumption_contract；不推荐独立功能包。"
     },
     {
       "id": "which-package",

@@ -29,7 +29,7 @@ toc: content
 
 ## 硬约束（禁止/必须）
 
-- 必须从 `@yss-ui/components` 导入 `YTable`、`YTableColumn`、`YTableActionConfig` 等真实导出，不使用 `a-table` 实现业务主表格。
+- 默认从 `@yss-ui/components` 导入 `YTable`、`YTableColumn`、`YTableActionConfig` 等真实导出，不使用 `a-table` 实现业务主表格。
 - 远程分页状态使用 `current/pageSize/total/remote`，显式设置 `remote: true`；后端 `pageIndex/pageSize/totalCount` 只在 Hook 中映射。
 - 开启内置分页时传 `pageable`，受控更新使用 `v-model:pagination`，请求时机使用 `@page-change="handlePageChange"`。
 - `page-change` 事件参数固定为 `{ current: number, pageSize: number }`；回调必须读取 `current`，禁止写成组件不会派发的 `currentPage`。
@@ -48,6 +48,15 @@ toc: content
 - 远程筛选必须提供稳定 `filters`，设置 `filterMethod: () => true` 禁用本地二次过滤，并监听 `filter-change`。
 - 自适应滚动列表绑定 `:height="tableHeight"`；`pageable`、工具栏分别对应 `withPagination: true`、`withToolbar: true`。纯短表不强制引入高度 Hook。
 - `mutator.ts` 已对网络错误和 `success === false` 统一 `message.error` 并 reject。API Hook 不再检查 `success === false`，不在 `else/catch` 重复 `message.error`；用 `finally` 恢复 loading，让异常继续中断流程。
+
+
+### 统一消费与构建契约
+
+- 默认单包安装，从 `@yss-ui/components` 具名导入并局部注册；不全局安装 YSSUI，不拆新的功能包。
+- `@yss-ui/components/table`、`@yss-ui/components/formily` 自 1.6.7 起公开，是可选入口；旧版本先核对 exports，禁止批量改写根入口。
+- 子路径与插件改善加载边界，不减少默认安装依赖；VXE/Formily 仍由组件库配套安装。
+- 官方 `@yss-ui/components/vite` 插件目标版本 1.7.0，Vite 6 模板统一接入。旧项目先读取实际安装版本、exports 和现有插件，禁止与旧隔离插件同时运行。
+- 生成代码前用 MCP `get_consumption_contract` 核对版本；未知版本不得假设新插件可用。文档站 Demo 的样式导入不能直接复制为业务全局样式策略。
 
 ## 标准代码骨架
 
@@ -281,4 +290,3 @@ onMounted(loadList);
 - 分页字段混乱时，在 Hook 中分离 YTable 状态和后端参数，不直接把 `pageIndex/totalCount` 绑到组件。
 - 操作过多时使用 `displayLimit` 和更多菜单；远程刷新失效时回到业务 `loadList()`，不把实例 `refresh()` 当成接口请求。
 - API 失败后只在 `finally` 恢复本地 loading，让 mutator 的 reject 继续中断删除后刷新等后续流程。
-

@@ -17,6 +17,7 @@ const MOCK_INDEX = {
       title: 'Table 表格',
       category: '数据展示',
       description: '通用表格组件',
+      doc: '## API\n\n表格 API',
       demos: [],
     },
   ],
@@ -107,4 +108,29 @@ test('get_test_coverage 大盘与单组件查询', () => {
   // 3. 不存在的模块
   const notFound = handleToolCall(store, 'get_test_coverage', { component: 'unknown-module-xyz' });
   assert.ok(notFound.includes('未找到模块'), '不存在模块应友好提示');
+});
+
+test('消费契约区分旧版本、当前源码和未知版本', () => {
+  const store = new DocStore(MOCK_INDEX);
+  store.index.consumptionContract = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '../../components/consumption-policy.json'), 'utf8')
+  );
+  const old = handleToolCall(store, 'get_consumption_contract', { componentsVersion: '1.6.7' });
+  assert.match(old, /"pluginAvailable": false/);
+  assert.match(old, /table/);
+  assert.match(handleToolCall(store, 'get_consumption_contract', { componentsVersion: '9.9.9' }), /未经当前索引验证/);
+  assert.match(handleToolCall(store, 'get_consumption_contract'), /单包/);
+  assert.match(handleToolCall(store, 'get_component_docs', { name: 'table' }), /索引组件版本/);
+});
+
+test('已核验当前版本可以提供插件契约，后续未知版本不能外推', () => {
+  const store = new DocStore(MOCK_INDEX);
+  store.index.consumptionContract = {
+    ...JSON.parse(fs.readFileSync(path.join(__dirname, '../../components/consumption-policy.json'), 'utf8')),
+    componentsVersion: '1.7.1',
+    subpaths: ['.', './vite', './table', './formily'],
+  };
+  const current = JSON.parse(handleToolCall(store, 'get_consumption_contract', { componentsVersion: '1.7.1' }));
+  assert.equal(current.plugin.entry, '@yss-ui/components/vite');
+  assert.match(handleToolCall(store, 'get_consumption_contract', { componentsVersion: '1.7.2' }), /未经当前索引验证/);
 });

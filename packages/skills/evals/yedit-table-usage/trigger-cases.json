@@ -6,7 +6,7 @@
       "id": "inline-edit",
       "prompt": "表格里行内编辑,点单元格直接改值",
       "should_trigger": true,
-      "assert": "用 YEditTable 行内编辑配置，editConfig.autoClear=false。"
+      "assert": "用 YEditTable 行内编辑配置，editConfig.autoClear=false。 消费方案保持单包根入口具名导入，先核对目标版本的 get_consumption_contract；不推荐独立功能包。"
     },
     {
       "id": "add-remove-rows",

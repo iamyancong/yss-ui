@@ -6,7 +6,7 @@
       "id": "action-column-confirm",
       "prompt": "YTable 操作列加编辑删除按钮和气泡确认",
       "should_trigger": true,
-      "assert": "用 YTableActionConfig 配操作列与气泡确认，不手写按钮列。"
+      "assert": "用 YTableActionConfig 配操作列与气泡确认，不手写按钮列。 消费方案保持单包根入口具名导入，先核对目标版本的 get_consumption_contract；不推荐独立功能包。"
     },
     {
       "id": "filter-and-dict",

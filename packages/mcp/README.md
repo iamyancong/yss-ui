@@ -44,7 +44,7 @@ npx -y @yss-ui/mcp install cursor --global    # 写全局配置（默认写当�
 
 ## 验证调用成功
 
-1. **连接层**：工具的 MCP 面板中 `yss-ui` 已连接且有 7 个工具；或终端运行 `npx -y @yss-ui/mcp`，stderr 输出 `yss-mcp v0.1.0 已启动…` 即 server 正常。
+1. **连接层**：工具的 MCP 面板中 `yss-ui` 已连接且有 10 个工具；或终端运行 `npx -y @yss-ui/mcp`，stderr 输出 `yss-mcp v<已安装版本> 已启动…` 即 server 正常。
 2. **调用层**：对 AI 说「用 yss-ui MCP 的 list_components 列出全部组件」——回复必须带工具调用卡片，且首行含真实版本号（如 `YSS UI v1.5.15`）。没有卡片、直接口头列组件 = 未调用，是凭记忆编的。
 3. **过程层**：让 AI 写组件代码时，应能看到 `get_component_docs` / `get_demo` 调用记录。不调用时可在项目规则中强制：「生成 YSS UI 代码前必须先用 yss-ui MCP 查询真实 API」。
 
@@ -54,6 +54,7 @@ npx -y @yss-ui/mcp install cursor --global    # 写全局配置（默认写当�
 
 | 工具 | 入参 | 说明 |
 | --- | --- | --- |
+| `get_consumption_contract` | `componentsVersion?` | 查询目标版本的统一入口、插件与样式规则；未知版本要求核验实际 exports |
 | `list_components` | — | 列出全部组件/Hooks/工具函数（含 Demo 数量） |
 | `get_component_docs` | `name`，`section?: api\|full` | 组件文档，默认仅 API 章节；支持 `YTable` / `y-table` / `表格` 等写法 |
 | `get_demo` | `component`，`demo?` | 不传 `demo` 列出可用 Demo；传入返回完整源码（vue/hooks/less） |

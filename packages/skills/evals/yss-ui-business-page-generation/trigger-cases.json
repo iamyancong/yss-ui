@@ -7,7 +7,7 @@
       "prompt": "生成一个完整的 CRUD 业务页",
       "should_trigger": true,
       "accept_route_to": ["page-list-module"],
-      "assert": "按组件选型、模块拆分、API 对接的完整流程生成页面。"
+      "assert": "按组件选型、模块拆分、API 对接的完整流程生成页面。 消费方案保持单包根入口具名导入，先核对目标版本的 get_consumption_contract；不推荐独立功能包。"
     },
     {
       "id": "manage-module",

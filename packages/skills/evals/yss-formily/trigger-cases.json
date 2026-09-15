@@ -7,7 +7,7 @@
       "prompt": "YFormily 组件怎么引入和使用",
       "should_trigger": true,
       "accept_route_to": ["formily-foundation", "component-selection-imports"],
-      "assert": "给出正确导入来源与基础用法，并按需求路由到细分 formily skill。"
+      "assert": "给出正确导入来源与基础用法，并按需求路由到细分 formily skill。 消费方案保持单包根入口具名导入，先核对目标版本的 get_consumption_contract；不推荐独立功能包。"
     },
     {
       "id": "dynamic-schema",
