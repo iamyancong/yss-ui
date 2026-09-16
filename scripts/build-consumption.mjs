@@ -7,6 +7,13 @@ import ts from 'typescript';
 /** 插件与契约产物仅从本仓库真实导出构建。 */
 const root = fileURLToPath(new URL('../packages/components', import.meta.url));
 const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
+const policy = JSON.parse(readFileSync(resolve(root, 'consumption-policy.json'), 'utf8'));
+const vitePeer = pkg.peerDependencies?.vite;
+if (!vitePeer || policy.plugin?.vitePeer !== vitePeer) {
+  throw new Error(
+    `消费契约中的 plugin.vitePeer 必须与 package.json peerDependencies.vite 一致：${policy.plugin?.vitePeer} !== ${vitePeer}`
+  );
+}
 const ast = ts.createSourceFile(
   'index.ts',
   readFileSync(resolve(root, 'src/index.ts'), 'utf8'),
@@ -34,6 +41,23 @@ const collectStyles = (file, visited = new Set()) => {
     return /\.m?js$/.test(id) ? collectStyles(target, visited) : [];
   });
 };
+const authorityEntryPath = resolve(root, 'dist/root/entries/AuthorityDropdown.mjs');
+const authorityEntry = readFileSync(authorityEntryPath, 'utf8');
+const authoritySideEffectImports = authorityEntry.match(
+  /^\s*import\s+["'](?![^"']+\.css(?:[?#].*)?["'])[^"']+["'];?\s*$/gm
+);
+const authorityCjsEntry = readFileSync(resolve(root, 'dist/root/entries/AuthorityDropdown.cjs'), 'utf8');
+const authoritySideEffectRequires = authorityCjsEntry.match(
+  /^\s*require\(\s*["'](?![^"']+\.css(?:[?#].*)?["'])[^"']+["']\s*\);?\s*$/gm
+);
+if (authoritySideEffectImports?.length || authoritySideEffectRequires?.length) {
+  throw new Error(
+    `AuthorityDropdown 稳定入口仍包含无关副作用导入：${[
+      ...(authoritySideEffectImports || []),
+      ...(authoritySideEffectRequires || []),
+    ].join(' | ')}`
+  );
+}
 const entries = Object.fromEntries(
   names.map(name => [
     name,
@@ -48,8 +72,10 @@ for (const name of names) {
   writeFileSync(resolve(root, `dist/root/entries/${name}.d.ts`), `export { ${name} } from '../../index';\n`);
 }
 const contract = {
-  ...JSON.parse(readFileSync(resolve(root, 'consumption-policy.json'), 'utf8')),
+  ...policy,
   componentsVersion: pkg.version,
+  peerDependencies: { vite: vitePeer },
+  plugin: { ...policy.plugin, vitePeer },
   entries,
   subpaths: Object.keys(pkg.exports).filter(name => !name.includes('*')),
 };

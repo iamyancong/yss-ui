@@ -203,6 +203,18 @@ function buildSkills() {
 /** 构建索引并写入 data/index.json。 */
 function main() {
   const sidebar = dumiConfig.themeConfig.sidebar || {};
+  const componentsPackage = JSON.parse(
+    fs.readFileSync(path.join(ROOT_DIR, 'packages/components/package.json'), 'utf8')
+  );
+  const consumptionPolicy = JSON.parse(
+    fs.readFileSync(path.join(ROOT_DIR, 'packages/components/consumption-policy.json'), 'utf8')
+  );
+  const vitePeer = componentsPackage.peerDependencies?.vite;
+  if (!vitePeer || consumptionPolicy.plugin?.vitePeer !== vitePeer) {
+    throw new Error(
+      `消费契约中的 plugin.vitePeer 必须与 package.json peerDependencies.vite 一致：${consumptionPolicy.plugin?.vitePeer} !== ${vitePeer}`
+    );
+  }
 
   // 1. 提取组件 Schema 字典
   let schemas = {};
@@ -230,8 +242,7 @@ function main() {
 
   const index = {
     generatedAt: new Date().toISOString(),
-    componentsVersion: JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'packages/components/package.json'), 'utf8'))
-      .version,
+    componentsVersion: componentsPackage.version,
     entries: [
       ...buildEntries(sidebar['/components'], 'component'),
       ...buildEntries(sidebar['/hooks'], 'hook'),
@@ -240,12 +251,11 @@ function main() {
     skills: buildSkills(),
     codegenRules: fs.readFileSync(path.join(ROOT_DIR, '.cursorrules'), 'utf8'),
     consumptionContract: {
-      ...JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'packages/components/consumption-policy.json'), 'utf8')),
-      componentsVersion: JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'packages/components/package.json'), 'utf8'))
-        .version,
-      subpaths: Object.keys(
-        JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'packages/components/package.json'), 'utf8')).exports
-      ),
+      ...consumptionPolicy,
+      componentsVersion: componentsPackage.version,
+      peerDependencies: { vite: vitePeer },
+      plugin: { ...consumptionPolicy.plugin, vitePeer },
+      subpaths: Object.keys(componentsPackage.exports),
     },
     schemas,
     coverage,

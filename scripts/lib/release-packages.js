@@ -39,6 +39,51 @@ const PACKAGES = {
 /** MCP 索引 JSON 路径（gitignore，发布时由 build-index 生成）。 */
 const MCP_INDEX_JSON = 'packages/mcp/data/index.json';
 
+/** 组件包 package.json 路径，用于校验 MCP 索引是否跟随组件包版本。 */
+const COMPONENTS_PACKAGE_JSON = 'packages/components/package.json';
+
+/**
+ * 重建 MCP 发布索引。
+ *
+ * @returns {void}
+ */
+function rebuildMcpIndex() {
+  execSync('node packages/mcp/scripts/build-index.js', { stdio: 'inherit' });
+}
+
+/**
+ * 校验待发布的 MCP 索引与组件包消费契约保持一致。
+ *
+ * @param {{ indexPath?: string, componentsPackagePath?: string }} [options] 测试或特殊工作区路径
+ * @returns {object} 已校验的索引对象
+ */
+function validateMcpIndex(options = {}) {
+  const indexPath = options.indexPath || MCP_INDEX_JSON;
+  const componentsPackagePath = options.componentsPackagePath || COMPONENTS_PACKAGE_JSON;
+  if (!fs.existsSync(indexPath)) {
+    throw new Error(`MCP 索引不存在：${indexPath}`);
+  }
+  const componentsPackage = JSON.parse(fs.readFileSync(componentsPackagePath, 'utf8'));
+  const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
+  const contract = index.consumptionContract || {};
+  const expectedVersion = componentsPackage.version;
+  const actualVersions = [index.componentsVersion, contract.componentsVersion];
+  if (actualVersions.some(version => version !== expectedVersion)) {
+    throw new Error(`MCP 索引版本未对齐组件包 ${expectedVersion}：${actualVersions.join(', ') || '缺失'}`);
+  }
+  const expectedVitePeer = componentsPackage.peerDependencies?.vite;
+  if (
+    !expectedVitePeer ||
+    contract.plugin?.vitePeer !== expectedVitePeer ||
+    contract.peerDependencies?.vite !== expectedVitePeer
+  ) {
+    throw new Error(
+      `MCP 索引 Vite peer 未对齐组件包 peerDependencies.vite：${contract.plugin?.vitePeer} / ${contract.peerDependencies?.vite} !== ${expectedVitePeer}`
+    );
+  }
+  return index;
+}
+
 /**
  * 路径是否落在包目录下（`packages/<dir>/` 前缀）。
  *
@@ -163,10 +208,7 @@ function writeIndexHash(hash, hashFile = PACKAGES.mcp.indexHashFile) {
  * @returns {string} sha256 hex
  */
 function computeCurrentIndexHash() {
-  execSync('node packages/mcp/scripts/build-index.js', {
-    stdio: ['ignore', 'pipe', 'pipe'],
-    encoding: 'utf8',
-  });
+  rebuildMcpIndex();
   const index = JSON.parse(fs.readFileSync(MCP_INDEX_JSON, 'utf8'));
   return hashIndexContent(index);
 }
@@ -292,6 +334,8 @@ function ensureMcpIndexChangelog(filePath, version, options = {}) {
 module.exports = {
   PACKAGES,
   MCP_INDEX_JSON,
+  rebuildMcpIndex,
+  validateMcpIndex,
   detectChangedPackages,
   isMcpRuntimeChange,
   matchesPackageDir,

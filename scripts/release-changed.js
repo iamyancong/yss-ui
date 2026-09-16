@@ -9,6 +9,8 @@ const {
   detectChangedPackages,
   isMcpRuntimeChange,
   refineMcpPublish,
+  rebuildMcpIndex,
+  validateMcpIndex,
   persistMcpIndexHash,
   hasChangelogVersion,
   ensureMcpIndexChangelog,
@@ -332,6 +334,12 @@ async function main() {
     writeJSON(pkgJsonPath, pkg);
     log(`${meta.name} 版本: ${oldVersion} -> ${newVersion}`);
     releaseSummaryEntries.push({ name: meta.name, oldVersion, newVersion });
+
+    if (item.key === 'mcp') {
+      log('重建并校验 @yss-ui/mcp 发布索引');
+      rebuildMcpIndex();
+      validateMcpIndex();
+    }
 
     // 构建
     log(`开始构建 ${meta.name}`);

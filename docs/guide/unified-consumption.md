@@ -1,9 +1,14 @@
 ---
 title: 统一入口与 Vite 消费契约
+description: 统一说明 YSS UI 根入口、官方 Vite 插件、稳定入口和 MCP 消费契约。
 toc: content
 ---
 
 # 统一入口与 Vite 消费契约
+
+## 当前发布状态
+
+截至 `2026-09-15`，`@yss-ui/components@1.7.0`、`@yss-ui/mcp@0.3.0` 和 `@yss-ui/skills@1.5.0` 已发布。下方“2026-09-15 验收结果”保留为发布前候选包的历史证据；其中“尚未发布”和“package.json 为 1.6.7”只描述当时的采集环境，不是当前安装状态。
 
 ## 业务接入
 
@@ -13,7 +18,7 @@ toc: content
 import { YButton, YTable, YFormily } from '@yss-ui/components';
 ```
 
-Vite 6 项目在构建配置加入同包插件（新增能力目标版本 1.7.0）：
+Vite 6 项目在构建配置加入自 1.7.0 起已发布的同包插件：
 
 ```ts
 import vue from '@vitejs/plugin-vue';
@@ -25,13 +30,13 @@ export default defineConfig({ plugins: [vue(), yssUi()] });
 
 不需要独立 table/formily 功能包，不需要补装 VXE/Formily，也不在 main.ts 全量注册 YSS UI。业务直接使用第三方 API 时，仍声明对应直接依赖。`lite`、`table`、`formily`、`monaco`、`echarts`、`sheet` 和 locale 子路径继续保留，使用前核对目标包 exports。
 
-旧项目可以先仅升级组件库；接入官方插件时移除旧的产物解析插件及整包 optimizeDeps.include，禁止两个方案同时运行；官方插件会对已知旧入口插件和旧预构建器显式报错。默认安装和动态整包导入保持全量语义。模板提供版本检测适配器：未发布新版本前，已安装的 1.6.6/1.6.7 继续旧配置；发现公开 `./vite` 后使用官方插件，官方插件加载错误不会静默降级。
+旧项目可以先仅升级组件库；接入官方插件时移除旧的产物解析插件及整包 optimizeDeps.include，禁止两个方案同时运行；官方插件会对已知旧入口插件和旧预构建器显式报错。默认安装和动态整包导入保持全量语义。模板提供版本检测适配器：`1.6.6/1.6.7` 继续旧配置；发现公开 `./vite` 后使用官方插件，官方插件加载错误不会静默降级。
 
 ## 产物与公共状态
 
 - 同一 Rollup 构建图生成根入口、子路径和稳定的 `entries/<公开符号>`。业务无需直接使用 entries。
 - 插件使用 Babel AST 和 Vue SFC parser 处理具名导入、别名、具名再导出；保留类型、默认安装、命名空间与动态整包语义。
-- `dist/consumption.json` 从真实导出生成符号、入口与 CSS 映射；插件位于独立 Node 入口，Vite 为 optional peer，包级范围兼容 `^5.4.10 || ^6.0.0`，避免仅升级组件库的 Vite 5 老项目新增 peer 冲突；官方插件的完整验收范围仍为 Vite 6。未安装 Vite 时不会强制补装，范围外版本仍需单独核验。
+- `dist/consumption.json` 从真实导出生成符号、入口与 CSS 映射；`plugin.vite` 表示官方插件已完成验证的范围，`plugin.vitePeer` 和顶层 `peerDependencies.vite` 表示包管理器兼容范围。当前官方插件完整验收范围为 Vite 6，实际 peer 范围兼容 `^5.4.10 || ^6.0.0`；Vite 5 仅完成包管理器解析验证，未完成浏览器验收。未安装 Vite 时不会强制补装，范围外版本仍需单独核验。
 - 每个产物 chunk 关联自己的 CSS。表格样式进入表格闭包；异步引擎样式保持动态边界。
 - 插件仅将官方 `@yss-ui/components/style.css` 和 `@yss-ui/components/dist/style.css` 转换为 Ant Design Vue reset 基础样式，不转换业务 CSS。
 - 保留旧 dist 文件和全量 CSS；同一图复用 locale、组件实现与引擎注册，根入口/子路径身份已在浏览器断言。
@@ -47,7 +52,7 @@ Skills 只修改 packages/skills，运行同步脚本生成文档和模板副本
 
 ## 2026-09-15 验收结果
 
-原始汇总见 [JSON 证据](./consumption-evidence/2026-09-15.json)。源码候选包尚未发布，package.json 版本仍为 1.6.7；报告中 candidate 指本次源码 tarball，baseline 指 registry 的 1.6.7，不能用版本字符串混淆二者。
+原始汇总见 [JSON 证据](./consumption-evidence/2026-09-15.json)。这是发布前候选包验收快照：采集时源码 package.json 仍为 1.6.7，candidate 指本次源码 tarball，baseline 指 registry 的 1.6.7，不能用版本字符串混淆二者；当前 1.7.0 已发布。
 
 ### JS/CSS 静态闭包
 
@@ -78,7 +83,7 @@ Skills 只修改 packages/skills，运行同步脚本生成文档和模板副本
 
 外部消费者显式启用 `--skipLibCheck false` 的扩展检查，新旧产物均报告 379 项错误，涉及 Ant Design Vue、Formily 等依赖声明；严格声明验收尚未通过，不能将仓库类型检查通过等同于消费者声明完全兼容。证据中的基础检查另有新旧各 189 项结果，两种检查范围不同，不能混算。`skipLibCheck: true` 可以跳过依赖声明检查，但会降低检查覆盖，并非本库强制要求。严格检查项目应单独验证其 TypeScript、Vue 与依赖版本组合。
 
-发布前仍须把本次源码能力发布为 minor，并用最终版本 tarball 复核接入。模板不会要求安装 registry 尚不存在的 1.7.0。上述性能数据采集时源码尚未提交、推送或发布。发版检测按已提交差异执行，工作区阶段的无待发包结果不代表无需发布。目标 changelog 已准备 components 1.7.0、mcp 0.3.0、skills 1.5.0，正式发版需在提交后重新检测确认。
+上述性能数据采集时源码尚未提交、推送或发布，因此最终版本仍需用 registry tarball 复核接入；当前 1.7.0 已完成发布。发版检测按已提交差异执行，工作区阶段的无待发包结果不代表无需发布。
 
 ## Issue #25：安装成本
 

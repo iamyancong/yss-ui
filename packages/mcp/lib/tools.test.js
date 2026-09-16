@@ -125,12 +125,16 @@ test('消费契约区分旧版本、当前源码和未知版本', () => {
 
 test('已核验当前版本可以提供插件契约，后续未知版本不能外推', () => {
   const store = new DocStore(MOCK_INDEX);
+  const policy = JSON.parse(fs.readFileSync(path.join(__dirname, '../../components/consumption-policy.json'), 'utf8'));
   store.index.consumptionContract = {
-    ...JSON.parse(fs.readFileSync(path.join(__dirname, '../../components/consumption-policy.json'), 'utf8')),
+    ...policy,
     componentsVersion: '1.7.1',
+    peerDependencies: { vite: policy.plugin.vitePeer },
     subpaths: ['.', './vite', './table', './formily'],
   };
   const current = JSON.parse(handleToolCall(store, 'get_consumption_contract', { componentsVersion: '1.7.1' }));
   assert.equal(current.plugin.entry, '@yss-ui/components/vite');
+  assert.equal(current.plugin.vitePeer, '^5.4.10 || ^6.0.0');
+  assert.equal(current.peerDependencies.vite, current.plugin.vitePeer);
   assert.match(handleToolCall(store, 'get_consumption_contract', { componentsVersion: '1.7.2' }), /未经当前索引验证/);
 });

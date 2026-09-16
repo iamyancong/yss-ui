@@ -19,6 +19,14 @@ await build({
   format: 'esm',
 });
 const { transformImports } = await import(pathToFileURL(`${dir}/transform.mjs`).href);
+await build({
+  entryPoints: ['packages/components/build/entry-facade.ts'],
+  outfile: `${dir}/entries.mjs`,
+  bundle: false,
+  platform: 'node',
+  format: 'esm',
+});
+const { pruneStableEntrySideEffects } = await import(pathToFileURL(`${dir}/entries.mjs`).href);
 const contract = { entries: { YButton: {}, YCard: {}, YTable: {}, YFormily: {} } };
 mkdirSync(`${dir}/vite`);
 writeFileSync(`${dir}/consumption.json`, JSON.stringify(contract));
@@ -69,6 +77,32 @@ test('历史虚拟入口和具名再导出按稳定入口输出', () => {
     /entries\/YFormily/
   );
 });
+test('AuthorityDropdown 稳定入口只保留自身实现和必要 CSS', () => {
+  const esm = [
+    'import { _ } from "../components/authority-hash.mjs";',
+    'import "../components/button-hash.mjs";',
+    'import "../formily.mjs";',
+    'import "../components/authority.css";',
+    'export { _ as AuthorityDropdown };',
+  ].join('\n');
+  const cjs = [
+    '"use strict";',
+    'const authority = require("../components/authority-hash.cjs");',
+    'require("../components/button-hash.cjs");',
+    'require("../formily.cjs");',
+    'require("../components/authority.css");',
+    'exports.AuthorityDropdown = authority._;',
+  ].join('\n');
+
+  const prunedEsm = pruneStableEntrySideEffects(esm, 'es');
+  const prunedCjs = pruneStableEntrySideEffects(cjs, 'cjs');
+  assert.match(prunedEsm, /authority-hash\.mjs/);
+  assert.match(prunedEsm, /authority\.css/);
+  assert.doesNotMatch(prunedEsm, /button-hash|formily/);
+  assert.match(prunedCjs, /authority-hash\.cjs/);
+  assert.match(prunedCjs, /authority\.css/);
+  assert.doesNotMatch(prunedCjs, /button-hash|formily/);
+});
 test('动态整包、namespace、默认全量安装与 type-only 不改写', () => {
   for (const code of [
     "const x = import('@yss-ui/components');",
@@ -90,7 +124,10 @@ test('同包工具和契约公开入口齐全，未拆成新的功能包', () =>
 
 test('Agent 场景覆盖旧版、新模板、混合入口和未知版本，不生成独立功能包', () => {
   const policy = JSON.parse(readFileSync('packages/components/consumption-policy.json', 'utf8'));
+  const pkg = JSON.parse(readFileSync('packages/components/package.json', 'utf8'));
   assert.equal(policy.defaultImport, '@yss-ui/components');
+  assert.equal(policy.plugin.vitePeer, pkg.peerDependencies.vite);
+  assert.match(policy.plugin.viteValidation, /Vite 6/);
   assert.ok(!policy.verifiedLegacyVersions['1.6.6'].includes('table'));
   assert.ok(policy.verifiedLegacyVersions['1.6.7'].includes('table'));
   assert.equal(policy.verifiedLegacyVersions['9.9.9'], undefined);

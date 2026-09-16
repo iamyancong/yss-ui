@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, defineAsyncComponent } from 'vue';
-import { YButton, YCard } from '@yss-ui/components';
+import { AuthorityDropdown, YButton, YCard } from '@yss-ui/components';
 const current = ref('');
 const pages = {
   table: defineAsyncComponent(() => import('./Table.vue')),
@@ -12,6 +12,7 @@ const pages = {
   <YCard
     ><YButton @click="current = 'table'">Table</YButton><YButton @click="current = 'form'">Form</YButton
     ><YButton @click="current = 'chart'">Chart</YButton>
+    <AuthorityDropdown :dropdown-items="[]" />
     <p id="ready">Button ready</p>
     <component v-if="current" :is="pages[current]"
   /></YCard>

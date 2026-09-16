@@ -10,6 +10,7 @@ const {
   isMcpRuntimeChange,
   hashIndexContent,
   refineMcpPublish,
+  validateMcpIndex,
   hasChangelogVersion,
   ensureMcpIndexChangelog,
 } = require('./release-packages');
@@ -109,6 +110,33 @@ assert.equal(hasChangelogVersion(changelogPath, '0.1.2'), true);
 assert.equal(ensureMcpIndexChangelog(changelogPath, '0.1.2', { date: '2026-08-17' }), false);
 const written = fs.readFileSync(changelogPath, 'utf8');
 assert.match(written, /## v0\.1\.2[\s\S]*索引同步[\s\S]*## v0\.1\.1/);
+
+const validIndexPath = path.join(tmpDir, 'index.json');
+const componentsPackagePath = path.join(tmpDir, 'components-package.json');
+fs.writeFileSync(
+  componentsPackagePath,
+  JSON.stringify({ version: '1.7.0', peerDependencies: { vite: '^5.4.10 || ^6.0.0' } })
+);
+fs.writeFileSync(
+  validIndexPath,
+  JSON.stringify({
+    componentsVersion: '1.7.0',
+    consumptionContract: {
+      componentsVersion: '1.7.0',
+      plugin: { vitePeer: '^5.4.10 || ^6.0.0' },
+      peerDependencies: { vite: '^5.4.10 || ^6.0.0' },
+    },
+  })
+);
+assert.equal(validateMcpIndex({ indexPath: validIndexPath, componentsPackagePath }).componentsVersion, '1.7.0');
+fs.writeFileSync(
+  validIndexPath,
+  JSON.stringify({
+    componentsVersion: '1.6.7',
+    consumptionContract: { componentsVersion: '1.6.7', plugin: { vitePeer: '^5.4.10 || ^6.0.0' } },
+  })
+);
+assert.throws(() => validateMcpIndex({ indexPath: validIndexPath, componentsPackagePath }), /MCP 索引版本未对齐组件包/);
 
 fs.rmSync(tmpDir, { recursive: true, force: true });
 

@@ -126,7 +126,7 @@ Vite 6 新项目接入下方官方插件后，组件样式由插件关联加载�
 
 > 默认仍从 `@yss-ui/components` 具名导入，并在页面局部注册。上述子路径是可选入口，不要求迁移旧代码。`optionalDependencies` 默认仍会安装；子路径和按需打包不代表安装树减重。是否进入首屏以实际 JS/CSS 依赖闭包和浏览器请求为准。
 
-#### 同包官方 Vite 插件（新增能力，目标版本 1.7.0）
+#### 同包官方 Vite 插件（自 1.7.0 起已发布）
 
 ```ts
 import vue from '@vitejs/plugin-vue';
@@ -136,7 +136,7 @@ import { yssUi } from '@yss-ui/components/vite';
 export default defineConfig({ plugins: [vue(), yssUi()] });
 ```
 
-业务继续 `import { YButton, YTable, YFormily } from '@yss-ui/components'`；不增加功能包，不全局 `app.use(YSSUI)`。插件按语法节点选择组件入口，并按组件加载样式，兼容原有官方全量 CSS 导入和历史虚拟入口。支持 Vite 6，构建工具不进入浏览器代码。
+业务继续 `import { YButton, YTable, YFormily } from '@yss-ui/components'`；不增加功能包，不全局 `app.use(YSSUI)`。插件按语法节点选择组件入口，并按组件加载样式，兼容原有官方全量 CSS 导入和历史虚拟入口。`@yss-ui/components@1.7.0` 已发布，官方插件完整验收范围为 Vite 6，构建工具不进入浏览器代码。
 
 旧项目仅升级组件库可保留现有配置；接入官方插件时，先确认安装包公开 `./vite`，再移除旧的 YSS 隔离/预构建插件和整包 `optimizeDeps.include`，不能同时启用。完整契约见 `@yss-ui/components/consumption.json`；AI 通过 MCP `get_consumption_contract` 查询目标版本。已发布的 1.6.6/1.6.7 不包含此新插件。实现说明、实测数据与 Issue #24/#25 评估见[统一消费报告](docs/guide/unified-consumption.md)。
 

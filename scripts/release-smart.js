@@ -22,6 +22,8 @@ const {
   detectChangedPackages,
   isMcpRuntimeChange,
   refineMcpPublish,
+  rebuildMcpIndex,
+  validateMcpIndex,
   persistMcpIndexHash,
   ensureMcpIndexChangelog,
 } = require('./lib/release-packages');
@@ -191,6 +193,11 @@ async function main() {
   // 构建并发布每个包
   for (const key of changed) {
     const meta = PACKAGES[key];
+    if (key === 'mcp') {
+      log('重建并校验 @yss-ui/mcp 发布索引');
+      rebuildMcpIndex();
+      validateMcpIndex();
+    }
     log(`开始构建 ${meta.name}`);
     try {
       run(`pnpm --filter ${meta.name} run build`, { stdio: 'inherit' });

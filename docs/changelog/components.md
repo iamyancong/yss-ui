@@ -10,6 +10,18 @@ toc: content
 
 YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
+## v1.7.1
+
+`2026-09-16`
+
+### 🐛 Bug Fixes
+
+- **AuthorityDropdown 稳定入口**：移除稳定入口误带的 Formily、Monaco、ECharts 等无关 JavaScript/CSS 副作用，避免官方 Vite 按需消费加载无关资源。
+
+### 🧪 Test & Quality
+
+- **消费契约**：明确官方插件已验证的 Vite 范围与 package peer 范围，并在构建阶段校验两者一致。
+
 ## v1.7.0
 
 `2026-09-15`

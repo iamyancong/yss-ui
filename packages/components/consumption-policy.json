@@ -5,7 +5,9 @@
   "plugin": {
     "entry": "@yss-ui/components/vite",
     "introducedIn": "1.7.0",
-    "vite": "^6.0.0"
+    "vite": "^6.0.0",
+    "vitePeer": "^5.4.10 || ^6.0.0",
+    "viteValidation": "Vite 6 完整验收；Vite 5 仅验证包管理器解析，未完成浏览器验收。"
   },
   "verifiedLegacyVersions": {
     "1.6.6": ["monaco", "echarts", "sheet", "locale"],

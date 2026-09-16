@@ -50,7 +50,7 @@ Vue 3 微应用与独立项目都默认在页面局部导入，不在 main.ts �
 import { YCard, YTable, YFormily } from '@yss-ui/components';
 ```
 
-自 1.6.0 起根入口支持生产 tree-shaking。新的同包官方 Vite 插件（目标版本 1.7.0，支持 Vite 6）进一步处理开发预构建和组件 CSS 关联，详见[统一入口与 Vite 消费契约](/guide/unified-consumption)。当前安装版本未公开 `./vite` 时保留已有适配配置；不要把未发布能力当作 1.6.6/1.6.7 已有能力。
+自 1.6.0 起根入口支持生产 tree-shaking。同包官方 Vite 插件自 1.7.0 起已发布（完整验收范围为 Vite 6），进一步处理开发预构建和组件 CSS 关联，详见[统一入口与 Vite 消费契约](/guide/unified-consumption)。当前安装版本未公开 `./vite` 时保留已有适配配置；1.6.6/1.6.7 不包含该插件能力。
 
 默认安装和动态整包导入仍可用于历史兼容，明确引用全部组件时会保留全量语义。`app.use(YSSUI)` 不是新微应用的默认方案。旧 dist 文件和全量 CSS 路径继续保留，不批量重写旧业务页面。
 

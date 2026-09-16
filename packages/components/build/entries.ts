@@ -2,6 +2,9 @@ import * as ts from 'typescript';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Plugin } from 'vite';
+import { pruneStableEntrySideEffects } from './entry-facade';
+
+export { pruneStableEntrySideEffects } from './entry-facade';
 
 /** 从根入口的真实具名再导出生成稳定实现入口，类型导出不进入运行时。 */
 export const readEntries = (root: string): Record<string, { source: string; imported: string }> => {
@@ -51,18 +54,23 @@ export const consumptionEntries = (root: string): Plugin => {
       for (const chunk of Object.values(bundle)) {
         if (chunk.type !== 'chunk') continue;
         const css = (chunk as typeof chunk & { viteMetadata?: { importedCss: Set<string> } }).viteMetadata?.importedCss;
-        if (!css?.size) continue;
-        const prefix = chunk.fileName.split('/').length > 1 ? '../' : './';
-        chunk.code =
-          [...css]
-            .map(file =>
-              _options.format === 'es'
-                ? `import ${JSON.stringify(prefix + file)};`
-                : `require(${JSON.stringify(prefix + file)});`
-            )
-            .join('\n') +
-          '\n' +
-          chunk.code;
+        if (css?.size) {
+          const prefix = chunk.fileName.split('/').length > 1 ? '../' : './';
+          chunk.code =
+            [...css]
+              .map(file =>
+                _options.format === 'es'
+                  ? `import ${JSON.stringify(prefix + file)};`
+                  : `require(${JSON.stringify(prefix + file)});`
+              )
+              .join('\n') +
+            '\n' +
+            chunk.code;
+        }
+
+        if (chunk.fileName.match(/(?:^|\/)entries\/AuthorityDropdown\.(?:mjs|cjs)$/)) {
+          chunk.code = pruneStableEntrySideEffects(chunk.code, _options.format === 'es' ? 'es' : 'cjs');
+        }
       }
     },
   };

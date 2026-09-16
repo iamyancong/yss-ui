@@ -13,6 +13,7 @@
     "build": "node scripts/build-index.js",
     "build:index": "node scripts/build-index.js",
     "test": "node --test lib/tools.test.js",
+    "prepack": "node scripts/build-index.js",
     "prepublishOnly": "node scripts/build-index.js"
   },
   "engines": {

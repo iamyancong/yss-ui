@@ -68,9 +68,11 @@ npx -y @yss-ui/mcp install cursor --global    # 写全局配置（默认写当�
 ## 索引构建（仅在 yss-ui 仓库内）
 
 ```bash
-pnpm mcp:index   # 生成 data/index.json（发布时 prepublishOnly 自动执行）
+pnpm mcp:index   # 生成 data/index.json（发布时 prepack/prepublishOnly 自动执行）
 ```
 
 数据源与文档站同源：`.dumirc.ts` sidebar → `docs/**/*.md` + `docs/**/demos/**` + `packages/skills/*/SKILL.md` + `.cursorrules`。
+
+`get_consumption_contract` 中的 `plugin.vite` 表示官方插件已完成验证的范围，`plugin.vitePeer` 与顶层 `peerDependencies.vite` 表示实际安装兼容范围；两者不应混用。当前 Vite 6 完整验收，Vite 5 仅完成包管理器解析验证。
 
 本地调试可用环境变量覆盖索引路径：`YSS_MCP_INDEX=/path/to/index.json yss-mcp`。
