@@ -41,6 +41,7 @@ export default defineConfig({
       ...configDefaults.exclude,
       'scripts/consumption-plugin.test.mjs',
       'scripts/check-registry-artifacts.test.mjs',
+      'scripts/verify-published-release.test.mjs',
       'scripts/generate-home-releases.test.js',
       'scripts/lib/release-packages.test.js',
       'packages/skills-cli/lib/sync.test.js',

@@ -42,18 +42,18 @@
   ],
   "/changelog/mcp": [
     {
+      "name": "iamyancong",
+      "email": "wangyancong@ysstech.com",
+      "commits": 5,
+      "avatar": "https://github.com/iamyancong.png?size=64",
+      "url": "https://github.com/iamyancong"
+    },
+    {
       "name": "github-actions[bot]",
       "email": "github-actions[bot]@users.noreply.github.com",
       "commits": 5,
       "avatar": "https://github.com/github-actions[bot].png?size=64",
       "url": "https://github.com/github-actions[bot]"
-    },
-    {
-      "name": "iamyancong",
-      "email": "wangyancong@ysstech.com",
-      "commits": 4,
-      "avatar": "https://github.com/iamyancong.png?size=64",
-      "url": "https://github.com/iamyancong"
     }
   ],
   "/changelog/skills": [
