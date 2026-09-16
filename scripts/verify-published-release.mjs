@@ -10,8 +10,10 @@ import { x as extractTarball } from 'tar';
 
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_REGISTRY = 'https://registry.npmjs.org/';
-const DEFAULT_RETRIES = 5;
-const DEFAULT_DELAY_MS = 2000;
+// npm publish 返回成功后，registry 的精确版本查询仍可能短暂返回 404。
+// 以约 5 分钟窗口覆盖常见传播延迟，同时保留可测试的重试参数覆盖能力。
+const DEFAULT_RETRIES = 20;
+const DEFAULT_DELAY_MS = 15000;
 const MCP_PACKAGE_NAME = '@yss-ui/mcp';
 const COMPONENTS_PACKAGE_NAME = '@yss-ui/components';
 
