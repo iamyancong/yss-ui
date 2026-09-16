@@ -20,7 +20,7 @@
   {
     "key": "mcp",
     "pkg": "@yss-ui/mcp",
-    "version": "v0.3.1",
+    "version": "v0.3.2",
     "date": "2026-09-16",
     "highlight": "首发：7 个文档查询工具 + 12 个 AI 工具一键安装器",
     "link": "/changelog/mcp",
