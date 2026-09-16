@@ -36,6 +36,13 @@ const PACKAGES = {
   },
 };
 
+/**
+ * 发布顺序：MCP 索引消费组件、Skills 与文档快照，因此必须最后处理。
+ *
+ * @type {string[]}
+ */
+const RELEASE_ORDER = ['components', 'hooks', 'theme', 'utils', 'skills-cli', 'skills', 'mcp'];
+
 /** MCP 索引 JSON 路径（gitignore，发布时由 build-index 生成）。 */
 const MCP_INDEX_JSON = 'packages/mcp/data/index.json';
 
@@ -140,6 +147,22 @@ function detectChangedPackages(files, packages = PACKAGES) {
     }
   });
   return Array.from(changed);
+}
+
+/**
+ * 按派生关系稳定排列发布包，确保 MCP 在其数据源包之后构建和发布。
+ * 未登记的包保留在已知包之后，并保持原有相对顺序。
+ *
+ * @param {string[]} keys 待发布包 key
+ * @returns {string[]} 去重并按依赖顺序排列的包 key
+ */
+function orderReleaseKeys(keys) {
+  const order = new Map(RELEASE_ORDER.map((key, index) => [key, index]));
+  return Array.from(new Set(keys)).sort((left, right) => {
+    const leftIndex = order.has(left) ? order.get(left) : RELEASE_ORDER.length;
+    const rightIndex = order.has(right) ? order.get(right) : RELEASE_ORDER.length;
+    return leftIndex - rightIndex;
+  });
 }
 
 /**
@@ -334,8 +357,10 @@ function ensureMcpIndexChangelog(filePath, version, options = {}) {
 module.exports = {
   PACKAGES,
   MCP_INDEX_JSON,
+  RELEASE_ORDER,
   rebuildMcpIndex,
   validateMcpIndex,
+  orderReleaseKeys,
   detectChangedPackages,
   isMcpRuntimeChange,
   matchesPackageDir,

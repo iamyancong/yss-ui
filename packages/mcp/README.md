@@ -75,4 +75,6 @@ pnpm mcp:index   # 生成 data/index.json（发布时 prepack/prepublishOnly 自
 
 `get_consumption_contract` 中的 `plugin.vite` 表示官方插件已完成验证的范围，`plugin.vitePeer` 与顶层 `peerDependencies.vite` 表示实际安装兼容范围；两者不应混用。当前 Vite 6 完整验收，Vite 5 仅完成包管理器解析验证。
 
+发版时 MCP 必须在组件包版本写入并发布后重建索引；GitHub Actions 会从 registry tarball 复核 `componentsVersion` 与本批组件目标版本一致，防止工作区索引和最终发布包漂移。
+
 本地调试可用环境变量覆盖索引路径：`YSS_MCP_INDEX=/path/to/index.json yss-mcp`。

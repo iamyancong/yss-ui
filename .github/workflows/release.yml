@@ -97,6 +97,10 @@ jobs:
             node scripts/release-changed.js "$BUMP_TYPE"
           fi
 
+      - name: Verify Published MCP Tarball
+        if: ${{ inputs.dry_run != true }}
+        run: node scripts/verify-published-release.mjs --registry=https://registry.npmjs.org/
+
       - name: Commit, Push & Tag Version Bumps
         if: ${{ inputs.dry_run != true }}
         env:

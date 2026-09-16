@@ -9,6 +9,7 @@ const {
   detectChangedPackages,
   isMcpRuntimeChange,
   hashIndexContent,
+  orderReleaseKeys,
   refineMcpPublish,
   validateMcpIndex,
   hasChangelogVersion,
@@ -23,6 +24,8 @@ const keys = files => detectChangedPackages(files).sort();
 
 assert.ok(PACKAGES.mcp.extraInputs.includes('docs/components/'));
 assert.equal(PACKAGES.mcp.indexHashFile, 'packages/mcp/index.hash');
+assert.deepEqual(orderReleaseKeys(['mcp', 'components', 'skills', 'components']), ['components', 'skills', 'mcp']);
+assert.deepEqual(orderReleaseKeys(['mcp', 'unknown']), ['mcp', 'unknown']);
 
 assert.deepEqual(keys(['docs/components/table.md']), ['mcp']);
 assert.deepEqual(keys(['docs/components/demos/table/x.vue']), ['mcp']);

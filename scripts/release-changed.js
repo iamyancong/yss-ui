@@ -8,6 +8,7 @@ const {
   PACKAGES,
   detectChangedPackages,
   isMcpRuntimeChange,
+  orderReleaseKeys,
   refineMcpPublish,
   rebuildMcpIndex,
   validateMcpIndex,
@@ -277,7 +278,7 @@ async function main() {
   log(`开始检测变更 (bump=${bump}${resolvedBase ? `, base=${resolvedBase}` : ''}${dryRun ? ', dry-run' : ''})`);
   const files = detectChangedFiles(resolvedBase);
   let changed = detectChangedPackages(files);
-  changed = refineMcpPublish(changed, files, { log });
+  changed = orderReleaseKeys(refineMcpPublish(changed, files, { log }));
   if (changed.length === 0) {
     log('未检测到需要发布的包，已退出');
     // 清理上一次可能遗留的摘要文件
@@ -320,20 +321,25 @@ async function main() {
   validateReleaseChangelogs(releasePlan, { dryRun, autoInsertedKeys });
   validateComponentRegistryArtifacts(releasePlan);
 
+  if (!dryRun) {
+    // 先一次性写入本批次所有目标版本，再构建派生包，避免 MCP 读取旧的 components 版本。
+    for (const item of releasePlan) {
+      item.pkg.version = item.newVersion;
+      writeJSON(item.pkgJsonPath, item.pkg);
+      log(`${item.meta.name} 版本: ${item.oldVersion} -> ${item.newVersion}`);
+      releaseSummaryEntries.push({ name: item.meta.name, oldVersion: item.oldVersion, newVersion: item.newVersion });
+    }
+  }
+
   // 依次处理每个包：版本号 + 构建 + 发布
   for (const item of releasePlan) {
-    const { meta, pkgJsonPath, oldVersion, newVersion, pkg } = item;
+    const { meta, oldVersion, newVersion } = item;
     if (dryRun) {
       log(`[dry-run] 跳过写入、构建与发布: ${meta.name}`);
       releaseSummaryEntries.push({ name: meta.name, oldVersion, newVersion });
       // eslint-disable-next-line no-continue
       continue;
     }
-
-    pkg.version = newVersion;
-    writeJSON(pkgJsonPath, pkg);
-    log(`${meta.name} 版本: ${oldVersion} -> ${newVersion}`);
-    releaseSummaryEntries.push({ name: meta.name, oldVersion, newVersion });
 
     if (item.key === 'mcp') {
       log('重建并校验 @yss-ui/mcp 发布索引');

@@ -10,6 +10,14 @@ toc: content
 
 YSS MCP 文档服务（`@yss-ui/mcp`）的版本更新记录。
 
+## v0.3.2
+
+`2026-09-16`
+
+### 🐛 Bug Fixes
+
+- **发布索引一致性**：同批次发布时按最终组件目标版本重建 MCP 索引，并在 registry tarball 中复核 `componentsVersion`，避免工作区校验通过但已发布索引漂移。
+
 ## v0.3.1
 
 `2026-09-16`
