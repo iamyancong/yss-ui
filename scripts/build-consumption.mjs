@@ -58,6 +58,11 @@ if (authoritySideEffectImports?.length || authoritySideEffectRequires?.length) {
     ].join(' | ')}`
   );
 }
+const yTableEntry = readFileSync(resolve(root, 'dist/root/entries/YTable.mjs'), 'utf8');
+const yTableCjsEntry = readFileSync(resolve(root, 'dist/root/entries/YTable.cjs'), 'utf8');
+if (/edit-table|YEditTable/i.test(yTableEntry) || /edit-table|YEditTable/i.test(yTableCjsEntry)) {
+  throw new Error('YTable 稳定入口仍包含 EditTable 引用，只读表未能与编辑表闭包解耦');
+}
 const entries = Object.fromEntries(
   names.map(name => [
     name,
@@ -67,6 +72,17 @@ const entries = Object.fromEntries(
     },
   ])
 );
+const yTableStyles = entries.YTable?.styles || [];
+if (!yTableStyles.some(s => s.includes('YTable.css'))) {
+  throw new Error(`YTable 样式契约异常：缺少 YTable.css 基础表格样式引用：${JSON.stringify(yTableStyles)}`);
+}
+if (yTableStyles.some(s => s.includes('edit-table') || s.includes('YEditTable'))) {
+  throw new Error(`YTable 样式契约异常：包含了 edit-table 样式引用：${JSON.stringify(yTableStyles)}`);
+}
+const yEditTableStyles = entries.YEditTable?.styles || [];
+if (!yEditTableStyles.some(s => s.includes('YTable.css'))) {
+  throw new Error(`YEditTable 样式契约异常：未继承 YTable.css 基础表格样式：${JSON.stringify(yEditTableStyles)}`);
+}
 for (const name of names) {
   readFileSync(resolve(root, `dist/root/entries/${name}.mjs`));
   writeFileSync(resolve(root, `dist/root/entries/${name}.d.ts`), `export { ${name} } from '../../index';\n`);

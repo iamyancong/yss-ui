@@ -10,12 +10,12 @@ import './table/global.less';
 // 统一导出名：YButton/YFormily/YTable
 export { default as AuthorityDropdown } from './authority/AuthorityDropdown.vue';
 export { default as YButton } from './button/index.vue';
+export { default as YTable } from './table/index.vue';
 export { default as YEditTable } from './edit-table/index.vue';
 export { default as YFileImport } from './file-import/index.vue';
 export { default as YFormily } from './formily/index.vue';
 export { default as YssFormily } from './formily/index.vue'; // 历史兼容别名
 export { default as YCard } from './card/index.vue';
-export { default as YTable } from './table/index.vue';
 export { default as YConditionBuilder } from './condition-builder/index.vue';
 export { default as YTree } from './tree/index.vue';
 export { default as YSplitPane } from './split-pane/index.vue';

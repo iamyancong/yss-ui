@@ -10,6 +10,18 @@ toc: content
 
 YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
+## v1.7.2
+
+`2026-09-17`
+
+### ⚡ Performance & Optimization
+
+- **YTable 稳定入口解耦**：解除 `components/table` 对 `edit-table` 的循环 chunk 依赖，使基础表格独立持有 VXE 样式，消除 `entries/YTable` 对 `YEditTable` 的副作用导入，只读表格页面不再额外拉取编辑表 JS/CSS 闭包 (#28)。
+
+### 🧪 Test & Quality
+
+- **发布门禁与契约断言**：在 `build-consumption` 与 tarball 发布校验中增加稳定入口纯净度断言，拦截跨 entry 裸副作用导入，并验证 `consumption.json` 中 `YTable.styles` 样式正确收敛 (#28)。
+
 ## v1.7.1
 
 `2026-09-16`

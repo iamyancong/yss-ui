@@ -68,8 +68,19 @@ export const consumptionEntries = (root: string): Plugin => {
             chunk.code;
         }
 
-        if (chunk.fileName.match(/(?:^|\/)entries\/AuthorityDropdown\.(?:mjs|cjs)$/)) {
+        if (chunk.fileName.match(/(?:^|\/)entries\/[^/]+\.(?:mjs|cjs)$/)) {
           chunk.code = pruneStableEntrySideEffects(chunk.code, _options.format === 'es' ? 'es' : 'cjs');
+          if (chunk.fileName.match(/(?:^|\/)entries\/YEditTable\.(?:mjs|cjs)$/)) {
+            const tableCssImport = _options.format === 'es' ? 'import "../YTable.css";' : 'require("../YTable.css");';
+            if (!chunk.code.includes('YTable.css')) {
+              chunk.code = `${tableCssImport}\n${chunk.code}`;
+            }
+          }
+          if (chunk.fileName.match(/(?:^|\/)entries\/YTable\.(?:mjs|cjs)$/)) {
+            if (/edit-table|YEditTable/i.test(chunk.code)) {
+              throw new Error(`entries/YTable 稳定入口仍包含 EditTable 相关引用：\n${chunk.code}`);
+            }
+          }
         }
       }
     },

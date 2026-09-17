@@ -103,6 +103,41 @@ test('AuthorityDropdown 稳定入口只保留自身实现和必要 CSS', () => {
   assert.match(prunedCjs, /authority\.css/);
   assert.doesNotMatch(prunedCjs, /button-hash|formily/);
 });
+test('YTable 稳定入口解耦 YEditTable 且保留自身 VXE 样式', () => {
+  const esm = [
+    'import "../YTable.css";',
+    'import "./YEditTable.mjs";',
+    'import { Y } from "../components/table-hash.mjs";',
+    'export { Y as YTable };',
+  ].join('\n');
+  const cjs = [
+    'require("../YTable.css");',
+    'require("./YEditTable.cjs");',
+    '"use strict";',
+    'const components_table = require("../components/table-hash.js");',
+    'exports.YTable = components_table.YTable;',
+  ].join('\n');
+
+  const prunedEsm = pruneStableEntrySideEffects(esm, 'es');
+  const prunedCjs = pruneStableEntrySideEffects(cjs, 'cjs');
+  assert.match(prunedEsm, /YTable\.css/);
+  assert.match(prunedEsm, /table-hash\.mjs/);
+  assert.doesNotMatch(prunedEsm, /YEditTable/);
+  assert.match(prunedCjs, /YTable\.css/);
+  assert.match(prunedCjs, /table-hash\.js/);
+  assert.doesNotMatch(prunedCjs, /YEditTable/);
+});
+test('构建产物 entries/YTable 无 edit-table 引用且 consumption.json 样式收敛', () => {
+  const yTableMjs = readFileSync('packages/components/dist/root/entries/YTable.mjs', 'utf8');
+  const yTableCjs = readFileSync('packages/components/dist/root/entries/YTable.cjs', 'utf8');
+  assert.doesNotMatch(yTableMjs, /edit-table|YEditTable/i);
+  assert.doesNotMatch(yTableCjs, /edit-table|YEditTable/i);
+  assert.match(yTableMjs, /YTable\.css/);
+  const realContract = JSON.parse(readFileSync('packages/components/dist/consumption.json', 'utf8'));
+  const styles = realContract.entries.YTable.styles;
+  assert.ok(styles.some(s => s.includes('YTable.css')));
+  assert.ok(!styles.some(s => s.includes('edit-table') || s.includes('YEditTable')));
+});
 test('动态整包、namespace、默认全量安装与 type-only 不改写', () => {
   for (const code of [
     "const x = import('@yss-ui/components');",

@@ -124,6 +124,32 @@ const validatePackedManifest = packageDirectory => {
       readRuntimeExportNames(path.join(packageDirectory, 'dist/index.mjs')),
       '根入口公开名称发生变化'
     );
+    const yTableEntryMjs = fs.readFileSync(path.join(packageDirectory, 'dist/root/entries/YTable.mjs'), 'utf8');
+    const yTableEntryCjs = fs.readFileSync(path.join(packageDirectory, 'dist/root/entries/YTable.cjs'), 'utf8');
+    assert.doesNotMatch(
+      yTableEntryMjs,
+      /edit-table|YEditTable/i,
+      'tarball 中 entries/YTable.mjs 仍包含 edit-table 引用'
+    );
+    assert.doesNotMatch(
+      yTableEntryCjs,
+      /edit-table|YEditTable/i,
+      'tarball 中 entries/YTable.cjs 仍包含 edit-table 引用'
+    );
+    assert.match(yTableEntryMjs, /\.css/, 'tarball 中 entries/YTable.mjs 必须持有 CSS 样式引用');
+
+    const entriesDir = path.join(packageDirectory, 'dist/root/entries');
+    if (fs.existsSync(entriesDir)) {
+      for (const file of fs.readdirSync(entriesDir)) {
+        if (!file.endsWith('.mjs')) continue;
+        const code = fs.readFileSync(path.join(entriesDir, file), 'utf8');
+        const bareSiblingImports = code.match(/^\s*import\s+["']\.\/[^"']+\.mjs["'];?\s*$/gm);
+        assert.ok(
+          !bareSiblingImports?.length,
+          `tarball 中 ${file} 仍包含跨入口裸副作用导入：${(bareSiblingImports || []).join(' | ')}`
+        );
+      }
+    }
   }
 
   for (const section of ['dependencies', 'optionalDependencies', 'peerDependencies']) {

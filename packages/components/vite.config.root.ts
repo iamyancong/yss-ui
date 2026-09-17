@@ -51,6 +51,7 @@ export default defineConfig({
         manualChunks(id) {
           const root = `${resolve(__dirname, 'src')}/`;
           if (id === `${root}install.ts`) return 'install';
+          if (id === `${root}table/index.ts`) return;
           if (!id.startsWith(root)) return;
           const component = id.slice(root.length).split('/')[0];
           if (!component || component.includes('.') || component === 'locale' || component === 'sheet') return;
