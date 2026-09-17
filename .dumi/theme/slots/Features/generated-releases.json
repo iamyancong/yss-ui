@@ -2,8 +2,8 @@
   {
     "key": "components",
     "pkg": "@yss-ui/components",
-    "version": "v1.7.1",
-    "date": "2026-09-16",
+    "version": "v1.7.2",
+    "date": "2026-09-17",
     "highlight": "16 个公开组件补齐全量 API 契约，公开类型导出与文档对齐",
     "link": "/changelog/components",
     "tone": "blue"
