@@ -1,6 +1,6 @@
 {
   "name": "@yss-ui/skills-cli",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "CLI tool to sync AI skills to local projects",
   "bin": {
     "yss-skills": "./bin/yss-skills.js"
