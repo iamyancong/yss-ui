@@ -8,6 +8,7 @@ const test = require('node:test');
 const {
   cleanupManagedSkillTarget,
   createIdeLinks,
+  ensurePrettierIgnore,
   resolveSkillsSource,
   syncSkillEntries,
   syncSkills,
@@ -190,4 +191,32 @@ test('--local 始终解析到 monorepo 的 packages/skills 单一事实源', asy
   assert.equal(sourceInfo.temporary, false);
   assert.equal(path.basename(sourceInfo.source), 'skills');
   assert.equal(await fs.pathExists(path.join(sourceInfo.source, 'skills.config.json')), true);
+});
+
+test('ensurePrettierIgnore 自动为项目创建或补齐 .prettierignore 规则且保证幂等', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'yss-skills-prettierignore-'));
+  const ignorePath = path.join(tempRoot, '.prettierignore');
+
+  try {
+    // 1. 不存在文件时自动创建
+    await ensurePrettierIgnore(tempRoot);
+    let content = await fs.readFile(ignorePath, 'utf8');
+    assert.equal(content.includes('.agents/'), true);
+    assert.equal(content.includes('.cursorrules'), true);
+
+    // 2. 再次执行具有幂等性
+    await ensurePrettierIgnore(tempRoot);
+    const contentSecond = await fs.readFile(ignorePath, 'utf8');
+    assert.equal(contentSecond, content);
+
+    // 3. 原有文件已有其他内容但漏掉某些 AI 目录时，能安全补齐
+    await fs.writeFile(ignorePath, 'dist/\nnode_modules/\n.agents/skills/\n', 'utf8');
+    await ensurePrettierIgnore(tempRoot);
+    content = await fs.readFile(ignorePath, 'utf8');
+    assert.equal(content.includes('dist/'), true);
+    assert.equal(content.includes('.cursorrules'), true);
+    assert.equal(content.includes('.cursor/'), true);
+  } finally {
+    await fs.remove(tempRoot);
+  }
 });

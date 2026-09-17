@@ -405,6 +405,11 @@ async function syncSkills(options = {}) {
       } catch (error) {
         console.warn(chalk.yellow(`⚠️ Failed to update .agents/rules: ${error.message}`));
       }
+      try {
+        await ensurePrettierIgnore(cwd);
+      } catch (error) {
+        console.warn(chalk.yellow(`⚠️ Failed to update .prettierignore: ${error.message}`));
+      }
 
       if (options.links !== false) {
         await createIdeLinks(cwd, primaryTarget, skillsConfig.symbolicLinks || [], skillsToSync, deprecatedSkills);
@@ -547,9 +552,63 @@ ${skillLines}
   console.log(chalk.green('Updated Antigravity YSS AI Skills rule in .agents/rules/yss-ai-skills.md'));
 }
 
+/**
+ * 确保项目的 .prettierignore 中包含 AI Skills 与规则的忽略项，避免本地提交时格式化改写产生差异。
+ *
+ * @param {string} projectRoot 项目根目录
+ */
+async function ensurePrettierIgnore(projectRoot) {
+  const ignorePath = path.join(projectRoot, '.prettierignore');
+  const markerStart = '# --- YSS AI SKILLS IGNORE START ---';
+  const markerEnd = '# --- YSS AI SKILLS IGNORE END ---';
+
+  const ignoreBlock = `${markerStart}
+# 官方 Skills 为发布包派生资产，由 @yss-ui/skills-cli 托管同步，严禁本地 Prettier 格式化改写产生漂移
+.agents/
+.agent/
+.cursor/
+.claude/
+.trae/
+.codex/
+.cursorrules
+${markerEnd}`;
+
+  let content = '';
+  if (await fs.pathExists(ignorePath)) {
+    content = await fs.readFile(ignorePath, 'utf8');
+  }
+
+  // 1. 若已有标记块，更新标记块内容
+  const regex = new RegExp(`${markerStart}[\\s\\S]*?${markerEnd}`, 'g');
+  if (regex.test(content)) {
+    content = content.replace(regex, ignoreBlock);
+    await fs.writeFile(ignorePath, content, 'utf8');
+    console.log(chalk.blue('Updated AI Skills ignore rules in .prettierignore'));
+    return;
+  }
+
+  // 2. 若已有散落的 .agents/ 规则，检查是否有缺失的核心目录
+  const requiredPatterns = ['.agents/', '.agent/', '.cursor/', '.claude/', '.trae/', '.cursorrules'];
+  const hasSomeAgentRule = content.includes('.agents/') || content.includes('.agents/skills/');
+
+  if (hasSomeAgentRule) {
+    const isMissingAny = requiredPatterns.some(pat => !content.includes(pat));
+    if (!isMissingAny) {
+      // 已经全部包含，无需重复追加
+      return;
+    }
+  }
+
+  // 3. 追加标记块
+  content = content ? `${content.trimEnd()}\n\n${ignoreBlock}\n` : `${ignoreBlock}\n`;
+  await fs.writeFile(ignorePath, content, 'utf8');
+  console.log(chalk.green('Added AI Skills ignore rules to .prettierignore'));
+}
+
 module.exports = {
   cleanupManagedSkillTarget,
   createIdeLinks,
+  ensurePrettierIgnore,
   isSafeSkillName,
   listSkills,
   normalizeSkillRoot,
