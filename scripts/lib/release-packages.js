@@ -263,6 +263,11 @@ function refineMcpPublish(changed, files, options = {}) {
   const log = options.log || (() => {});
   if (!changed.includes('mcp')) return changed;
 
+  if (changed.includes('components') && changed.includes('mcp')) {
+    log('本批含 components，保留 mcp（索引必须跟随组件版本）');
+    return changed;
+  }
+
   if (isMcpRuntimeChange(files)) {
     log('mcp 运行时文件变更，将发布 @yss-ui/mcp');
     return changed;
@@ -288,6 +293,21 @@ function refineMcpPublish(changed, files, options = {}) {
   }
   log('mcp 索引内容已变化，将发布 @yss-ui/mcp');
   return changed;
+}
+
+/**
+ * components 发版时强制带上派生包 mcp（索引必须跟 componentsVersion）。
+ * 须在 refineMcpPublish 之后调用，避免「哈希未变」把 mcp 剔掉。
+ *
+ * @param {string[]} changed 待发布包 key 列表
+ * @param {{ log?: (msg: string) => void }} [options] 日志选项
+ * @returns {string[]} 补齐派生包后的 key 列表
+ */
+function ensureDerivedMcpPublish(changed, options = {}) {
+  const log = options.log || (() => {});
+  if (!changed.includes('components') || changed.includes('mcp')) return changed;
+  log('检测到 @yss-ui/components 待发布，强制跟发派生包 @yss-ui/mcp 以同步索引');
+  return [...changed, 'mcp'];
 }
 
 /**
@@ -373,6 +393,7 @@ module.exports = {
   computeCurrentIndexHash,
   persistMcpIndexHash,
   refineMcpPublish,
+  ensureDerivedMcpPublish,
   hasChangelogVersion,
   todayLocal,
   ensureMcpIndexChangelog,

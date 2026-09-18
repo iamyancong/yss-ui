@@ -96,14 +96,22 @@ test('发版摘要必须包含有效的 packages 列表', () => {
   fs.rmSync(tempRoot, { recursive: true, force: true });
 });
 
-test('只发布 components 时跳过 MCP registry 校验', async () => {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'yss-release-summary-skip-test-'));
+test('发布 components 但未发布 MCP 时拒绝放行并抛错', async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'yss-release-summary-reject-test-'));
   const summaryPath = path.join(tempRoot, 'summary.json');
   fs.writeFileSync(summaryPath, JSON.stringify({ packages: [{ name: '@yss-ui/components', newVersion: '1.7.2' }] }));
-  await assert.doesNotReject(async () => {
-    const result = await verifyPublishedRelease({ summaryPath });
-    assert.deepEqual(result, { skipped: true, reason: '本批次未发布 @yss-ui/mcp' });
-  });
+  await assert.rejects(async () => {
+    await verifyPublishedRelease({ summaryPath });
+  }, /本批次发布了 @yss-ui\/components@1\.7\.2 但未发布 @yss-ui\/mcp；MCP 索引会落后，拒绝放行/);
+  fs.rmSync(tempRoot, { recursive: true, force: true });
+});
+
+test('发布其他包（如 hooks）且未发布 MCP 时正常跳过', async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'yss-release-summary-skip-test-'));
+  const summaryPath = path.join(tempRoot, 'summary.json');
+  fs.writeFileSync(summaryPath, JSON.stringify({ packages: [{ name: '@yss-ui/hooks', newVersion: '1.2.0' }] }));
+  const result = await verifyPublishedRelease({ summaryPath });
+  assert.deepEqual(result, { skipped: true, reason: '本批次未发布 @yss-ui/mcp' });
   fs.rmSync(tempRoot, { recursive: true, force: true });
 });
 

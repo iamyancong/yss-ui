@@ -23,6 +23,7 @@ const {
   isMcpRuntimeChange,
   orderReleaseKeys,
   refineMcpPublish,
+  ensureDerivedMcpPublish,
   rebuildMcpIndex,
   validateMcpIndex,
   persistMcpIndexHash,
@@ -122,7 +123,9 @@ async function main() {
 
   const files = detectChangedFiles(lastTag);
   let changed = detectChangedPackages(files);
-  changed = orderReleaseKeys(refineMcpPublish(changed, files, { log }));
+  changed = refineMcpPublish(changed, files, { log });
+  changed = ensureDerivedMcpPublish(changed, { log });
+  changed = orderReleaseKeys(changed);
 
   if (changed.length === 0) {
     log('未检测到需要发布的包，已退出');

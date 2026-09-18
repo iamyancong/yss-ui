@@ -11,6 +11,7 @@ const {
   hashIndexContent,
   orderReleaseKeys,
   refineMcpPublish,
+  ensureDerivedMcpPublish,
   validateMcpIndex,
   hasChangelogVersion,
   ensureMcpIndexChangelog,
@@ -66,11 +67,19 @@ assert.deepEqual(
 );
 
 assert.deepEqual(
+  refineMcpPublish(['mcp', 'skills'], ['docs/components/table.md'], {
+    computeIndexHash: () => 'abc',
+    storedHash: 'abc',
+  }),
+  ['skills']
+);
+
+assert.deepEqual(
   refineMcpPublish(['mcp', 'components'], ['docs/components/table.md'], {
     computeIndexHash: () => 'abc',
     storedHash: 'abc',
   }),
-  ['components']
+  ['mcp', 'components']
 );
 
 assert.deepEqual(
@@ -96,6 +105,27 @@ assert.deepEqual(
   }),
   ['mcp']
 );
+
+assert.deepEqual(
+  refineMcpPublish(['components', 'mcp'], ['packages/components/src/table/index.vue'], {
+    computeIndexHash: () => 'abc',
+    storedHash: 'abc',
+  }),
+  ['components', 'mcp']
+);
+
+assert.deepEqual(ensureDerivedMcpPublish(['components']), ['components', 'mcp']);
+assert.deepEqual(ensureDerivedMcpPublish(['components', 'mcp']), ['components', 'mcp']);
+assert.deepEqual(ensureDerivedMcpPublish(['skills']), ['skills']);
+
+// 模拟 #28：仅修改 packages/components/**，经 refine + ensureDerived + order 链后必须包含 components 和 mcp
+const simulatedFiles = ['packages/components/src/table/index.vue', 'docs/changelog/components.md'];
+const initialChanged = detectChangedPackages(simulatedFiles);
+assert.deepEqual(initialChanged, ['components']);
+const refined = refineMcpPublish(initialChanged, simulatedFiles);
+const derived = ensureDerivedMcpPublish(refined);
+const finalOrder = orderReleaseKeys(derived);
+assert.deepEqual(finalOrder, ['components', 'mcp']);
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yss-mcp-changelog-'));
 const changelogPath = path.join(tmpDir, 'mcp.md');

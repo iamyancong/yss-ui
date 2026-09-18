@@ -203,10 +203,16 @@ export const verifyPublishedRelease = async ({
   }
   const packages = readReleaseSummary(summaryPath);
   const mcp = packages.find(item => item.name === MCP_PACKAGE_NAME);
+  const components = packages.find(item => item.name === COMPONENTS_PACKAGE_NAME);
   if (!mcp?.newVersion) {
+    if (components?.newVersion) {
+      throw new Error(
+        `本批次发布了 ${COMPONENTS_PACKAGE_NAME}@${components.newVersion} 但未发布 ${MCP_PACKAGE_NAME}；MCP 索引会落后，拒绝放行`
+      );
+    }
     return { skipped: true, reason: `本批次未发布 ${MCP_PACKAGE_NAME}` };
   }
-  const componentsTarget = packages.find(item => item.name === COMPONENTS_PACKAGE_NAME)?.newVersion;
+  const componentsTarget = components?.newVersion;
   const currentComponentsVersion = componentsTarget
     ? null
     : readRegistryVersion({ name: COMPONENTS_PACKAGE_NAME, registry });

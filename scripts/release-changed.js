@@ -10,6 +10,7 @@ const {
   isMcpRuntimeChange,
   orderReleaseKeys,
   refineMcpPublish,
+  ensureDerivedMcpPublish,
   rebuildMcpIndex,
   validateMcpIndex,
   persistMcpIndexHash,
@@ -278,7 +279,9 @@ async function main() {
   log(`开始检测变更 (bump=${bump}${resolvedBase ? `, base=${resolvedBase}` : ''}${dryRun ? ', dry-run' : ''})`);
   const files = detectChangedFiles(resolvedBase);
   let changed = detectChangedPackages(files);
-  changed = orderReleaseKeys(refineMcpPublish(changed, files, { log }));
+  changed = refineMcpPublish(changed, files, { log });
+  changed = ensureDerivedMcpPublish(changed, { log });
+  changed = orderReleaseKeys(changed);
   if (changed.length === 0) {
     log('未检测到需要发布的包，已退出');
     // 清理上一次可能遗留的摘要文件
