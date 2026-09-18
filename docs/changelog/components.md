@@ -22,6 +22,8 @@ YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
 - **发布门禁与契约断言**：在 `build-consumption` 与 tarball 发布校验中增加稳定入口纯净度断言，拦截跨 entry 裸副作用导入，并验证 `consumption.json` 中 `YTable.styles` 样式正确收敛 (#28)。
 
+---
+
 ## v1.7.1
 
 `2026-09-16`
@@ -33,6 +35,8 @@ YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 ### 🧪 Test & Quality
 
 - **消费契约**：明确官方插件已验证的 Vite 范围与 package peer 范围，并在构建阶段校验两者一致。
+
+---
 
 ## v1.7.0
 
@@ -160,6 +164,8 @@ YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 ### 📝 Documentation
 
 - **ConfigProvider**: 修复演示的表格操作列、分页参数及 runtime-only 子组件写法，补充微应用、失败重试与引擎边界说明。
+
+---
 
 ## v1.5.19
 `2026-09-01`
@@ -1364,7 +1370,7 @@ YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
 - **FormDescriptionsView**: 新增对 `TreeSelect` 和 `Cascader` 组件的预览支持，支持自动解析 `treeData`/`options` 并显示对应标签。[`88eec41`](https://github.com/yss-ui/yss-ui/commit/88eec417f163b55bf3aff328b8bb74027a4bbfaf)
 
-
+---
 
 ## v1.1.17
 `2025-12-11`

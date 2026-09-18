@@ -18,6 +18,8 @@ YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
 - **统一消费契约**：将官方 Vite 插件的版本说明更新为“自 1.7.0 起已发布”，明确 Vite 6 验收边界，避免 Agent 把已发布能力识别为待发布能力。
 
+---
+
 ## v1.5.0
 
 `2026-09-15`
@@ -93,6 +95,8 @@ YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 - **yss-ui-business-page-generation**: 总入口 Skill 增加国际化项目全链路工厂规范，统一自动判定国际化项目并强制生成无中文硬编码的业务页面与交付检查清单。
 - **i18n-locale-management**: 优化微应用路由标题多语言渐进式非强制规范，澄清普通/隐藏路由与多语言标题映射边界。
 
+---
+
 ## v1.3.9
 
 `2026-09-01`
@@ -107,6 +111,8 @@ YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
 - **Trigger Evals**: 为两个维护者 Skill 增加真实正例和相邻 near-miss，用词法路由门禁验证测试任务、Skill 源码维护与普通组件开发/Skill 使用之间的边界。
 - **Skills Metadata**: 当前官方 Skill 数量更新为 33，易漂移的说明文档改用 `30+` 或动态范围表述。
+
+---
 
 ## v1.3.8
 

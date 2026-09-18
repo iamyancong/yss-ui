@@ -340,6 +340,7 @@ function ensureMcpIndexChangelog(filePath, version, options = {}) {
     '',
     '- **索引同步**: 重建并发布文档索引（组件 API / Demo / Skills / 代码生成规则）。',
     '',
+    '---',
     '',
   ].join('\n');
 

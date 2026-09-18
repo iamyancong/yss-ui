@@ -127,6 +127,8 @@ YSS UI Hooks 库（`@yss-ui/hooks`）的版本更新记录。
 
 - 新增 `useTableHeight` 完整文档，包含 Flex 布局、弹窗（Modal）、抽屉（Drawer）等多种场景的实战 Demo。
 
+---
+
 ## v1.0.8
 `2026-01-04`
 
@@ -158,6 +160,7 @@ YSS UI Hooks 库（`@yss-ui/hooks`）的版本更新记录。
   - 包含 3 个典型场景 Demo：基础用法、带搜索框头部、头部+底部复杂布局
   - 详细的 API 说明和布局最佳实践指南
 
+---
 
 ## v1.0.3
 `2025-12-19`
