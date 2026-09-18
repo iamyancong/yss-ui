@@ -11,8 +11,8 @@ import { x as extractTarball } from 'tar';
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_REGISTRY = 'https://registry.npmjs.org/';
 // npm publish 返回成功后，registry 的精确版本查询仍可能短暂返回 404。
-// 以约 5 分钟窗口覆盖常见传播延迟，同时保留可测试的重试参数覆盖能力。
-const DEFAULT_RETRIES = 20;
+// 默认提升至 32 次 * 15 秒（约 8 分钟窗口），覆盖全球 CDN / 节点传播延迟。
+const DEFAULT_RETRIES = 32;
 const DEFAULT_DELAY_MS = 15000;
 const MCP_PACKAGE_NAME = '@yss-ui/mcp';
 const COMPONENTS_PACKAGE_NAME = '@yss-ui/components';
@@ -165,6 +165,12 @@ export const verifyPublishedMcpTarball = async ({
       } catch (error) {
         lastError = error;
         if (attempt + 1 < attemptCount) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            `[published-release] 第 ${attempt + 1}/${attemptCount} 次拉取 ${MCP_PACKAGE_NAME}@${mcpVersion} 失败（${
+              error?.message || error
+            }），等待 ${Math.round(waitMs / 1000)} 秒后重试...`
+          );
           await new Promise(resolve => setTimeout(resolve, waitMs));
         }
       }
@@ -197,6 +203,8 @@ export const verifyPublishedMcpTarball = async ({
 export const verifyPublishedRelease = async ({
   summaryPath = path.join(ROOT_DIR, 'scripts/.release-summary.json'),
   registry = DEFAULT_REGISTRY,
+  retries = DEFAULT_RETRIES,
+  delayMs = DEFAULT_DELAY_MS,
 } = {}) => {
   if (!fs.existsSync(summaryPath)) {
     return { skipped: true, reason: `未找到发版摘要：${summaryPath}` };
@@ -221,6 +229,8 @@ export const verifyPublishedRelease = async ({
     mcpVersion: mcp.newVersion,
     expectedComponentsVersion,
     registry,
+    retries,
+    delayMs,
   });
 };
 
@@ -229,6 +239,8 @@ const parseArgs = argv => {
   for (const argument of argv.slice(2)) {
     if (argument.startsWith('--summary=')) options.summaryPath = argument.slice('--summary='.length);
     if (argument.startsWith('--registry=')) options.registry = argument.slice('--registry='.length);
+    if (argument.startsWith('--retries=')) options.retries = parseInt(argument.slice('--retries='.length), 10);
+    if (argument.startsWith('--delay-ms=')) options.delayMs = parseInt(argument.slice('--delay-ms='.length), 10);
   }
   return options;
 };
