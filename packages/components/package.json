@@ -1,6 +1,6 @@
 {
   "name": "@yss-ui/components",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "YSS UI 核心组件包",
   "main": "dist/root/index.cjs",
   "module": "dist/root/index.mjs",
