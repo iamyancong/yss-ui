@@ -1,3 +1,8 @@
+/**
+ * 保留旧 dist 构建的全量样式来源。公开 dist/root 构建由 consumptionEntries
+ * 移除这里的表格样式导入，再关联到 Table/EditTable 实现模块；reset 仍保留。
+ * 直接 alias 到本源码不会执行该重分配，不属于 npm 产物的按需样式保证范围。
+ */
 // 全局样式：vxe-table v4 样式
 import 'vxe-table/lib/style.css';
 // vxe-pc-ui 样式（包含 Tooltip 等 PC UI 组件的样式）

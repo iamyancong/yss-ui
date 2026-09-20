@@ -12,7 +12,7 @@
       "id": "which-package",
       "prompt": "该用 ant-design-vue 还是 @yss-ui/components 的组件",
       "should_trigger": true,
-      "assert": "按选型规则判定组件来源，YSS 封装优先。"
+      "assert": "按选型规则判定组件来源，YSS 封装优先。核对 components 版本与 consumption.json；1.7.3 起支持 tree-shaking 的无插件 ESM 生产构建会关联组件样式，不要求额外全量 CSS；显式全量导入、旧版本及开发预构建保持各自边界。"
     },
     {
       "id": "import-error",

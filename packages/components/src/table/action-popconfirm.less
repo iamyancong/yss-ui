@@ -1,0 +1,8 @@
+/**
+ * 修复 Popconfirm 按钮在 loading 状态下折行的问题
+ * 注意：Popconfirm 弹出层通过 teleport 渲染到 body，scoped 样式无法穿透
+ */
+.y-table-action-popconfirm .ant-popconfirm-buttons {
+  display: flex;
+  justify-content: flex-end;
+}

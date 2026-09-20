@@ -1,44 +1,7 @@
-<template>
-  <!-- 需要二次确认时，用 Popconfirm 包裹 -->
-  <Popconfirm
-    v-if="config?.isConfirm && allowed"
-    v-model:open="visible"
-    :disabled="isDisabled"
-    :title="titleText"
-    :ok-text="okText"
-    :cancel-text="cancelText"
-    :placement="isLast ? 'topLeft' : undefined"
-    overlay-class-name="y-table-action-popconfirm"
-    v-bind="config?.confirmProps?.popProps"
-    :ok-button-props="{ loading: needLoading && loading }"
-    @confirm="handleConfirm"
-    @cancel="handleCancel"
-  >
-    <template #default>
-      <Button :type="antdType" size="small" :disabled="isDisabled" :title="actionText" class="y-table-action-link">
-        <span class="y-table-action-link__text">{{ actionText }}</span>
-      </Button>
-    </template>
-  </Popconfirm>
-  <!-- 无确认时，直接按钮 -->
-  <Button
-    v-else-if="allowed || config?.fallback === 'disable'"
-    :type="antdType"
-    size="small"
-    :disabled="isDisabled || (!allowed && config?.fallback === 'disable')"
-    :loading="needLoading && loading"
-    :title="actionText"
-    class="y-table-action-link"
-    @click="handleConfirm"
-  >
-    <span class="y-table-action-link__text">{{ actionText }}</span>
-  </Button>
-</template>
-
 <script setup lang="ts">
 import { hasAuth } from '@yss-ui/utils';
 import { Button, Popconfirm } from 'ant-design-vue';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useLocale } from '../locale/useLocale';
 import type { ActionButtonConfig } from './type';
 
@@ -61,7 +24,9 @@ const loading = ref(false);
 const visible = ref(false);
 
 const allowed = computed(() => !props.config?.permissionCode || hasAuth(props.config.permissionCode));
-const isDisabled = computed(() => props.config?.disabledFn?.(props.scope) ?? false);
+const isDisabled = computed(() => !allowed.value || !!props.config?.disabledFn?.(props.scope));
+/** 只有仍有权限且未禁用的操作才创建确认触发器。 */
+const canConfirm = computed(() => !!props.config?.isConfirm && !isDisabled.value);
 const needLoading = computed(() => !!props.config?.confirmProps?.needLoading);
 const actionText = computed(() => props.config?.text ?? props.config?.label ?? '');
 
@@ -86,9 +51,19 @@ const close = () => {
   visible.value = false;
 };
 
+/** 资格失效或行/操作身份变化时清理旧确认，重新启用不会恢复过期弹层。 */
+watch([canConfirm, () => props.scope?.row, () => props.config?.key ?? props.config?.value], close, { flush: 'sync' });
+
 /** 执行已通过禁用与确认校验的操作，并通知上层菜单立即收起。 */
 const handleConfirm = async () => {
-  if (isDisabled.value || (!allowed.value && props.config?.fallback === 'disable')) return;
+  if (
+    (props.config?.permissionCode && !hasAuth(props.config.permissionCode)) ||
+    props.config?.disabledFn?.(props.scope) ||
+    (props.config?.isConfirm && !visible.value)
+  ) {
+    close();
+    return;
+  }
   if (needLoading.value) loading.value = true;
   const clickHandler = props.config?.clickFn ?? props.config?.click;
   emit('request-close');
@@ -107,48 +82,47 @@ const handleCancel = () => {
 };
 </script>
 
+<template>
+  <!-- 需要二次确认时，用 Popconfirm 包裹 -->
+  <Popconfirm
+    v-if="canConfirm"
+    v-bind="config?.confirmProps?.popProps"
+    v-model:open="visible"
+    :disabled="isDisabled"
+    :title="titleText"
+    :ok-text="okText"
+    :cancel-text="cancelText"
+    :placement="isLast ? 'topLeft' : undefined"
+    overlay-class-name="y-table-action-popconfirm"
+    :ok-button-props="{ loading: needLoading && loading }"
+    @confirm="handleConfirm"
+    @cancel="handleCancel"
+  >
+    <template #default>
+      <Button :type="antdType" size="small" :disabled="isDisabled" :title="actionText" class="y-table-action-link">
+        <span class="y-table-action-link__text">{{ actionText }}</span>
+      </Button>
+    </template>
+  </Popconfirm>
+  <!-- 无确认时，直接按钮 -->
+  <Button
+    v-else-if="allowed || config?.fallback === 'disable'"
+    :type="antdType"
+    size="small"
+    :disabled="isDisabled"
+    :loading="needLoading && loading"
+    :title="actionText"
+    class="y-table-action-link"
+    @click="handleConfirm"
+  >
+    <span class="y-table-action-link__text">{{ actionText }}</span>
+  </Button>
+</template>
+
 <style scoped lang="less">
-.y-table-action-link {
-  padding: 0 2px;
-  color: var(--primary-color, #3371ff);
-
-  &:hover:not(:disabled, .ant-btn-disabled),
-  &:focus:not(:disabled, .ant-btn-disabled) {
-    color: var(--primary-color, #3371ff);
-    opacity: 0.85;
-  }
-
-  /* 禁用态需覆盖主色，否则 disabled 只拦点击、视觉仍是可点主色 */
-  &:disabled,
-  &.ant-btn-disabled {
-    color: var(--ant-disabled-color, rgb(0 0 0 / 25%));
-    cursor: not-allowed;
-    opacity: 1;
-
-    &:hover,
-    &:focus {
-      color: var(--ant-disabled-color, rgb(0 0 0 / 25%));
-      opacity: 1;
-    }
-  }
-}
-
-.y-table-action-link__text {
-  display: inline-block;
-  max-width: 180px; /* 防止文本过长撑开列 */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+@import url('./action-button.less');
 </style>
 
 <style lang="less">
-/**
- * 修复 Popconfirm 按钮在 loading 状态下折行的问题
- * 注意：Popconfirm 弹出层通过 teleport 渲染到 body，scoped 样式无法穿透
- */
-.y-table-action-popconfirm .ant-popconfirm-buttons {
-  display: flex;
-  justify-content: flex-end;
-}
+@import url('./action-popconfirm.less');
 </style>

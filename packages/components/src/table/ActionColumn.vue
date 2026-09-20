@@ -137,6 +137,7 @@ export default { name: 'YTableActionColumn' };
 .y-table-action-pop-list {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 6px;
   min-width: 60px;
 }

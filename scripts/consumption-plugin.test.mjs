@@ -2,9 +2,10 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { build } from 'esbuild';
-import { mkdtempSync, readFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, readFileSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
+import { assertTableStyleOwnership } from './lib/check-table-style-ownership.mjs';
 
 /** 将真实变换模块编译到独立临时目录，测试 TS/Vue 与再导出语义。 */
 const dir = mkdtempSync(`${tmpdir()}/yss-transform-`);
@@ -127,6 +128,54 @@ test('YTable 稳定入口解耦 YEditTable 且保留自身 VXE 样式', () => {
   assert.match(prunedCjs, /table-hash\.js/);
   assert.doesNotMatch(prunedCjs, /YEditTable/);
 });
+test('样式归属门禁拒绝实现漏引、文件改名和虚假的文本引用', t => {
+  const fixture = mkdtempSync(`${tmpdir()}/yss-style-ownership-`);
+  t.after(() => rmSync(fixture, { recursive: true, force: true }));
+  mkdirSync(`${fixture}/dist/root/entries`, { recursive: true });
+  mkdirSync(`${fixture}/dist/root/components`);
+  writeFileSync(`${fixture}/dist/root/YTable.css`, '.vxe-table { display: block }');
+  const entries = Object.fromEntries(
+    ['YTable', 'YEditTable'].map(name => [name, { styles: ['dist/root/YTable.css'] }])
+  );
+  for (const [name, component] of [
+    ['YTable', 'table'],
+    ['YEditTable', 'edit-table'],
+  ]) {
+    writeFileSync(
+      `${fixture}/dist/root/entries/${name}.mjs`,
+      `export { value as ${name} } from '../components/${component}-hash.mjs';`
+    );
+    writeFileSync(
+      `${fixture}/dist/root/entries/${name}.cjs`,
+      `exports.${name} = require('../components/${component}-hash.js').value;`
+    );
+    writeFileSync(
+      `${fixture}/dist/root/components/${component}-hash.mjs`,
+      'import "../YTable.css"; export const value = {};'
+    );
+    writeFileSync(
+      `${fixture}/dist/root/components/${component}-hash.js`,
+      'require("../YTable.css"); exports.value = {};'
+    );
+  }
+  assert.doesNotThrow(() => assertTableStyleOwnership(fixture, entries));
+  for (const extension of ['mjs', 'js']) {
+    const file = `${fixture}/dist/root/components/table-hash.${extension}`;
+    const original = readFileSync(file, 'utf8');
+    for (const invalid of [
+      '/* import "../YTable.css"; */ const misleading = "../YTable.css";',
+      'import("../YTable.css");',
+      original.replace('YTable.css', 'RenamedTable.css'),
+    ]) {
+      writeFileSync(file, invalid);
+      assert.throws(() => assertTableStyleOwnership(fixture, entries), /缺少公共 CSS 静态引用/);
+    }
+    writeFileSync(file, original);
+  }
+  rmSync(`${fixture}/dist/root/YTable.css`);
+  assert.throws(() => assertTableStyleOwnership(fixture, entries), /ENOENT/);
+});
+
 test('构建产物 entries/YTable 无 edit-table 引用且 consumption.json 样式收敛', t => {
   if (
     !existsSync('packages/components/dist/root/entries/YTable.mjs') ||
@@ -139,8 +188,12 @@ test('构建产物 entries/YTable 无 edit-table 引用且 consumption.json 样�
   const yTableCjs = readFileSync('packages/components/dist/root/entries/YTable.cjs', 'utf8');
   assert.doesNotMatch(yTableMjs, /edit-table|YEditTable/i);
   assert.doesNotMatch(yTableCjs, /edit-table|YEditTable/i);
-  assert.match(yTableMjs, /YTable\.css/);
+  for (const extension of ['mjs', 'cjs']) {
+    const rootEntry = readFileSync(`packages/components/dist/root/index.${extension}`, 'utf8');
+    assert.doesNotMatch(rootEntry, /entries\/|YTable\.css/);
+  }
   const realContract = JSON.parse(readFileSync('packages/components/dist/consumption.json', 'utf8'));
+  assertTableStyleOwnership('packages/components', realContract.entries);
   const styles = realContract.entries.YTable.styles;
   assert.ok(styles.some(s => s.includes('YTable.css')));
   assert.ok(!styles.some(s => s.includes('edit-table') || s.includes('YEditTable')));

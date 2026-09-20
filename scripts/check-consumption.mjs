@@ -1,3 +1,4 @@
+import { checkRootStyles } from './check-root-styles.mjs';
 import { execFileSync } from 'node:child_process';
 import {
   mkdtempSync,
@@ -168,3 +169,5 @@ writeFileSync(
     2
   )
 );
+
+if (!baseline) checkRootStyles(consumer);

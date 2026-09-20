@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { x as extractTarball } from 'tar';
 import ts from 'typescript';
+import { assertTableStyleOwnership } from './lib/check-table-style-ownership.mjs';
 
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TEMP_PARENT = path.join(ROOT_DIR, 'tmp');
@@ -136,7 +137,20 @@ const validatePackedManifest = packageDirectory => {
       /edit-table|YEditTable/i,
       'tarball 中 entries/YTable.cjs 仍包含 edit-table 引用'
     );
-    assert.match(yTableEntryMjs, /\.css/, 'tarball 中 entries/YTable.mjs 必须持有 CSS 样式引用');
+    const contract = JSON.parse(fs.readFileSync(path.join(packageDirectory, 'dist/consumption.json'), 'utf8'));
+    assertTableStyleOwnership(packageDirectory, contract.entries);
+    for (const name of ['YTable', 'YEditTable']) {
+      assert.ok(
+        contract.entries[name].styles.some(file => file.endsWith('/YTable.css')),
+        `${name} 的实现闭包缺少表格样式`
+      );
+      for (const file of contract.entries[name].styles)
+        assert.ok(fs.existsSync(path.join(packageDirectory, file)), `缺少 ${file}`);
+    }
+    for (const extension of ['mjs', 'cjs']) {
+      const code = fs.readFileSync(path.join(packageDirectory, `dist/root/index.${extension}`), 'utf8');
+      assert.doesNotMatch(code, /entries\/|YTable\.css/, '根入口仍无条件引入表格稳定入口或样式');
+    }
 
     const entriesDir = path.join(packageDirectory, 'dist/root/entries');
     if (fs.existsSync(entriesDir)) {

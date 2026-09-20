@@ -32,6 +32,14 @@ export default defineConfig({ plugins: [vue(), yssUi()] });
 
 旧项目可以先仅升级组件库；接入官方插件时移除旧的产物解析插件及整包 optimizeDeps.include，禁止两个方案同时运行；官方插件会对已知旧入口插件和旧预构建器显式报错。默认安装和动态整包导入保持全量语义。模板提供版本检测适配器：`1.6.6/1.6.7` 继续旧配置；发现公开 `./vite` 后使用官方插件，官方插件加载错误不会静默降级。
 
+## 无插件样式关联（待发布）
+
+本次候选版本在支持 tree-shaking 的 ESM 生产构建中，也会为根入口具名导入关联实际组件样式。仅导入 `YButton` 不引入表格公共 CSS；`YTable`、`YEditTable` 的实现闭包自动携带 VXE 和表格基础样式，无需业务额外导入 VXE CSS。根入口保留 Ant Design Vue reset。
+
+`lite` 继续不引入根入口 reset，但与根入口、功能子路径共享实际组件及其必要样式；它不代表表格组件没有全局 CSS。已有显式全量样式导入无需删除。
+
+无插件项目仍可显式导入 `@yss-ui/components/style.css` 或 `@yss-ui/components/dist/style.css` 获取全量样式；此时不适用 Button-only CSS 预算。官方插件仍将这两个全量路径转换为基础 reset，再按组件加载样式，保持既有行为。CJS、默认全量安装及动态整包导入不承诺按具名组件裁剪；开发预构建也不能套用生产闭包结论。
+
 ## 产物与公共状态
 
 - 同一 Rollup 构建图生成根入口、子路径和稳定的 `entries/<公开符号>`。业务无需直接使用 entries。

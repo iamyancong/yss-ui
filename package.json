@@ -34,7 +34,7 @@
     "lint:style": "pnpm lint:style:check --fix",
     "lint:style:check": "stylelint \"packages/**/*.{vue,css,less,scss}\" \"docs/**/*.{vue,css,less,scss}\"",
     "type-check": "vue-tsc --noEmit",
-    "quality": "pnpm lint:ci && pnpm lint:style:check && pnpm type-check && pnpm test:coverage && pnpm test:node && pnpm test:package-consumer && pnpm validate:skills && pnpm validate:docs && pnpm build:docs:check",
+    "quality": "pnpm lint:ci && pnpm lint:style:check && pnpm type-check && pnpm test:coverage && pnpm test:node && pnpm test:package-consumer && pnpm test:consumption:built && pnpm validate:skills && pnpm validate:docs && pnpm build:docs:check",
     "generate:llms": "node scripts/generate-llms.js",
     "mcp:index": "node packages/mcp/scripts/build-index.js",
     "test:release-detect": "node scripts/lib/release-packages.test.js",
@@ -54,7 +54,8 @@
     "release:smart:minor": "node scripts/release-smart.js minor",
     "release:smart:major": "node scripts/release-smart.js major",
     "test:consumption-plugin": "node --test scripts/consumption-plugin.test.mjs",
-    "test:consumption": "pnpm build:packages:publishable && node scripts/check-consumption.mjs",
+    "test:consumption": "pnpm build:packages:publishable && pnpm test:consumption:built",
+    "test:consumption:built": "node scripts/check-consumption.mjs",
     "test:consumption-types": "node scripts/check-consumption-types.mjs"
   },
   "dependencies": {

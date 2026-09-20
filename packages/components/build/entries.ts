@@ -38,22 +38,50 @@ export const consumptionEntries = (root: string): Plugin => {
   return {
     name: 'yss-consumption-entries',
     resolveId(id) {
+      if (id === 'yss-table-styles' || id === resolve(root, 'yss-table-styles')) return '\0yss-table-styles';
       if (id.includes('yss-entry:')) return '\0' + id.slice(id.indexOf('yss-entry:'));
     },
     load(id) {
+      if (id === '\0yss-table-styles') return `import ${JSON.stringify(resolve(root, 'src/table/base.less'))};`;
       if (!id.startsWith('\0yss-entry:')) return;
       const name = id.slice('\0yss-entry:'.length);
       const item = entries[name];
-      const styles = ['YTable', 'YEditTable'].includes(name)
-        ? `import 'vxe-table/lib/style.css'; import 'vxe-pc-ui/lib/style.css'; import ${JSON.stringify(resolve(root, 'src/table/global.less'))};`
-        : '';
-      return `${styles}\nexport { ${item.imported} as ${name} } from ${JSON.stringify(item.source)};`;
+      return `export { ${item.imported} as ${name} } from ${JSON.stringify(item.source)};`;
+    },
+    transform(code, id) {
+      if (id !== resolve(root, 'src/index.ts')) return;
+      /** 旧 dist 保留历史全量样式；公开根入口把表格基础样式交给实际实现 chunk。 */
+      const ast = ts.createSourceFile(id, code, ts.ScriptTarget.Latest, true);
+      const tableStyles = new Set(['vxe-table/lib/style.css', 'vxe-pc-ui/lib/style.css', './table/global.less']);
+      let transformed = code;
+      for (const node of [...ast.statements].reverse()) {
+        if (
+          ts.isImportDeclaration(node) &&
+          ts.isStringLiteral(node.moduleSpecifier) &&
+          tableStyles.has(node.moduleSpecifier.text)
+        ) {
+          transformed = transformed.slice(0, node.getStart(ast)) + transformed.slice(node.end);
+        }
+      }
+      return { code: transformed, map: null };
     },
     generateBundle(_options, bundle) {
       /** CSS 只挂到拥有它的模块；动态组件的 CSS 随动态入口加载。 */
       for (const chunk of Object.values(bundle)) {
         if (chunk.type !== 'chunk') continue;
         const css = (chunk as typeof chunk & { viteMetadata?: { importedCss: Set<string> } }).viteMetadata?.importedCss;
+        /** 样式跟随真实组件实现，根入口、lite、子路径和稳定入口共享同一份依赖。 */
+        if (
+          Object.keys(chunk.modules).some(id =>
+            ['table', 'edit-table'].some(name => id.split('?')[0] === resolve(root, `src/${name}/index.vue`))
+          )
+        ) {
+          if (!css) throw new Error(`表格实现缺少 Vite CSS 元数据：${chunk.fileName}`);
+          const ownCss = [...css];
+          css.clear();
+          css.add('YTable.css');
+          ownCss.forEach(file => css.add(file));
+        }
         if (css?.size) {
           const prefix = chunk.fileName.split('/').length > 1 ? '../' : './';
           chunk.code =
@@ -70,12 +98,6 @@ export const consumptionEntries = (root: string): Plugin => {
 
         if (chunk.fileName.match(/(?:^|\/)entries\/[^/]+\.(?:mjs|cjs)$/)) {
           chunk.code = pruneStableEntrySideEffects(chunk.code, _options.format === 'es' ? 'es' : 'cjs');
-          if (chunk.fileName.match(/(?:^|\/)entries\/YEditTable\.(?:mjs|cjs)$/)) {
-            const tableCssImport = _options.format === 'es' ? 'import "../YTable.css";' : 'require("../YTable.css");';
-            if (!chunk.code.includes('YTable.css')) {
-              chunk.code = `${tableCssImport}\n${chunk.code}`;
-            }
-          }
           if (chunk.fileName.match(/(?:^|\/)entries\/YTable\.(?:mjs|cjs)$/)) {
             if (/edit-table|YEditTable/i.test(chunk.code)) {
               throw new Error(`entries/YTable 稳定入口仍包含 EditTable 相关引用：\n${chunk.code}`);

@@ -30,6 +30,7 @@ export default defineConfig({
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
         lite: resolve(__dirname, 'src/lite.ts'),
+        YTable: 'yss-table-styles',
         ...Object.fromEntries(
           ['table', 'formily', 'monaco', 'echarts'].map(name => [name, resolve(__dirname, `src/${name}/index.ts`)])
         ),
@@ -51,6 +52,7 @@ export default defineConfig({
         manualChunks(id) {
           const root = `${resolve(__dirname, 'src')}/`;
           if (id === `${root}install.ts`) return 'install';
+          if (id === `${root}table/base.less`) return;
           if (id === `${root}table/index.ts`) return;
           if (!id.startsWith(root)) return;
           const component = id.slice(root.length).split('/')[0];

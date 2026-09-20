@@ -3,6 +3,7 @@ import { build } from 'esbuild';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname, relative } from 'node:path';
 import ts from 'typescript';
+import { assertTableStyleOwnership } from './lib/check-table-style-ownership.mjs';
 
 /** 插件与契约产物仅从本仓库真实导出构建。 */
 const root = fileURLToPath(new URL('../packages/components', import.meta.url));
@@ -58,6 +59,12 @@ if (authoritySideEffectImports?.length || authoritySideEffectRequires?.length) {
     ].join(' | ')}`
   );
 }
+/** 根入口不得再反向借用稳定入口或直接加载表格公共样式。 */
+for (const extension of ['mjs', 'cjs']) {
+  const code = readFileSync(resolve(root, `dist/root/index.${extension}`), 'utf8');
+  if (/entries\/|YTable\.css/.test(code)) throw new Error('根入口存在表格样式或稳定入口副作用依赖');
+}
+readFileSync(resolve(root, 'dist/root/YTable.css'));
 const yTableEntry = readFileSync(resolve(root, 'dist/root/entries/YTable.mjs'), 'utf8');
 const yTableCjsEntry = readFileSync(resolve(root, 'dist/root/entries/YTable.cjs'), 'utf8');
 if (/edit-table|YEditTable/i.test(yTableEntry) || /edit-table|YEditTable/i.test(yTableCjsEntry)) {
@@ -73,6 +80,7 @@ const entries = Object.fromEntries(
   ])
 );
 const yTableStyles = entries.YTable?.styles || [];
+assertTableStyleOwnership(root, entries);
 if (!yTableStyles.some(s => s.includes('YTable.css'))) {
   throw new Error(`YTable 样式契约异常：缺少 YTable.css 基础表格样式引用：${JSON.stringify(yTableStyles)}`);
 }

@@ -14,7 +14,7 @@
     "1.6.7": ["monaco", "echarts", "sheet", "table", "formily", "locale"]
   },
   "installation": "单包安装；VXE/Formily 保持配套依赖。子路径与插件不减少默认安装树。",
-  "styles": "插件自动按组件引入样式；未使用插件时保留原全量 CSS。",
+  "styles": "支持 tree-shaking 的 ESM 构建中，无插件根入口具名导入与官方插件均按实际组件关联样式；显式导入 @yss-ui/components/style.css 或 @yss-ui/components/dist/style.css 保留无插件全量兼容，官方插件仍将这两个路径转换为基础 reset。CJS、默认安装及动态整包导入不承诺按具名组件裁剪。",
   "legacy": "旧项目保留根入口、lite、功能子路径和既有兼容插件；接入官方插件时移除旧插件，禁止同时启用。",
   "agentRules": [
     "业务页面默认从 @yss-ui/components 具名导入，script setup 局部注册；不全局安装 YSSUI。",

@@ -10,6 +10,16 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.5.2
+
+`2026-09-20`
+
+### 📝 Documentation
+
+- **component-selection-imports**：补齐 components 1.7.3 无插件 ESM 生产构建的组件样式关联说明，区分显式全量 CSS、官方插件转换和旧版本兼容边界，避免 Agent 因未接入插件就要求业务额外导入全量样式。
+
+---
+
 ## v1.5.1
 
 `2026-09-16`

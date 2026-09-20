@@ -1,0 +1,33 @@
+.y-table-action-link {
+  text-align: center;
+  padding: 0 2px;
+  color: var(--primary-color, #3371ff);
+
+  &:hover:not(:disabled, .ant-btn-disabled),
+  &:focus:not(:disabled, .ant-btn-disabled) {
+    color: var(--primary-color, #3371ff);
+    opacity: 0.85;
+  }
+
+  /* 禁用态需覆盖主色，否则 disabled 只拦点击、视觉仍是可点主色 */
+  &:disabled,
+  &.ant-btn-disabled {
+    color: var(--ant-disabled-color, rgb(0 0 0 / 25%));
+    cursor: not-allowed;
+    opacity: 1;
+
+    &:hover,
+    &:focus {
+      color: var(--ant-disabled-color, rgb(0 0 0 / 25%));
+      opacity: 1;
+    }
+  }
+}
+
+.y-table-action-link__text {
+  display: inline-block;
+  max-width: 180px; /* 防止文本过长撑开列 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

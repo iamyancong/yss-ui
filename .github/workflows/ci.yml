@@ -222,6 +222,9 @@ jobs:
           pnpm build:components
           pnpm test:package-consumer
 
+      - name: Verify Tarball Consumption Matrix
+        run: pnpm test:consumption:built
+
       - name: Validate Documentation Contract
         run: pnpm validate:docs
 

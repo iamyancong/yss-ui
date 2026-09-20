@@ -57,7 +57,8 @@ import { YCard, YTable, YFormily } from '@yss-ui/components';
 ### 样式策略
 
 - 接入官方插件后，组件 CSS 随实际实现入口加载；官方全量 style.css 导入会转换为公共基础样式。
-- 未接入插件时保留项目已有样式策略；全量 CSS 不会因为 JS 具名导入自动消失。
+- 自 1.7.3 起（当前待发布），在支持 tree-shaking 的 ESM 生产构建中，无插件根入口具名导入也会关联实际组件样式，无需为此额外引入全量 CSS；根入口保留 Ant Design Vue reset。
+- 无插件项目显式导入 `@yss-ui/components/style.css` 或 `@yss-ui/components/dist/style.css` 时仍保留全量样式，不会因 JS 具名导入自动裁剪。旧版本保留已验证的样式策略；CJS、默认全量安装、动态整包导入及开发预构建不套用上述生产裁剪结论。
 - `lite` 是可选兼容入口，与根入口共享组件和语言状态。它不是微应用必改写法，也不意味着样式完全不会影响宿主。
 
 ### 可选公开子路径
