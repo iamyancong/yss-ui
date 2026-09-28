@@ -42,7 +42,7 @@ description: 指导 YSS UI 业务页面、CRUD、列表页、表单页和组件�
 - `@yss-ui/components/table`、`@yss-ui/components/formily` 自 1.6.7 起公开，是可选入口；旧版本先核对 exports，禁止批量改写根入口。
 - 子路径与插件改善加载边界，不减少默认安装依赖；VXE/Formily 仍由组件库配套安装。
 - 官方 `@yss-ui/components/vite` 插件自 1.7.0 起已发布，完整验收范围为 Vite 6。旧项目先读取实际安装版本、exports 和现有插件，禁止与旧隔离插件同时运行。
-- `@yss-ui/components` 自 1.7.3 起（当前待发布），在支持 tree-shaking 的 ESM 生产构建中，无插件根入口具名导入也会关联实际组件样式；根入口保留 Ant Design Vue reset。核对目标包的版本及 `consumption.json` 后，不因未接入插件就要求业务额外导入全量 CSS。
+- `@yss-ui/components` 自 1.7.3 起，在支持 tree-shaking 的 ESM 生产构建中，无插件根入口具名导入也会关联实际组件样式；根入口保留 Ant Design Vue reset。核对目标包的版本及 `consumption.json` 后，不因未接入插件就要求业务额外导入全量 CSS。
 - 无插件显式导入 `@yss-ui/components/style.css` 或 `@yss-ui/components/dist/style.css` 仍保留全量样式；官方插件继续将这两个路径转换为基础 reset，再按组件加载样式。不得批量删除旧项目已有样式导入；CJS、默认全量安装、动态整包导入及开发预构建不套用上述生产裁剪结论。
 - 生成代码前用 MCP `get_consumption_contract` 核对版本；未知版本不得假设新插件可用。文档站 Demo 的样式导入不能直接复制为业务全局样式策略。
 

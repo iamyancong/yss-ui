@@ -51,7 +51,7 @@
     {
       "name": "github-actions[bot]",
       "email": "github-actions[bot]@users.noreply.github.com",
-      "commits": 5,
+      "commits": 6,
       "avatar": "https://github.com/github-actions[bot].png?size=64",
       "url": "https://github.com/github-actions[bot]"
     }
@@ -325,6 +325,15 @@
     }
   ],
   "/guide/test-coverage": [
+    {
+      "name": "iamyancong",
+      "email": "wangyancong@ysstech.com",
+      "commits": 1,
+      "avatar": "https://github.com/iamyancong.png?size=64",
+      "url": "https://github.com/iamyancong"
+    }
+  ],
+  "/guide/troubleshooting": [
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",

@@ -10,6 +10,16 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.5.3
+
+`2026-09-28`
+
+### 📝 Documentation
+
+- **component-selection-imports**：更新 components 1.7.3 无插件样式关联说明为已发布状态，移除“当前待发布”措辞，与统一入口消费契约保持一致 (#32)。
+
+---
+
 ## v1.5.2
 
 `2026-09-20`
