@@ -130,14 +130,7 @@ temp/
 .cursor/skills
 .claude/skills
 .agents/skills/*
-!.agents/skills/gsap-core/
-!.agents/skills/gsap-frameworks/
-!.agents/skills/gsap-performance/
-!.agents/skills/gsap-plugins/
-!.agents/skills/gsap-react/
-!.agents/skills/gsap-scrolltrigger/
-!.agents/skills/gsap-timeline/
-!.agents/skills/gsap-utils/
+!.agents/skills/lib-*/
 .agent/skills
 
 # CI 生成的临时文件
