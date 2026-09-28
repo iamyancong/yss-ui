@@ -34,7 +34,7 @@
     "lint:style": "pnpm lint:style:check --fix",
     "lint:style:check": "stylelint \"packages/**/*.{vue,css,less,scss}\" \"docs/**/*.{vue,css,less,scss}\"",
     "type-check": "vue-tsc --noEmit",
-    "quality": "pnpm lint:ci && pnpm lint:style:check && pnpm type-check && pnpm test:coverage && pnpm test:node && pnpm test:package-consumer && pnpm test:consumption:built && pnpm validate:skills && pnpm validate:docs && pnpm build:docs:check",
+    "quality": "pnpm lint:ci && pnpm lint:style:check && pnpm type-check && pnpm test:coverage && pnpm test:node && pnpm test:package-consumer && pnpm test:consumption:built && pnpm validate:skills && pnpm validate:docs && pnpm build:docs:check && pnpm check:agents-size",
     "generate:llms": "node scripts/generate-llms.js",
     "mcp:index": "node packages/mcp/scripts/build-index.js",
     "test:release-detect": "node scripts/lib/release-packages.test.js",
@@ -47,6 +47,7 @@
     "scan:skills": "node scripts/scan-skills-security.js",
     "validate:skills": "node scripts/validate-skills.js && node scripts/validate-docs.mjs --skills-only && node scripts/run-trigger-evals.js && node scripts/scan-skills-security.js",
     "validate:docs": "pnpm test:home-releases && node scripts/validate-docs.mjs",
+    "check:agents-size": "node scripts/check-agents-size.js",
     "release:patch": "node scripts/release-changed.js patch",
     "release:minor": "node scripts/release-changed.js minor",
     "release:major": "node scripts/release-changed.js major",
@@ -154,7 +155,7 @@
     "*.{css,less,scss}": [
       "bash -c 'if [[ \"$0\" != */.agent/skills/* ]] && [[ \"$0\" != */packages/skills/* ]]; then stylelint --fix \"$0\"; fi'"
     ],
-    "*": "prettier --write --ignore-unknown"
+    "*": "bash -c 'if [ ! -L \"$0\" ]; then prettier --write --ignore-unknown \"$0\"; fi'"
   },
   "pnpm": {
     "overrides": {
