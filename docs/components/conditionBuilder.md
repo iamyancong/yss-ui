@@ -29,6 +29,7 @@ toc: content
 ## 使用说明
 
 - 默认提供 `field/operator/value` 三段；操作符内置 `none/single/between/multiple` 四类输入语义。
+- 字段选择支持 `field-mode`：默认为 `'autocomplete'`（支持自由输入与模糊补全提示），也可指定为 `'select'`（下拉选择模式，严格限定仅能从候选选项中选择，支持搜索过滤）。
 - 通过 `operator-options` 传入静态操作符；或通过 `get-operators(field)` 动态拉取。
 - 通过 `load-fields(q)` 与 `load-values({ q, field, operator })` 实现本地/远程搜索。
 - 事件：`update:modelValue`、`change`、`blur`；实例方法见类型定义。
@@ -40,6 +41,7 @@ toc: content
 | 参数 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | modelValue / v-model | 绑定的条件组数据 | `ConditionGroup` | - |
+| field-mode / fieldMode | 字段选择模式：`autocomplete`（自动补全，支持自由输入与模糊提示）或 `select`（下拉选择，严格限定从候选列表选择） | `'autocomplete' \| 'select'` | `'autocomplete'` |
 | segments | 自定义条件分段配置 | `SegmentSchema[]` | 内置分段 |
 | max-depth | 最大嵌套深度 | `number` | `3` |
 | load-fields | 加载字段选项的方法，支持搜索 | `(q: string) => Promise<OptionItem[]>` | - |

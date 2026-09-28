@@ -117,12 +117,28 @@ export function useConditionBuilderContext(
     { immediate: true, deep: true }
   );
 
+  const preloadLeafOperators = async () => {
+    if (rootRef.value.children) {
+      await Promise.all(
+        rootRef.value.children.map(async (child, idx) => {
+          if (child.type === 'LEAF') {
+            if (props.loadValues) fetchValues(child as any, '');
+            if ((child as any).field) {
+              await state.refreshOperatorOptions(idx);
+            }
+          }
+        })
+      );
+    }
+  };
+
   watch(
     () => props.modelValue,
     v => {
       if (!v) return;
       if (root.value !== v) root.value = v as ConditionGroup;
       emit('change', root.value);
+      preloadLeafOperators();
     },
     { immediate: true, deep: true }
   );
@@ -139,13 +155,9 @@ export function useConditionBuilderContext(
     { immediate: true, deep: true }
   );
 
-  onMounted(() => {
+  onMounted(async () => {
     initializeFields();
-    if (props.loadValues) {
-      rootRef.value.children.forEach(child => {
-        if (child.type === 'LEAF') fetchValues(child as any, '');
-      });
-    }
+    await preloadLeafOperators();
   });
 
   const handleNestedChange = (nestedCondition: any, index: number) => {
@@ -162,6 +174,7 @@ export function useConditionBuilderContext(
   };
 
   return {
+    props,
     t,
     rootRef,
     resolvedOperators,

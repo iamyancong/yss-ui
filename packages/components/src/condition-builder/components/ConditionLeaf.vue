@@ -15,8 +15,26 @@ const props = defineProps<{
 
 <template>
   <div class="simple-condition">
-    <!-- 字段选择 -->
+    <!-- 字段选择 (下拉选择模式) -->
+    <ASelect
+      v-if="props.ctx.props.fieldMode === 'select'"
+      :value="child.field || undefined"
+      :options="props.ctx.fieldOptions.value"
+      :placeholder="props.ctx.t('fieldPlaceholder')"
+      size="small"
+      class="field-select"
+      :class="{ 'is-error': props.ctx.errors.value[idx]?.field }"
+      :disabled="disabled"
+      show-search
+      :filter-option="props.ctx.state.filterFieldOption"
+      allow-clear
+      @change="(val: any) => props.ctx.state.handleFieldChange(idx, val)"
+      @blur="props.ctx.state.emitBlur"
+    />
+
+    <!-- 字段选择 (自动补全模式) -->
     <AAutoComplete
+      v-else
       :value="props.ctx.state.getFieldLabel(child.field)"
       :options="props.ctx.fieldOptions.value"
       :placeholder="props.ctx.t('fieldPlaceholder')"
@@ -32,14 +50,13 @@ const props = defineProps<{
 
     <!-- 操作符选择 -->
     <ASelect
-      :value="child.operator"
+      :value="child.operator || undefined"
       :options="props.ctx.state.getOperatorOptionsSync(idx)"
       :placeholder="props.ctx.t('operatorPlaceholder')"
       size="small"
       class="operator-select"
       :class="{ 'is-error': props.ctx.errors.value[idx]?.operator }"
-      :disabled="disabled"
-      allow-clear
+      :disabled="disabled || !child.field"
       @dropdown-visible-change="(vis: boolean) => vis && props.ctx.state.refreshOperatorOptions(idx)"
       @change="(val: any) => props.ctx.state.handleOperatorChange(idx, val)"
       @blur="props.ctx.state.emitBlur"

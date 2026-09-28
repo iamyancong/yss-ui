@@ -55,7 +55,7 @@ export const useLinkage = (opts: LinkageOptions) => {
   const getOperatorOptions = async (field: unknown): Promise<OperatorOption[]> => {
     if (opts.getOperators) {
       const res = await opts.getOperators(field);
-      if (Array.isArray(res) && res.length) return res;
+      if (Array.isArray(res)) return res;
     }
     return opts.operatorOptions;
   };

@@ -142,4 +142,148 @@ describe('YConditionBuilder 公开实例契约', () => {
     expect(errorField.exists()).toBe(true);
     expect(errorOperator.exists()).toBe(true);
   });
+
+  it('字段未选择时操作符控件处于禁用状态', async () => {
+    const emptyFieldGroup: ConditionGroup = {
+      id: 'root',
+      type: 'GROUP',
+      logicalOp: 'AND',
+      children: [
+        {
+          id: 'leaf-empty',
+          type: 'LEAF',
+          field: '',
+          operator: '=',
+          value: '',
+        },
+      ],
+    };
+    const wrapper = mountConditionBuilder(emptyFieldGroup);
+    await nextTick();
+
+    const operatorSelect = wrapper.find('.operator-select');
+    expect(operatorSelect.attributes()).toHaveProperty('disabled');
+  });
+
+  it('切换字段后立即刷新操作符缓存并更新当前合法操作符', async () => {
+    const group: ConditionGroup = {
+      id: 'root',
+      type: 'GROUP',
+      logicalOp: 'AND',
+      children: [
+        {
+          id: 'leaf-1',
+          type: 'LEAF',
+          field: 'name',
+          operator: 'LIKE',
+          value: 'test',
+        },
+      ],
+    };
+
+    const getOperators = async (field: unknown) => {
+      if (field === 'age') {
+        return [
+          { label: '大于', value: 'GT' },
+          { label: '小于', value: 'LT' },
+        ];
+      }
+      return [{ label: '包含', value: 'LIKE' }];
+    };
+
+    const wrapper = mountConditionBuilder(group, { getOperators });
+    await nextTick();
+
+    const leaf = wrapper.findComponent(ConditionLeaf);
+    expect(leaf.exists()).toBe(true);
+
+    // 触发字段变更为 age
+    await leaf.props('ctx').state.handleFieldChange(0, 'age');
+    await nextTick();
+
+    const exposed = wrapper.vm as unknown as YConditionExpose;
+    const currentGroup = exposed.getValue();
+    const leafNode = currentGroup.children[0] as any;
+
+    expect(leafNode.field).toBe('age');
+    // 原操作符 LIKE 在 age 下不支持，应自动更新为 age 的首个可用操作符 GT
+    expect(leafNode.operator).toBe('GT');
+
+    // 操作符 options 应已立即包含 age 的选项，而不是旧选项或默认选项
+    const operatorOptions = leaf.props('ctx').state.getOperatorOptionsSync(0);
+    expect(operatorOptions.map((o: any) => o.value)).toEqual(['GT', 'LT']);
+  });
+
+  it('getOperators 返回空数组时尊重空选项，不回退到默认操作符', async () => {
+    const group: ConditionGroup = {
+      id: 'root',
+      type: 'GROUP',
+      logicalOp: 'AND',
+      children: [
+        {
+          id: 'leaf-1',
+          type: 'LEAF',
+          field: 'custom',
+          operator: '',
+          value: '',
+        },
+      ],
+    };
+
+    const wrapper = mountConditionBuilder(group, {
+      getOperators: async () => [],
+    });
+    await nextTick();
+
+    const leaf = wrapper.findComponent(ConditionLeaf);
+    const options = await leaf.props('ctx').state.refreshOperatorOptions(0);
+    expect(options).toEqual([]);
+  });
+
+  it('fieldMode 为 select 时渲染 ASelect 并具备搜索过滤能力', async () => {
+    const group: ConditionGroup = {
+      id: 'root',
+      type: 'GROUP',
+      logicalOp: 'AND',
+      children: [
+        {
+          id: 'leaf-select',
+          type: 'LEAF',
+          field: 'age',
+          operator: 'EQ',
+          value: 18,
+        },
+      ],
+    };
+
+    const loadFields = async () => [
+      { label: '年龄', value: 'age' },
+      { label: '姓名', value: 'name' },
+    ];
+
+    const wrapper = mountConditionBuilder(group, {
+      fieldMode: 'select',
+      loadFields,
+    });
+    await nextTick();
+
+    const leaf = wrapper.findComponent(ConditionLeaf);
+    const fieldSelect = leaf.find('.field-select');
+    expect(fieldSelect.exists()).toBe(true);
+
+    const filterOption = leaf.props('ctx').state.filterFieldOption;
+    expect(filterOption('年', { label: '年龄', value: 'age' })).toBe(true);
+    expect(filterOption('age', { label: '年龄', value: 'age' })).toBe(true);
+    expect(filterOption('无', { label: '年龄', value: 'age' })).toBe(false);
+  });
+
+  it('操作符选择框不再包含 allowClear 属性', async () => {
+    const wrapper = mountConditionBuilder(createConditionGroup());
+    await nextTick();
+
+    const operatorSelect = wrapper.find('.operator-select');
+    expect(operatorSelect.exists()).toBe(true);
+    expect(operatorSelect.attributes('allow-clear')).toBeUndefined();
+    expect(operatorSelect.attributes('allowclear')).toBeUndefined();
+  });
 });

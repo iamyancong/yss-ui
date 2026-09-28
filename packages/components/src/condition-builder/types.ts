@@ -69,6 +69,12 @@ export interface YConditionBuilderProps {
   /** @deprecated 当前实现不消费该属性，请使用 disabled。 */
   readonly?: boolean;
   /**
+   * 字段选择模式：
+   * - 'autocomplete': (默认) 自动补全模式，支持自由输入与模糊下拉提示
+   * - 'select': 下拉选择模式，仅允许从选项列表中选择，严格避免非候选非法字符输入
+   */
+  fieldMode?: 'autocomplete' | 'select';
+  /**
    * 是否开启严格校验模式
    * - true: (默认) 所有字段必填，值为空时校验不通过
    * - false: 允许字段为空，不强制校验

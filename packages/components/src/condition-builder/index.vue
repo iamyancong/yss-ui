@@ -18,6 +18,7 @@ const props = withDefaults(
     disabled: false,
     depth: 1,
     strictMode: true,
+    fieldMode: 'autocomplete',
   }
 );
 
@@ -99,6 +100,7 @@ defineExpose<YConditionExpose>({
               :or-text="ctx.resolvedOrText.value"
               :is-root="false"
               :disabled="props.disabled"
+              :field-mode="props.fieldMode"
               :depth="props.depth + 1"
               @update:model-value="(val: any) => ctx.handleNestedChange(val, idx)"
               @blur="ctx.state.emitBlur"
