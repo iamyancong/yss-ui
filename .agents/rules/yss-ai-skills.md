@@ -48,6 +48,12 @@ trigger: always_on
 - ytable-usage: .agents/skills/ytable-usage/SKILL.md
 - ytree-usage: .agents/skills/ytree-usage/SKILL.md
 
+### Library Maintenance Skills
+
+- lib-component-add: .agents/skills/lib-component-add/SKILL.md
+- lib-docs-sync: .agents/skills/lib-docs-sync/SKILL.md
+- lib-release-check: .agents/skills/lib-release-check/SKILL.md
+
 ## Mandatory Workflow
 
 1. 页面/CRUD/列表/表单任务：先读 `.agents/skills/yss-ui-business-page-generation/SKILL.md`。
@@ -57,6 +63,9 @@ trigger: always_on
 5. 新增/编辑/查看/抽屉表单：同时读 `.agents/skills/yss-formily/SKILL.md`、`.agents/skills/page-form-module/SKILL.md`。
 6. 可编辑表格、扩展属性、添加行/删除行：必须读 `.agents/skills/yedit-table-usage/SKILL.md`。
 7. 用户给原型截图或旧项目路径：必须读 `.agents/skills/prototype-page-acceptance/SKILL.md`，先生成验收清单，再实现。
+8. 新增组件/Hook/工具函数：先读 `.agents/skills/lib-component-add/SKILL.md`。
+9. 修改公开 API 后同步文档或编写 changelog：先读 `.agents/skills/lib-docs-sync/SKILL.md`。
+10. 准备发版或排查 CI 门禁失败：先读 `.agents/skills/lib-release-check/SKILL.md`。
 
 ## Hard Stops
 
