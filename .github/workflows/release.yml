@@ -110,6 +110,11 @@ jobs:
         if: ${{ inputs.dry_run != true }}
         run: node scripts/verify-published-release.mjs --registry=https://registry.npmjs.org/ --retries=32
 
+      - name: Sync published packages to npmmirror
+        if: ${{ inputs.dry_run != true }}
+        continue-on-error: true
+        run: node scripts/sync-npmmirror.mjs
+
       - name: Send Notification (Optional)
         if: ${{ inputs.dry_run != true }}
         env:

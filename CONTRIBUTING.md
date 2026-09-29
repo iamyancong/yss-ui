@@ -56,6 +56,7 @@
   ```bash
   node scripts/release-changed.js patch --dry
   ```
+- **镜像自动同步**：CI 发版成功后会自动按本批次实际发布的包列表向 npmmirror 触发主动同步（`scripts/sync-npmmirror.mjs`），缩短国内消费空窗；本地发版后可运行 `pnpm sync:npmmirror` 手动触发。
 - **提交规范**：
   - 遵循 Conventional Commits，格式：`<type>(<scope>): <subject>`。
   - Scope 必须为合规枚举值（如 `components`, `hooks`, `utils`, `theme`, `docs`, `skills`, `release` 等）。
