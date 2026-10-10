@@ -10,6 +10,16 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.5.4
+
+`2026-10-10`
+
+### 📝 Documentation
+
+- **ytable-usage**：在操作列与行键规范中补充轮询及高频刷新表格显式配置 `row-config="{ keyField: 'id', useKey: true }"` 的最佳实践建议，说明操作列按稳定行身份保持的机制，并补齐 `needLoading` 配合 `helpers.close()` / `helpers.hideLoading()` 的生命周期说明 (#35)。
+
+---
+
 ## v1.5.3
 
 `2026-09-28`

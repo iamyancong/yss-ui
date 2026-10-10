@@ -10,6 +10,19 @@ toc: content
 
 YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
+## v1.7.5
+
+`2026-10-10`
+
+### 🐛 Bug Fixes
+
+- **操作列**：
+  - **按稳定行身份监听浮层**：将操作列直显确认与“更多”弹层的关闭监听由行引用升级为稳定行身份（优先 `scope.rowid` 即 `rowConfig.keyField`，其次 `row.id`，最后回退至行引用），彻底解决业务轮询或局部刷新浅拷贝重建行对象时误关「更多」与 Popconfirm 确认框的问题 (#35)。
+  - **更多菜单级联关闭子 Popconfirm**：为收纳操作项传递 `menuOpen` 状态，当更多菜单关闭时级联收起子 Popconfirm 并清理 loading，避免浮层隐藏后遗留脱离锚点的残留弹层 (#35)。
+  - **needLoading 弹层生命周期与重试解耦**：在操作列启用 `needLoading: true` 时，确认后保持确认弹层与更多浮层处于打开及 loading 状态；操作成功通过 `helpers.close()` 手动关闭并清理 loading，失败通过 `helpers.hideLoading()` 结束 loading 并保持浮层供重试；通过懒注册信号过滤器驱动 AntDV 停止转圈并解锁重试；普通无确认按钮执行解耦，防止触发 Vue 的 errorHandler；行身份变化时自动级联清理旧行 loading 与弹层 (#35)。
+
+---
+
 ## v1.7.4
 
 `2026-09-28`

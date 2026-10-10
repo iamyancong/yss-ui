@@ -34,9 +34,9 @@ toc: content
 - 开启内置分页时传 `pageable`，受控更新使用 `v-model:pagination`，请求时机使用 `@page-change="handlePageChange"`。
 - `page-change` 事件参数固定为 `{ current: number, pageSize: number }`；回调必须读取 `current`，禁止写成组件不会派发的 `currentPage`。
 - YTable 没有 `request` 或 `searchParams` Props；远程查询由业务 Hook 管理。`refresh()` 是真实实例方法，内部调用 vxe-table `updateData()` 刷新当前表格数据，不等于重新调用后端接口。
-- 行键使用 `:row-config="{ keyField: 'id', useKey: true }"`，不臆造 `row-key` Prop。
+- 行键使用 `:row-config="{ keyField: 'id', useKey: true }"`，不臆造 `row-key` Prop。**在轮询或频繁刷新运行态的表格中，强烈建议显式配置 `keyField` 为真实业务主键**，以确保操作列“更多”与 Popconfirm 确认弹层按稳定行身份保持，避免行对象浅拷贝或重建时误关弹层。
 - 新增、导入、批量操作等主按钮直接放入 `#toolbar-right` 或 `#toolbar-left` 插槽即可自动渲染工具栏；**无需配置 `:toolbar-config="{ custom: true }"`**，避免无端展示列设置图标；**仅在业务明确需要列设置时才传入 `:toolbar-config="{ custom: true }"`**。
-- 删除、启停、发布等危险操作使用 `actionConfig.buttons[].isConfirm = true`，不默认使用 `Modal.confirm`。
+- 删除、启停、发布等危险操作使用 `actionConfig.buttons[].isConfirm = true`，不默认使用 `Modal.confirm`；配合 `needLoading: true` 时，异步回调成功后调用 `helpers.close()` 统一关闭弹层与清理 loading，失败调用 `helpers.hideLoading()` 供用户重试。
 - 列配置超过 10 行时放入 `constant.ts`；需要调用组件 Hook 的操作配置使用工厂函数注入回调，禁止在 `constant.ts` 直接引用组件局部的 `openEdit/deleteItem`。
 - **表格国际化多语言规范（Critical）**：
   - 在支持或预留国际化的项目中，**严禁在表格列配置、操作列配置和工具栏按钮中硬编码中文**。

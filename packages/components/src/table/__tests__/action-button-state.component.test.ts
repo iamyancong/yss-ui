@@ -3,10 +3,13 @@ import { Popconfirm } from 'ant-design-vue';
 import { nextTick } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ActionButton from '../ActionButton.vue';
+import { ACTION_RETRY_SIGNAL } from '../utils/actionRetry';
 
 /** 模拟外部权限存储变化，不依赖 Vue 的响应式更新。 */
 const authorization = vi.hoisted(() => ({ granted: true }));
 vi.mock('@yss-ui/utils', () => ({ hasAuth: (code: string) => authorization.granted && code !== 'denied' }));
+
+
 
 /** 记录组件，确保真实 Ant Design Vue 浮层随测试清理。 */
 const wrappers: VueWrapper[] = [];
@@ -108,4 +111,287 @@ describe('操作按钮的确认资格与真实禁用触发器', () => {
       expect(wrapper.getComponent(Popconfirm).props('open')).toBe(false);
     }
   );
+
+  it('head 按钮在行引用变化但主键未变时保持 Popconfirm 打开', async () => {
+    const clickFn = vi.fn();
+    const wrapper = createButton({ clickFn });
+    const confirm = wrapper.getComponent(Popconfirm);
+    confirm.vm.$emit('update:open', true);
+    await nextTick();
+    expect(confirm.props('open')).toBe(true);
+
+    // 轮询重建行对象（id 不变）
+    await wrapper.setProps({ scope: { row: { id: 1, status: 'polling' } } });
+    expect(confirm.props('open')).toBe(true);
+
+    // 行身份变化（换行）则关闭
+    await wrapper.setProps({ scope: { row: { id: 2 } } });
+    expect(confirm.props('open')).toBe(false);
+  });
+
+  it('基于 scope.rowid 保持稳定身份，rowid 变化时关闭', async () => {
+    const wrapper = mount(ActionButton, {
+      props: {
+        scope: { rowid: 'row_101', row: { id: 1 } },
+        config: { text: '删除', isConfirm: true },
+      },
+      attachTo: document.body,
+    });
+    wrappers.push(wrapper);
+    const confirm = wrapper.getComponent(Popconfirm);
+    confirm.vm.$emit('update:open', true);
+    await nextTick();
+    expect(confirm.props('open')).toBe(true);
+
+    // 轮询重建行对象，保持 rowid 不变
+    await wrapper.setProps({ scope: { rowid: 'row_101', row: { id: 1, status: 'polling' } } });
+    expect(confirm.props('open')).toBe(true);
+
+    // rowid 变化（换行或复用）则关闭
+    await wrapper.setProps({ scope: { rowid: 'row_102', row: { id: 1, status: 'polling' } } });
+    expect(confirm.props('open')).toBe(false);
+  });
+
+  it('menuOpen 变为 false 时级联关闭 Popconfirm 并清理 loading', async () => {
+    const wrapper = mount(ActionButton, {
+      props: {
+        scope: { row: { id: 1 } },
+        config: { text: '删除', isConfirm: true },
+        menuOpen: true,
+      },
+      attachTo: document.body,
+    });
+    wrappers.push(wrapper);
+
+    const confirm = wrapper.getComponent(Popconfirm);
+    confirm.vm.$emit('update:open', true);
+    await nextTick();
+    expect(confirm.props('open')).toBe(true);
+
+    // 更多菜单收起
+    await wrapper.setProps({ menuOpen: false });
+    expect(confirm.props('open')).toBe(false);
+  });
+
+  it('needLoading 确认后同行刷新保持 loading 与打开，行身份变化或 close helper 清理状态', async () => {
+    let capturedHelpers: any;
+    const clickFn = vi.fn((_scope, _config, helpers) => {
+      capturedHelpers = helpers;
+    });
+
+    const wrapper = createButton({
+      confirmProps: { needLoading: true },
+      clickFn,
+    });
+
+    await wrapper.get('button.y-table-action-link').trigger('click');
+    await flushPromises();
+
+    // 点击真实确认按钮
+    const confirmButton = document.body.querySelector<HTMLButtonElement>('.ant-popconfirm-buttons .ant-btn-primary');
+    if (!confirmButton) throw new Error('未找到确认按钮');
+    confirmButton.click();
+    await flushPromises();
+
+    expect(clickFn).toHaveBeenCalledOnce();
+    const confirm = wrapper.getComponent(Popconfirm);
+    expect(confirm.props('open')).toBe(true);
+    expect(confirm.props('okButtonProps')?.loading).toBe(true);
+
+    // 刷新数据（同 id），保持 loading 与打开
+    await wrapper.setProps({ scope: { row: { id: 1, refreshed: true } } });
+    expect(confirm.props('open')).toBe(true);
+    expect(confirm.props('okButtonProps')?.loading).toBe(true);
+
+    // 业务调用 close helper，应清理 loading 并关闭弹层且发出 request-close
+    capturedHelpers.close();
+    await nextTick();
+    expect(confirm.props('open')).toBe(false);
+    expect(confirm.props('okButtonProps')?.loading).toBe(false);
+    expect(wrapper.emitted('request-close')).toHaveLength(1);
+
+    // 再次打开确认框，loading 不会有历史残留
+    confirm.vm.$emit('update:open', true);
+    await nextTick();
+    expect(confirm.props('okButtonProps')?.loading).toBe(false);
+  });
+
+  it('needLoading 下行身份变化（换行）时主动关闭弹层并重置 loading', async () => {
+    const clickFn = vi.fn();
+    const wrapper = createButton({
+      confirmProps: { needLoading: true },
+      clickFn,
+    });
+
+    await wrapper.get('button.y-table-action-link').trigger('click');
+    await flushPromises();
+
+    const confirmButton = document.body.querySelector<HTMLButtonElement>('.ant-popconfirm-buttons .ant-btn-primary');
+    confirmButton?.click();
+    await flushPromises();
+
+    const confirm = wrapper.getComponent(Popconfirm);
+    expect(confirm.props('okButtonProps')?.loading).toBe(true);
+
+    // 行身份真正变化（换到第 2 行）
+    await wrapper.setProps({ scope: { row: { id: 2 } } });
+    expect(confirm.props('open')).toBe(false);
+    expect(confirm.props('okButtonProps')?.loading).toBe(false);
+  });
+
+  /** 临时拦截 AntDV Popconfirm 内部重新抛出的 ACTION_RETRY_SIGNAL，用例结束后恢复原监听器。 */
+  const withActionRetryRejection = async (fn: () => Promise<void>) => {
+    const listeners = process.rawListeners('unhandledRejection');
+    process.removeAllListeners('unhandledRejection');
+    const handler = (reason: unknown, promise: Promise<unknown>) => {
+      if (reason === ACTION_RETRY_SIGNAL || (reason instanceof Error && reason.name === 'YssActionRetry')) {
+        return;
+      }
+      listeners.forEach(l => (l as any)(reason, promise));
+    };
+    process.on('unhandledRejection', handler);
+    try {
+      await fn();
+    } finally {
+      process.removeListener('unhandledRejection', handler);
+      listeners.forEach(l => process.on('unhandledRejection', l as any));
+    }
+  };
+
+  it('needLoading 模式下 hideLoading 停止 loading 且可以再次点击确定重试', async () => {
+    await withActionRetryRejection(async () => {
+      let capturedHelpers: any;
+      const clickFn = vi.fn((_scope, _config, helpers) => {
+        capturedHelpers = helpers;
+      });
+
+      const wrapper = createButton({
+        confirmProps: { needLoading: true },
+        clickFn,
+      });
+
+      await wrapper.get('button.y-table-action-link').trigger('click');
+      await flushPromises();
+      const confirm = wrapper.getComponent(Popconfirm);
+      expect(confirm.props('open')).toBe(true);
+
+      const confirmButton = document.body.querySelector<HTMLButtonElement>('.ant-popconfirm-buttons .ant-btn-primary');
+      if (!confirmButton) throw new Error('未找到 AntDV 真实确认按钮');
+      confirmButton.click();
+      await flushPromises();
+
+      expect(clickFn).toHaveBeenCalledTimes(1);
+      expect(confirm.props('open')).toBe(true);
+      expect(confirmButton.classList.contains('ant-btn-loading')).toBe(true);
+
+      // 业务调用 hideLoading 表示操作失败
+      capturedHelpers.hideLoading();
+      await flushPromises();
+
+      // 验证：loading 停止，弹层保持打开
+      expect(confirm.props('open')).toBe(true);
+      expect(confirmButton.classList.contains('ant-btn-loading')).toBe(false);
+
+      // 用户再次点击确定进行重试
+      confirmButton.click();
+      await flushPromises();
+
+      expect(clickFn).toHaveBeenCalledTimes(2);
+      expect(confirm.props('open')).toBe(true);
+      expect(confirmButton.classList.contains('ant-btn-loading')).toBe(true);
+
+      // 重试成功，业务调用 close()
+      capturedHelpers.close();
+      await flushPromises();
+
+      expect(confirm.props('open')).toBe(false);
+    });
+  });
+
+  it('needLoading 模式下 clickFn 抛错或 reject 时自动结束 loading 并允许重试', async () => {
+    await withActionRetryRejection(async () => {
+      let shouldFail = true;
+      const clickFn = vi.fn((_scope, _config, helpers) => {
+        if (shouldFail) {
+          return Promise.reject(new Error('操作失败'));
+        }
+        helpers.close();
+        return Promise.resolve();
+      });
+
+      const wrapper = createButton({
+        confirmProps: { needLoading: true },
+        clickFn,
+      });
+
+      await wrapper.get('button.y-table-action-link').trigger('click');
+      await flushPromises();
+      const confirm = wrapper.getComponent(Popconfirm);
+      expect(confirm.props('open')).toBe(true);
+
+      const confirmButton = document.body.querySelector<HTMLButtonElement>('.ant-popconfirm-buttons .ant-btn-primary');
+      if (!confirmButton) throw new Error('未找到 AntDV 真实确认按钮');
+
+      // 首次点击确定（会 reject）
+      confirmButton.click();
+      await flushPromises();
+
+      expect(clickFn).toHaveBeenCalledTimes(1);
+      // 弹层保持打开，且 loading 自动停止，允许重试
+      expect(confirm.props('open')).toBe(true);
+      expect(confirmButton.classList.contains('ant-btn-loading')).toBe(false);
+
+      // 再次点击确定重试（成功）
+      shouldFail = false;
+      confirmButton.click();
+      await flushPromises();
+
+      expect(clickFn).toHaveBeenCalledTimes(2);
+      // 重试成功，弹层关闭
+      expect(confirm.props('open')).toBe(false);
+    });
+  });
+
+  it('普通按钮配 needLoading，调 hideLoading 后 errorHandler 不会被调用', async () => {
+    let capturedHelpers: any;
+    const errorHandler = vi.fn();
+    const clickFn = vi.fn((_scope, _config, helpers) => {
+      capturedHelpers = helpers;
+    });
+
+    const wrapper = mount(ActionButton, {
+      props: {
+        scope: { row: { id: 1 } },
+        config: {
+          text: '导出',
+          isConfirm: false,
+          confirmProps: { needLoading: true },
+          clickFn,
+        },
+      },
+      global: {
+        config: {
+          errorHandler,
+        },
+      },
+      attachTo: document.body,
+    });
+    wrappers.push(wrapper);
+
+    const btn = wrapper.get('button.y-table-action-link');
+    await btn.trigger('click');
+    await flushPromises();
+
+    expect(clickFn).toHaveBeenCalledTimes(1);
+    expect(btn.classes()).toContain('ant-btn-loading');
+
+    // 业务调用 hideLoading 结束 loading
+    capturedHelpers.hideLoading();
+    await flushPromises();
+
+    // 验证 loading 停止，且未向 Vue 事件系统抛出未捕获 rejection
+    expect(btn.classes()).not.toContain('ant-btn-loading');
+    expect(errorHandler).not.toHaveBeenCalled();
+  });
 });
+

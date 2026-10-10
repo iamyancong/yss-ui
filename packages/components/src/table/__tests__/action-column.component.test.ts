@@ -1,6 +1,7 @@
 /* eslint-disable vue/one-component-per-file */
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { toRaw } from 'vue';
 
 vi.mock('@yss-ui/utils', () => ({ hasAuth: () => true }));
 
@@ -280,5 +281,87 @@ describe('YTable ActionColumn 更多菜单', () => {
     await wrapper.setProps({ displayLimit: Number.NaN });
     expect(wrapper.find('.popover-trigger').exists()).toBe(false);
     expect(wrapper.findAll('.y-table-action-list > .y-table-action-link')).toHaveLength(3);
+  });
+
+  it('轮询刷新行对象但 id 不变时保持更多菜单打开', async () => {
+    const wrapper = mountActionColumn({
+      displayLimit: 0,
+      scope: { row: { id: 1, status: 'pending' } },
+      buttons: [{ key: 'version', text: '版本' }],
+    });
+
+    await openMore(wrapper);
+    await wrapper.setProps({ scope: { row: { id: 1, status: 'running' } } });
+
+    expect(wrapper.find('.popover-content').exists()).toBe(true);
+  });
+
+  it('基于 scope.rowid 识别稳定行身份：rowid 不变保持打开，变化则关闭', async () => {
+    const wrapper = mountActionColumn({
+      displayLimit: 0,
+      scope: { rowid: 'row_101', row: { name: 'task-a' } },
+      buttons: [{ key: 'version', text: '版本' }],
+    });
+
+    await openMore(wrapper);
+    // 重建行对象但 rowid 不变
+    await wrapper.setProps({ scope: { rowid: 'row_101', row: { name: 'task-a-updated' } } });
+    expect(wrapper.find('.popover-content').exists()).toBe(true);
+
+    // rowid 变化（换行或复用）
+    await wrapper.setProps({ scope: { rowid: 'row_102', row: { name: 'task-b' } } });
+    expect(wrapper.find('.popover-content').exists()).toBe(false);
+  });
+
+  it('更多中的 Popconfirm 打开后轮询刷新保持打开，确认时读取最新 row', async () => {
+    const click = vi.fn();
+    const wrapper = mountActionColumn({
+      displayLimit: 0,
+      scope: { row: { id: 1, status: 'pending' } },
+      buttons: [{ key: 'delete', text: '删除', isConfirm: true, clickFn: click }],
+    });
+
+    await openMore(wrapper);
+    await wrapper.get('.y-table-action-link').trigger('click');
+    expect(wrapper.find('.popconfirm-content').exists()).toBe(true);
+
+    // 轮询刷新，产生新的 row 引用
+    const nextRow = { id: 1, status: 'success' };
+    await wrapper.setProps({ scope: { row: nextRow } });
+
+    expect(wrapper.find('.popover-content').exists()).toBe(true);
+    expect(wrapper.find('.popconfirm-content').exists()).toBe(true);
+
+    await wrapper.get('.popconfirm-confirm').trigger('click');
+    expect(click).toHaveBeenCalledOnce();
+    expect(toRaw(click.mock.calls[0][0].row)).toBe(nextRow);
+    expect(click.mock.calls[0][0].row.status).toBe('success');
+  });
+
+  it('直显按钮动态隐藏导致收纳按钮提升时关闭更多菜单', async () => {
+    let hideFirst = false;
+    const wrapper = mountActionColumn({
+      displayLimit: 1,
+      buttons: [
+        { key: 'edit', text: '编辑', hideFn: () => hideFirst },
+        { key: 'detail', text: '详情' },
+        { key: 'delete', text: '删除' },
+      ],
+    });
+
+    await openMore(wrapper);
+    expect(wrapper.find('.popover-content').exists()).toBe(true);
+
+    // 动态隐藏编辑按钮，使得详情按钮从 tail 移动到 head
+    hideFirst = true;
+    await wrapper.setProps({
+      buttons: [
+        { key: 'edit', text: '编辑', hideFn: () => true },
+        { key: 'detail', text: '详情' },
+        { key: 'delete', text: '删除' },
+      ],
+    });
+
+    expect(wrapper.find('.popover-content').exists()).toBe(false);
   });
 });

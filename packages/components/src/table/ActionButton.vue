@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { hasAuth } from '@yss-ui/utils';
 import { Button, Popconfirm } from 'ant-design-vue';
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useLocale } from '../locale/useLocale';
 import type { ActionButtonConfig } from './type';
+import { ACTION_RETRY_SIGNAL, ensureRetrySignalFilter } from './utils/actionRetry';
+import { resolveRowIdentity } from './utils/rowIdentity';
 
 defineOptions({ name: 'YTableActionButton' });
 
@@ -13,6 +15,7 @@ const props = defineProps<{
   scope: any;
   config: ActionButtonConfig;
   isLast?: boolean;
+  menuOpen?: boolean;
 }>();
 
 /** 通知上层操作容器关闭当前菜单。 */
@@ -44,18 +47,69 @@ const antdType = computed(() => {
   return t as any;
 });
 
+let pending: { resolve: () => void; reject: (e?: unknown) => void } | null = null;
+
 const hideLoading = () => {
   loading.value = false;
+  if (pending) {
+    const p = pending;
+    pending = null;
+    p.reject(ACTION_RETRY_SIGNAL);
+  }
 };
+
 const close = () => {
   visible.value = false;
+  if (pending) {
+    const p = pending;
+    pending = null;
+    p.resolve();
+  }
 };
 
-/** 资格失效或行/操作身份变化时清理旧确认，重新启用不会恢复过期弹层。 */
-watch([canConfirm, () => props.scope?.row, () => props.config?.key ?? props.config?.value], close, { flush: 'sync' });
+const rowIdentity = computed(() => resolveRowIdentity(props.scope));
 
-/** 执行已通过禁用与确认校验的操作，并通知上层菜单立即收起。 */
-const handleConfirm = async () => {
+/** 提供给操作回调的关闭辅助函数，确保清理 loading、关闭弹层并通知上层菜单收起。 */
+const handleHelperClose = () => {
+  close();
+  loading.value = false;
+  emit('request-close');
+};
+
+/** 资格失效或操作身份变化时清理旧确认，重新启用不会恢复过期弹层。 */
+watch([canConfirm, () => props.config?.key ?? props.config?.value], close, { flush: 'sync' });
+
+/** 行身份变化（换行/复用）时清理旧确认与 loading，避免把旧行状态带入新行。 */
+watch(
+  rowIdentity,
+  () => {
+    close();
+    hideLoading();
+  },
+  { flush: 'sync' }
+);
+
+/** 所在上层菜单关闭时，级联收起 Popconfirm 并清理 loading。 */
+watch(
+  () => props.menuOpen,
+  open => {
+    if (open === false) {
+      close();
+      hideLoading();
+    }
+  }
+);
+
+onBeforeUnmount(() => {
+  if (pending) {
+    const p = pending;
+    pending = null;
+    p.resolve();
+  }
+});
+
+/** 执行已通过禁用与确认校验的操作。 */
+const handleConfirm = () => {
   if (
     (props.config?.permissionCode && !hasAuth(props.config.permissionCode)) ||
     props.config?.disabledFn?.(props.scope) ||
@@ -64,12 +118,55 @@ const handleConfirm = async () => {
     close();
     return;
   }
-  if (needLoading.value) loading.value = true;
+  if (needLoading.value) {
+    loading.value = true;
+  } else {
+    emit('request-close');
+  }
   const clickHandler = props.config?.clickFn ?? props.config?.click;
-  emit('request-close');
-  await Promise.resolve(clickHandler?.(props.scope, props.config, { close, hideLoading }));
-  if (!needLoading.value) {
-    // 非受控 loading，直接关闭弹层
+
+  if (needLoading.value) {
+    if (canConfirm.value) {
+      // 仅二次确认的 Popconfirm 需要返回受控 Promise，并在按需注册全局 filter 后
+      // 允许通过 reject(ACTION_RETRY_SIGNAL) 驱动 AntDV ActionButton 停止 loading 并解锁重试
+      ensureRetrySignalFilter();
+      return new Promise<void>((resolve, reject) => {
+        pending = { resolve, reject };
+        try {
+          Promise.resolve(clickHandler?.(props.scope, props.config, { close: handleHelperClose, hideLoading })).catch(
+            () => {
+              hideLoading();
+            }
+          );
+        } catch {
+          hideLoading();
+        }
+      });
+    }
+
+    // 普通无确认按钮：直接触发操作，无需向 Vue 事件系统返回受控 Promise，
+    // 避免 hideLoading() 或内部抛错触发 Vue 的 errorHandler 或控制台未捕获报错。
+    try {
+      Promise.resolve(clickHandler?.(props.scope, props.config, { close: handleHelperClose, hideLoading })).catch(
+        () => {
+          hideLoading();
+        }
+      );
+    } catch {
+      hideLoading();
+    }
+    return;
+  }
+
+  try {
+    Promise.resolve(clickHandler?.(props.scope, props.config, { close: handleHelperClose, hideLoading }))
+      .finally(() => {
+        close();
+      })
+      .catch(() => {
+        // 静默吸收业务 clickHandler 抛出的 rejection，避免未捕获异常泄露至控制台或 Node 进程；业务层异常应由其自身处理
+      });
+  } catch {
     close();
   }
 };

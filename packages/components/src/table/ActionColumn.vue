@@ -19,6 +19,7 @@
             :config="btn"
             :scope="scope"
             :is-last="index === tailButtons.length - 1"
+            :menu-open="moreOpen"
             @request-close="closeMore"
           />
         </div>
@@ -44,6 +45,7 @@ import { computed, ref, useSlots, watch } from 'vue';
 import { useLocale } from '../locale/useLocale';
 import ActionButton from './ActionButton.vue';
 import type { ActionButtonConfig, MoreRenderType } from './type';
+import { resolveRowIdentity } from './utils/rowIdentity';
 
 const { t } = useLocale('table');
 
@@ -105,10 +107,13 @@ const closeMore = () => {
   moreOpen.value = false;
 };
 
+const rowIdentity = computed(() => resolveRowIdentity(props.scope));
+
 /**
- * 行复用或操作集合变化时关闭旧浮层，避免分页、虚拟滚动和权限变化后残留过期菜单。
+ * 行身份变化或操作集合变化时关闭旧浮层，避免分页、虚拟滚动和权限变化后残留过期菜单。
+ * 轮询刷新等仅行对象引用变化但主键未变场景下保持菜单稳定。
  */
-watch([tailButtonSignature, () => props.scope?.row], closeMore);
+watch([tailButtonSignature, rowIdentity], closeMore);
 </script>
 
 <script lang="ts">

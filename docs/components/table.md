@@ -456,7 +456,7 @@ const actionConfig: YTableActionConfig = {
 | title | `string` | `确定要执行此操作吗？` | 确认框标题 |
 | okText | `string` | `确定` | 确认按钮文字 |
 | cancelText | `string` | `取消` | 取消按钮文字 |
-| needLoading | `boolean` | `false` | 是否在确认后显示 loading 状态（需配合 `clickFn` 中的 `helpers.hideLoading()` 手动关闭） |
+| needLoading | `boolean` | `false` | 是否在确认后显示 loading 状态（成功调用 `helpers.close()`，失败调用 `helpers.hideLoading()`，两个都不调用时 loading 会一直保持） |
 | popProps | `Record<string, any>` | - | 透传给 `Popconfirm` 的其他属性（如 `placement`、`icon` 等） |
 
 **clickFn 回调参数**：
@@ -474,6 +474,10 @@ click?: (scope, btn, helpers) => void | Promise<void>
 ```
 
 > **“更多”菜单关闭规则**：点击普通操作后菜单会立即关闭；启用 `isConfirm` 时，点击操作只打开气泡确认框，确认或取消后再关闭“更多”菜单；禁用操作不会触发关闭。分页、虚拟滚动或权限变化导致当前行/收纳操作集合变化时，组件也会自动清理旧菜单，避免浮层残留。
+
+> **行身份稳定性与轮询配置**：直显确认与“更多”弹层统一按稳定行身份（优先 `scope.rowid` 即 `rowConfig.keyField`，其次 `row.id`，最后回退至行引用）监听与保持。对于轮询或局部刷新场景，行对象浅拷贝或重建不会误关闭已打开的确认弹层；**建议在轮询表格中显式配置 `:row-config="{ keyField: 'id', useKey: true }"`**（将 `keyField` 设为真实业务主键），确保 `<tr>` 与操作列实例稳定复用。
+
+> **needLoading 与弹层生命周期**：当 `isConfirm` 配合 `needLoading: true` 时，确认后 Popconfirm 保持打开并进入 loading 态；若位于“更多”菜单内，也会延后关闭更多浮层。异步操作成功后必须由业务显式调用 `helpers.close()`（自动清理 loading、关闭 Popconfirm 并收起更多菜单）；若操作失败可调用 `helpers.hideLoading()` 结束 loading 并保持浮层打开供用户重试；若在此期间行身份变化（如翻页/换行）或外部关闭浮层，组件将自动级联清理 loading 与弹层。
 
 > **禁用与确认**：更多菜单内普通项、确认项及禁用项统一居中。禁用确认项直接渲染禁用按钮；确认资格失效或当前行、操作标识变化时清理旧确认状态，重新启用不会自动弹出确认框。
 
