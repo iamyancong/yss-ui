@@ -277,7 +277,7 @@ import { useActionColumn, useColumnProps, useNormalizedColumns } from './hooks/u
 import { useTableEvents } from './hooks/useEvents';
 import { useTableSelection } from './hooks/useTableSelection';
 import { usePagination as usePaginationHook } from './hooks/usePagination';
-import { useSafeData } from './hooks/useSafeData';
+import { resolveTreeChildrenField, useSafeData } from './hooks/useSafeData';
 import { useStableConfig } from './hooks/useStableConfig';
 import { useStyleVars } from './hooks/useStyleVars';
 import { useActionConfig as useActionConfigHook, useTableProps as useTablePropsHook } from './hooks/useTableProps';
@@ -362,15 +362,17 @@ const {
   handleAntdChange,
 } = usePaginationHook(props as any, emit);
 
-// 数据安全处理：对分页后的显示数据进行安全处理，确保所有列的字段都存在
+// 可写纯对象保持原引用；类实例等不可直接挂行键的对象转成稳定复用的普通副本。
+// useAttrs() 返回的不是响应式对象，运行中更换 tree-config 时下面的 computed 不会重算。
+// 树配置一般随表格创建，不在运行中切换。
+const attrs = useAttrs();
 const displayData = useSafeData(
   rawDisplayData,
-  computed(() => props.columns)
+  computed(() => resolveTreeChildrenField((attrs as any).treeConfig ?? (attrs as any)['tree-config']))
 );
 
 // vxe 表格透传配置
 const { tableProps } = useTablePropsHook(props as any);
-const attrs = useAttrs();
 
 // 工具栏插槽检测
 const slots = useSlots();
