@@ -81,12 +81,15 @@ export function useValidation(props: any, tableRef: any) {
 
   /**
    * 监听表格滚动事件，若非程序化滚动则自动收起当前悬浮的校验气泡。
+   *
+   * @returns 当前是否处于程序化滚动保护期
    */
-  const handleTableScroll = () => {
-    if (isProgrammaticScrolling) return;
+  const handleTableScroll = (): boolean => {
+    if (isProgrammaticScrolling) return true;
     if (activeErrorCell.value) {
       clearActiveErrorCell();
     }
+    return false;
   };
 
   const isEmptyValue = (v: any) => v === '' || v === null || v === undefined;

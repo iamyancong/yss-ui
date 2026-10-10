@@ -1,8 +1,9 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { Popconfirm } from 'ant-design-vue';
-import { nextTick } from 'vue';
+import { nextTick, ref } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ActionButton from '../ActionButton.vue';
+import { Y_TABLE_ACTION_SCROLL_KEY } from '../utils/actionScroll';
 import { ACTION_RETRY_SIGNAL } from '../utils/actionRetry';
 
 /** 模拟外部权限存储变化，不依赖 Vue 的响应式更新。 */
@@ -610,3 +611,79 @@ describe('操作按钮的确认资格与真实禁用触发器', () => {
   });
 });
 
+describe('操作按钮随表格纵向滚动关闭', () => {
+  /** 挂载带滚动信号的确认按钮。 */
+  const mountScrollButton = (config: Record<string, unknown> = {}, closeOnScroll = true) => {
+    const scrollTick = ref(0);
+    const wrapper = mount(ActionButton, {
+      props: {
+        scope: { row: { id: 1 } },
+        closeOnScroll,
+        config: { text: '删除', isConfirm: true, ...config },
+      },
+      global: {
+        provide: {
+          [Y_TABLE_ACTION_SCROLL_KEY as symbol]: { scrollTick },
+        },
+      },
+      attachTo: document.body,
+    });
+    wrappers.push(wrapper);
+    return { wrapper, scrollTick };
+  };
+
+  it('打开直显确认后纵向滚动关闭确认框', async () => {
+    const { wrapper, scrollTick } = mountScrollButton();
+    await wrapper.get('button.y-table-action-link').trigger('click');
+    await flushPromises();
+    expect(wrapper.getComponent(Popconfirm).props('open')).toBe(true);
+
+    scrollTick.value += 1;
+    await nextTick();
+
+    expect(wrapper.getComponent(Popconfirm).props('open')).toBe(false);
+  });
+
+  it('needLoading 执行中滚动不关闭，成功后仍关闭且回调已执行', async () => {
+    let resolveAction: (() => void) | undefined;
+    const clickFn = vi.fn(
+      () =>
+        new Promise<void>(resolve => {
+          resolveAction = resolve;
+        })
+    );
+    const { wrapper, scrollTick } = mountScrollButton({
+      confirmProps: { needLoading: true },
+      clickFn,
+    });
+
+    await wrapper.get('button.y-table-action-link').trigger('click');
+    await flushPromises();
+    const confirmButton = document.body.querySelector<HTMLButtonElement>('.ant-popconfirm-buttons .ant-btn-primary');
+    if (!confirmButton) throw new Error('未找到 AntDV 真实确认按钮');
+    confirmButton.click();
+    await flushPromises();
+
+    expect(clickFn).toHaveBeenCalledOnce();
+    expect(wrapper.getComponent(Popconfirm).props('open')).toBe(true);
+
+    scrollTick.value += 1;
+    await nextTick();
+    expect(wrapper.getComponent(Popconfirm).props('open')).toBe(true);
+
+    resolveAction?.();
+    await flushPromises();
+    expect(wrapper.getComponent(Popconfirm).props('open')).toBe(false);
+  });
+
+  it('closeOnScroll 为 false 时滚动保持确认框', async () => {
+    const { wrapper, scrollTick } = mountScrollButton({}, false);
+    await wrapper.get('button.y-table-action-link').trigger('click');
+    await flushPromises();
+
+    scrollTick.value += 1;
+    await nextTick();
+
+    expect(wrapper.getComponent(Popconfirm).props('open')).toBe(true);
+  });
+});

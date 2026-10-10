@@ -354,6 +354,13 @@ export interface YTableActionConfig {
   moreRenderType?: MoreRenderType;
   /** 按钮列表 */
   buttons: ActionButtonConfig[];
+  /**
+   * 表格内部纵向滚动时是否关闭「更多」和二次确认浮层。
+   * 默认开启。needLoading 执行过程中故意不关闭，这段时间浮层停在原位、不跟着行走。
+   * 仅横向滚动、1px 以内的纵向抖动，以及 scrollTo / scrollToRow 等程序滚动不关闭。
+   * 设为 false 可恢复滚动后浮层保持打开的原行为。
+   */
+  closeOnScroll?: boolean;
 }
 
 /**

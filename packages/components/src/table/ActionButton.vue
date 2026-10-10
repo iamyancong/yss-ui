@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { hasAuth } from '@yss-ui/utils';
 import { Button, Popconfirm } from 'ant-design-vue';
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, inject, onBeforeUnmount, ref, watch } from 'vue';
 import { useLocale } from '../locale/useLocale';
 import type { ActionButtonConfig } from './type';
 import { ACTION_RETRY_SIGNAL, ensureRetrySignalFilter } from './utils/actionRetry';
+import { Y_TABLE_ACTION_SCROLL_KEY } from './utils/actionScroll';
 import { resolveRowIdentity } from './utils/rowIdentity';
 
 defineOptions({ name: 'YTableActionButton' });
@@ -16,15 +17,20 @@ const props = defineProps<{
   config: ActionButtonConfig;
   isLast?: boolean;
   menuOpen?: boolean;
+  /** 为 false 时，表格内部滚动不关闭当前确认浮层 */
+  closeOnScroll?: boolean;
 }>();
 
-/** 通知上层操作容器关闭当前菜单。 */
+/** 通知上层操作容器关闭当前菜单，或声明异步操作仍在进行。 */
 const emit = defineEmits<{
   'request-close': [];
+  'busy-change': [busy: boolean];
 }>();
 
 const loading = ref(false);
 const visible = ref(false);
+/** needLoading 的受控确认尚未结束。滚动时用来避免中途收起浮层。 */
+const actionPending = ref(false);
 
 const allowed = computed(() => !props.config?.permissionCode || hasAuth(props.config.permissionCode));
 const isDisabled = computed(() => !allowed.value || !!props.config?.disabledFn?.(props.scope));
@@ -61,6 +67,7 @@ const abortPending = () => {
   if (pending) {
     const p = pending;
     pending = null;
+    actionPending.value = false;
     p.settled = true;
     p.resolve();
   }
@@ -76,6 +83,25 @@ const close = () => {
 };
 
 const rowIdentity = computed(() => resolveRowIdentity(props.scope));
+const actionBusy = computed(() => loading.value || actionPending.value);
+const actionScroll = inject(Y_TABLE_ACTION_SCROLL_KEY, null);
+
+/** 异步确认开始或结束时通知操作列，避免滚动把进行中的「更多」菜单收掉。 */
+watch(
+  actionBusy,
+  (busy, previous) => {
+    if (previous === undefined || busy === previous) return;
+    emit('busy-change', busy);
+  },
+  { flush: 'sync' }
+);
+
+if (actionScroll) {
+  watch(actionScroll.scrollTick, () => {
+    if (props.closeOnScroll === false || actionBusy.value || !visible.value) return;
+    close();
+  });
+}
 
 /** 提供给操作回调的关闭辅助函数，确保清理 loading、关闭弹层并通知上层菜单收起。 */
 const handleHelperClose = () => {
@@ -109,6 +135,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  loading.value = false;
   abortPending();
 });
 
@@ -144,12 +171,14 @@ const handleConfirm = () => {
           reject,
         };
         pending = currentPending;
+        actionPending.value = true;
 
         const finishSuccess = () => {
           if (currentPending.settled) return;
           currentPending.settled = true;
           loading.value = false;
           visible.value = false;
+          actionPending.value = false;
           emit('request-close');
           currentPending.resolve();
           if (pending === currentPending) {
@@ -161,6 +190,7 @@ const handleConfirm = () => {
           if (currentPending.settled) return;
           currentPending.settled = true;
           loading.value = false;
+          actionPending.value = false;
           currentPending.reject(ACTION_RETRY_SIGNAL);
           if (pending === currentPending) {
             pending = null;

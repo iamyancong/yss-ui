@@ -29,6 +29,7 @@ defineProps<{
     :buttons="actionConfig?.buttons"
     :display-limit="actionConfig?.displayLimit"
     :more-render-type="actionConfig?.moreRenderType"
+    :close-on-scroll="actionConfig?.closeOnScroll !== false"
     :scope="scope"
   >
     <template v-if="$slots['action-more-icon']" #more>

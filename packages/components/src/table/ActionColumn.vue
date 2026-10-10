@@ -7,6 +7,8 @@
       :config="btn"
       :scope="scope"
       :is-last="!tailButtons.length && index === headButtons.length - 1"
+      :close-on-scroll="closeOnScroll"
+      @busy-change="handleBusyChange"
     />
 
     <!-- 更多：收纳剩余按钮 -->
@@ -20,7 +22,9 @@
             :scope="scope"
             :is-last="index === tailButtons.length - 1"
             :menu-open="moreOpen"
+            :close-on-scroll="closeOnScroll"
             @request-close="closeMore"
+            @busy-change="handleBusyChange"
           />
         </div>
       </template>
@@ -41,10 +45,11 @@
 import { hasAuth } from '@yss-ui/utils';
 import { Button as AButton, Popover as APopover } from 'ant-design-vue';
 import { MoreOutlined } from '@ant-design/icons-vue';
-import { computed, ref, useSlots, watch } from 'vue';
+import { computed, inject, ref, useSlots, watch } from 'vue';
 import { useLocale } from '../locale/useLocale';
 import ActionButton from './ActionButton.vue';
 import type { ActionButtonConfig, MoreRenderType } from './type';
+import { Y_TABLE_ACTION_SCROLL_KEY } from './utils/actionScroll';
 import { resolveRowIdentity } from './utils/rowIdentity';
 
 const { t } = useLocale('table');
@@ -55,10 +60,15 @@ const props = defineProps<{
   displayLimit?: number;
   moreRenderType?: MoreRenderType;
   moreText?: string;
+  /** 为 false 时，表格内部滚动不关闭「更多」和确认浮层 */
+  closeOnScroll?: boolean;
 }>();
 
 /** “更多”操作浮层的受控打开状态。 */
 const moreOpen = ref(false);
+/** 仍在执行 needLoading 的按钮数量。大于 0 时滚动不关闭菜单。 */
+const busyCount = ref(0);
+const actionScroll = inject(Y_TABLE_ACTION_SCROLL_KEY, null);
 
 /**
  * 规范化直显按钮数量。
@@ -107,7 +117,25 @@ const closeMore = () => {
   moreOpen.value = false;
 };
 
+/**
+ * 记录子按钮是否处于 needLoading。
+ * 进行中的确认被菜单收起时会中断浮层生命周期，所以滚动期间先保持菜单。
+ *
+ * @param busy 该按钮是否进入或离开异步确认
+ */
+const handleBusyChange = (busy: boolean) => {
+  busyCount.value += busy ? 1 : -1;
+  if (busyCount.value < 0) busyCount.value = 0;
+};
+
 const rowIdentity = computed(() => resolveRowIdentity(props.scope));
+
+if (actionScroll) {
+  watch(actionScroll.scrollTick, () => {
+    if (props.closeOnScroll === false || busyCount.value > 0) return;
+    closeMore();
+  });
+}
 
 /**
  * 行身份变化或操作集合变化时关闭旧浮层，避免分页、虚拟滚动和权限变化后残留过期菜单。

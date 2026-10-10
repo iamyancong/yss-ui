@@ -3,6 +3,8 @@ import { computed, nextTick } from 'vue';
 import type { VxeTable } from 'vxe-table';
 import { useLocale } from '../../locale/useLocale';
 import { useStableConfig } from '../../table/hooks/useStableConfig';
+import { useActionScrollClose } from '../../table/hooks/useActionScrollClose';
+import type { TableScrollEvent } from '../../table/utils/actionScroll';
 import { useTableDragScroll } from '../../table/hooks/useTableDragScroll';
 import { makeProxyTableInstance } from '../../table/utils';
 import { useActionConfig } from './useActionConfig';
@@ -44,7 +46,7 @@ export function useEditTableContext(
     isActiveErrorCell,
     setActiveErrorCell,
     markProgrammaticScrolling,
-    handleTableScroll,
+    handleTableScroll: handleValidationScroll,
     scheduleValidateRow,
     validate: validateInternal,
     showTooltipContent,
@@ -104,6 +106,19 @@ export function useEditTableContext(
 
   const { getColumnProps, getColgroupProps } = useColumns(props);
   const { resolveActionConfig } = useActionConfig({ actionConfig: props.actionConfig });
+  const { handleActionScroll } = useActionScrollClose();
+
+  /**
+   * 校验气泡与操作列浮层共用同一次表格滚动。
+   * 程序化 scrollToRow 不派发 vxe scroll，因此不会关闭用户刚打开的确认。
+   *
+   * @param params vxe scroll 事件参数
+   */
+  const handleTableScroll = (params?: TableScrollEvent) => {
+    const programmatic = handleValidationScroll();
+    if (programmatic) return;
+    handleActionScroll(params);
+  };
 
   const validate = async () => {
     const res: any = await validateInternal();

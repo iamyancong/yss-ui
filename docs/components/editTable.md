@@ -281,7 +281,7 @@ vxe-table 4.19.x 新增或增强的原生配置也会继续透传，例如 `aggr
 
 ### 操作列（YTableActionConfig）
 
-不再默认追加操作列。如需操作列，请在 `columns` 中显式声明 `{ type: 'action', actionConfig }` 或自行插槽渲染。沿用 `y-table` 的按钮配置，按权限/禁用/隐藏、二次确认与异步 loading 全部可用：
+不再默认追加操作列。如需操作列，请在 `columns` 中显式声明 `{ type: 'action', actionConfig }` 或自行插槽渲染。沿用 `y-table` 的按钮配置，按权限/禁用/隐藏、二次确认与异步 loading 全部可用。表格内部纵向滚动时默认关闭「更多」和二次确认（`actionConfig.closeOnScroll`，默认 `true`；设为 `false` 可恢复滚动后保持打开）。`needLoading` 执行期间浮层故意保持打开，会停在原位、不跟着行走。
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |

@@ -1,7 +1,10 @@
 /* eslint-disable vue/one-component-per-file */
-import { mount, type VueWrapper } from '@vue/test-utils';
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { toRaw } from 'vue';
+import { ref, toRaw } from 'vue';
+import ActionColumn from '../ActionColumn.vue';
+import type { ActionButtonConfig } from '../type';
+import { Y_TABLE_ACTION_SCROLL_KEY } from '../utils/actionScroll';
 
 vi.mock('@yss-ui/utils', () => ({ hasAuth: () => true }));
 
@@ -98,9 +101,6 @@ vi.mock('ant-design-vue', async () => {
 
   return { Button, Popover, Popconfirm };
 });
-
-import ActionColumn from '../ActionColumn.vue';
-import type { ActionButtonConfig } from '../type';
 
 const wrappers: VueWrapper[] = [];
 
@@ -362,6 +362,107 @@ describe('YTable ActionColumn 更多菜单', () => {
       ],
     });
 
+    expect(wrapper.find('.popover-content').exists()).toBe(false);
+  });
+});
+
+describe('操作列随表格纵向滚动关闭', () => {
+  /** 挂载带滚动信号的操作列。 */
+  const mountWithScroll = (closeOnScroll?: boolean) => {
+    const scrollTick = ref(0);
+    const wrapper = mount(ActionColumn, {
+      props: {
+        displayLimit: 0,
+        closeOnScroll,
+        buttons: [{ key: 'delete', text: '删除', isConfirm: true }],
+        scope: { row: { id: 1 } },
+      },
+      global: {
+        provide: {
+          [Y_TABLE_ACTION_SCROLL_KEY as symbol]: { scrollTick },
+        },
+      },
+      attachTo: document.body,
+    });
+    wrappers.push(wrapper);
+    return { wrapper, scrollTick };
+  };
+
+  it('纵向滚动关闭更多菜单', async () => {
+    const { wrapper, scrollTick } = mountWithScroll();
+    await openMore(wrapper);
+
+    scrollTick.value += 1;
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('.popover-content').exists()).toBe(false);
+  });
+
+  it('closeOnScroll 为 false 时滚动保持更多菜单', async () => {
+    const { wrapper, scrollTick } = mountWithScroll(false);
+    await openMore(wrapper);
+
+    scrollTick.value += 1;
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('.popover-content').exists()).toBe(true);
+  });
+
+  it('滚动一个表格只关闭该表格的更多菜单', async () => {
+    const first = mountWithScroll();
+    const second = mountWithScroll();
+    await openMore(first.wrapper);
+    await openMore(second.wrapper);
+
+    first.scrollTick.value += 1;
+    await first.wrapper.vm.$nextTick();
+    await second.wrapper.vm.$nextTick();
+
+    expect(first.wrapper.find('.popover-content').exists()).toBe(false);
+    expect(second.wrapper.find('.popover-content').exists()).toBe(true);
+  });
+
+  it('needLoading 执行中滚动不关闭更多菜单，结束后仍关闭', async () => {
+    let resolveAction: (() => void) | undefined;
+    const scrollTick = ref(0);
+    const wrapper = mount(ActionColumn, {
+      props: {
+        displayLimit: 0,
+        buttons: [
+          {
+            key: 'delete',
+            text: '删除',
+            isConfirm: true,
+            confirmProps: { needLoading: true },
+            clickFn: () =>
+              new Promise<void>(resolve => {
+                resolveAction = resolve;
+              }),
+          },
+        ],
+        scope: { row: { id: 1 } },
+      },
+      global: {
+        provide: {
+          [Y_TABLE_ACTION_SCROLL_KEY as symbol]: { scrollTick },
+        },
+      },
+      attachTo: document.body,
+    });
+    wrappers.push(wrapper);
+
+    await openMore(wrapper);
+    await wrapper.get('.popconfirm-trigger').trigger('click');
+    await flushPromises();
+    await wrapper.get('.popconfirm-confirm').trigger('click');
+    await flushPromises();
+
+    scrollTick.value += 1;
+    await flushPromises();
+    expect(wrapper.find('.popover-content').exists()).toBe(true);
+
+    resolveAction?.();
+    await flushPromises();
     expect(wrapper.find('.popover-content').exists()).toBe(false);
   });
 });

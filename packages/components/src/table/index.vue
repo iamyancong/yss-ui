@@ -30,6 +30,7 @@
       @row-dragend="handleRowDragend"
       @checkbox-change="handleCheckboxChange"
       @checkbox-all="handleCheckboxAll"
+      @scroll="handleActionScroll"
     >
       <!-- 行拖拽把手（可选；使用 vxe 内置 drag-sort 展示拖拽图标） -->
       <vxe-column
@@ -95,6 +96,7 @@
                 :display-limit="resolveActionConfig(sub as any).displayLimit"
                 :more-render-type="resolveActionConfig(sub as any).moreRenderType"
                 :more-text="resolveActionConfig(sub as any).moreText"
+                :close-on-scroll="resolveActionConfig(sub as any).closeOnScroll !== false"
                 :scope="scope"
               >
                 <template v-if="$slots['action-more-icon']" #more>
@@ -185,6 +187,7 @@
               :display-limit="resolveActionConfig(column).displayLimit"
               :more-render-type="resolveActionConfig(column).moreRenderType"
               :more-text="resolveActionConfig(column).moreText"
+              :close-on-scroll="resolveActionConfig(column).closeOnScroll !== false"
               :scope="scope"
             >
               <template v-if="$slots['action-more-icon']" #more>
@@ -246,6 +249,7 @@
             :display-limit="resolveActionConfig().displayLimit"
             :more-render-type="resolveActionConfig().moreRenderType"
             :more-text="resolveActionConfig().moreText"
+            :close-on-scroll="resolveActionConfig().closeOnScroll !== false"
             :scope="scope"
           >
             <template v-if="$slots['action-more-icon']" #more>
@@ -277,6 +281,7 @@ import { useActionColumn, useColumnProps, useNormalizedColumns } from './hooks/u
 import { useTableEvents } from './hooks/useEvents';
 import { useTableSelection } from './hooks/useTableSelection';
 import { usePagination as usePaginationHook } from './hooks/usePagination';
+import { useActionScrollClose } from './hooks/useActionScrollClose';
 import { resolveTreeChildrenField, useSafeData } from './hooks/useSafeData';
 import { useStableConfig } from './hooks/useStableConfig';
 import { useStyleVars } from './hooks/useStyleVars';
@@ -353,6 +358,7 @@ const toKebabCase = (input: string): string => {
 
 // 安装 vxe-pc-ui
 useVxeInstall();
+const { handleActionScroll } = useActionScrollClose();
 
 // 分页（先进行分页处理）
 const {
