@@ -1,6 +1,6 @@
 {
   "name": "@yss-ui/components",
-  "version": "1.7.4",
+  "version": "1.7.5",
   "description": "YSS UI 核心组件包",
   "main": "dist/root/index.cjs",
   "module": "dist/root/index.mjs",
@@ -75,8 +75,12 @@
       "require": "./dist/root/entries/*.cjs"
     }
   },
-  "files": ["dist"],
-  "sideEffects": ["*.css"],
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
   "scripts": {
     "build": "vite build && vite build --config vite.config.root.ts && node ../../scripts/build-consumption.mjs",
     "dev": "vite build --config vite.config.watch.ts",
