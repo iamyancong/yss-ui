@@ -10,6 +10,19 @@ toc: content
 
 YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
+## v1.7.6
+
+`2026-10-10`
+
+### 🐛 Bug Fixes
+
+- **操作列**：
+  - **needLoading 二次确认行为回退为兼容语义**：修复 1.7.5 中因引入严格受控 Promise 导致存量业务在 `finally` 块中调用 `hideLoading()` 或正常 resolve 但未调用 helper 时弹层无法关闭或 loading 常转的问题。1.7.6 恢复兼容语义：回调正常 resolve 视为成功自动关闭弹层与收起菜单；`finally` 中调用 `hideLoading()` 仅停止 loading，在函数 resolve 后安全关闭；异常或 reject 自动停止 loading 并保持弹层供重试 (#37)。
+  - **支持 `manualClose` 受控配置**：在 `confirmProps` 中新增 `manualClose?: boolean` 选项。配置为 `true` 时保留 1.7.5 严格受控语义（必须显式调用 `helpers.close()` 才关闭弹层，`helpers.hideLoading()` 停止 loading 并保留弹层供重试）(#37)。
+  - **建议跳过 1.7.5**：受影响的下游微应用无需修改业务代码，直接升级至 1.7.6 即可恢复原有行为 (#37)。
+
+---
+
 ## v1.7.5
 
 `2026-10-10`

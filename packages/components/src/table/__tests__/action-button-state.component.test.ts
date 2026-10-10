@@ -177,6 +177,7 @@ describe('操作按钮的确认资格与真实禁用触发器', () => {
     let capturedHelpers: any;
     const clickFn = vi.fn((_scope, _config, helpers) => {
       capturedHelpers = helpers;
+      return new Promise<void>(() => {});
     });
 
     const wrapper = createButton({
@@ -217,7 +218,7 @@ describe('操作按钮的确认资格与真实禁用触发器', () => {
   });
 
   it('needLoading 下行身份变化（换行）时主动关闭弹层并重置 loading', async () => {
-    const clickFn = vi.fn();
+    const clickFn = vi.fn(() => new Promise<void>(() => {}));
     const wrapper = createButton({
       confirmProps: { needLoading: true },
       clickFn,
@@ -258,11 +259,74 @@ describe('操作按钮的确认资格与真实禁用触发器', () => {
     }
   };
 
-  it('needLoading 模式下 hideLoading 停止 loading 且可以再次点击确定重试', async () => {
+  it('1.7.6 测试 1: finally 里调用 hideLoading 且操作成功：弹层关闭、发出 request-close 且无 loading（兼容 yuyan 写法）', async () => {
+    let finallyExecuted = false;
+    const clickFn = vi.fn(async (_scope, _config, { hideLoading }) => {
+      try {
+        await Promise.resolve('api-success');
+      } finally {
+        hideLoading();
+        finallyExecuted = true;
+      }
+    });
+
+    const wrapper = createButton({
+      confirmProps: { needLoading: true },
+      clickFn,
+    });
+
+    await wrapper.get('button.y-table-action-link').trigger('click');
+    await flushPromises();
+
+    const confirmButton = document.body.querySelector<HTMLButtonElement>('.ant-popconfirm-buttons .ant-btn-primary');
+    if (!confirmButton) throw new Error('未找到 AntDV 真实确认按钮');
+    confirmButton.click();
+    await flushPromises();
+
+    expect(clickFn).toHaveBeenCalledOnce();
+    expect(finallyExecuted).toBe(true);
+    const confirm = wrapper.getComponent(Popconfirm);
+    expect(confirm.props('open')).toBe(false);
+    expect(confirm.props('okButtonProps')?.loading).toBe(false);
+    expect(wrapper.emitted('request-close')).toHaveLength(1);
+  });
+
+  it('1.7.6 测试 2: 两个 helper 都不调用且正常 resolve：视为成功自动关闭弹层并清理 loading', async () => {
+    const clickFn = vi.fn(async () => {
+      await Promise.resolve('done');
+    });
+
+    const wrapper = createButton({
+      confirmProps: { needLoading: true },
+      clickFn,
+    });
+
+    await wrapper.get('button.y-table-action-link').trigger('click');
+    await flushPromises();
+
+    const confirmButton = document.body.querySelector<HTMLButtonElement>('.ant-popconfirm-buttons .ant-btn-primary');
+    if (!confirmButton) throw new Error('未找到 AntDV 真实确认按钮');
+    confirmButton.click();
+    await flushPromises();
+
+    expect(clickFn).toHaveBeenCalledOnce();
+    const confirm = wrapper.getComponent(Popconfirm);
+    expect(confirm.props('open')).toBe(false);
+    expect(confirm.props('okButtonProps')?.loading).toBe(false);
+    expect(wrapper.emitted('request-close')).toHaveLength(1);
+  });
+
+  it('1.7.6 测试 3: reject 或同步抛错：弹层保留、loading 停止且可再次点击确定重试', async () => {
     await withActionRetryRejection(async () => {
-      let capturedHelpers: any;
+      let isFirstTry = true;
       const clickFn = vi.fn((_scope, _config, helpers) => {
-        capturedHelpers = helpers;
+        if (isFirstTry) {
+          // 首次同步抛错测试
+          throw new Error('网络异常，请重试');
+        }
+        // 重试成功
+        helpers.close();
+        return Promise.resolve();
       });
 
       const wrapper = createButton({
@@ -277,43 +341,32 @@ describe('操作按钮的确认资格与真实禁用触发器', () => {
 
       const confirmButton = document.body.querySelector<HTMLButtonElement>('.ant-popconfirm-buttons .ant-btn-primary');
       if (!confirmButton) throw new Error('未找到 AntDV 真实确认按钮');
+
+      // 首次点击：同步抛错
       confirmButton.click();
       await flushPromises();
 
       expect(clickFn).toHaveBeenCalledTimes(1);
-      expect(confirm.props('open')).toBe(true);
-      expect(confirmButton.classList.contains('ant-btn-loading')).toBe(true);
-
-      // 业务调用 hideLoading 表示操作失败
-      capturedHelpers.hideLoading();
-      await flushPromises();
-
-      // 验证：loading 停止，弹层保持打开
+      // 弹层保留，loading 停止
       expect(confirm.props('open')).toBe(true);
       expect(confirmButton.classList.contains('ant-btn-loading')).toBe(false);
 
-      // 用户再次点击确定进行重试
+      // 再次点击确定重试
+      isFirstTry = false;
       confirmButton.click();
       await flushPromises();
 
       expect(clickFn).toHaveBeenCalledTimes(2);
-      expect(confirm.props('open')).toBe(true);
-      expect(confirmButton.classList.contains('ant-btn-loading')).toBe(true);
-
-      // 重试成功，业务调用 close()
-      capturedHelpers.close();
-      await flushPromises();
-
       expect(confirm.props('open')).toBe(false);
     });
   });
 
-  it('needLoading 模式下 clickFn 抛错或 reject 时自动结束 loading 并允许重试', async () => {
+  it('1.7.6 测试 3 补充: 异步 reject 时弹层保留、loading 停止并支持重试', async () => {
     await withActionRetryRejection(async () => {
       let shouldFail = true;
       const clickFn = vi.fn((_scope, _config, helpers) => {
         if (shouldFail) {
-          return Promise.reject(new Error('操作失败'));
+          return Promise.reject(new Error('异步操作失败'));
         }
         helpers.close();
         return Promise.resolve();
@@ -332,24 +385,186 @@ describe('操作按钮的确认资格与真实禁用触发器', () => {
       const confirmButton = document.body.querySelector<HTMLButtonElement>('.ant-popconfirm-buttons .ant-btn-primary');
       if (!confirmButton) throw new Error('未找到 AntDV 真实确认按钮');
 
-      // 首次点击确定（会 reject）
       confirmButton.click();
       await flushPromises();
 
       expect(clickFn).toHaveBeenCalledTimes(1);
-      // 弹层保持打开，且 loading 自动停止，允许重试
       expect(confirm.props('open')).toBe(true);
       expect(confirmButton.classList.contains('ant-btn-loading')).toBe(false);
 
-      // 再次点击确定重试（成功）
       shouldFail = false;
       confirmButton.click();
       await flushPromises();
 
       expect(clickFn).toHaveBeenCalledTimes(2);
-      // 重试成功，弹层关闭
       expect(confirm.props('open')).toBe(false);
     });
+  });
+
+  it('1.7.6 测试 4: 执行中调用 close()：立即关闭且后续 resolve 不重复触发', async () => {
+    let resolveLate: () => void = () => {};
+    const clickFn = vi.fn((_scope, _config, helpers) => {
+      helpers.close();
+      return new Promise<void>(resolve => {
+        resolveLate = resolve;
+      });
+    });
+
+    const wrapper = createButton({
+      confirmProps: { needLoading: true },
+      clickFn,
+    });
+
+    await wrapper.get('button.y-table-action-link').trigger('click');
+    await flushPromises();
+
+    const confirmButton = document.body.querySelector<HTMLButtonElement>('.ant-popconfirm-buttons .ant-btn-primary');
+    if (!confirmButton) throw new Error('未找到 AntDV 真实确认按钮');
+    confirmButton.click();
+    await flushPromises();
+
+    expect(clickFn).toHaveBeenCalledOnce();
+    const confirm = wrapper.getComponent(Popconfirm);
+    expect(confirm.props('open')).toBe(false);
+    expect(wrapper.emitted('request-close')).toHaveLength(1);
+
+    // 晚到的 resolve，不应重复触发 request-close，状态维持关闭
+    resolveLate();
+    await flushPromises();
+    expect(wrapper.emitted('request-close')).toHaveLength(1);
+    expect(confirm.props('open')).toBe(false);
+  });
+
+  it('1.7.6 测试 5: manualClose: true 保留 1.7.5 严格受控语义（hideLoading 可重试、不调 close 不关）', async () => {
+    await withActionRetryRejection(async () => {
+      let capturedHelpers: any;
+      const clickFn = vi.fn((_scope, _config, helpers) => {
+        capturedHelpers = helpers;
+        return Promise.resolve();
+      });
+
+      const wrapper = createButton({
+        confirmProps: { needLoading: true, manualClose: true },
+        clickFn,
+      });
+
+      await wrapper.get('button.y-table-action-link').trigger('click');
+      await flushPromises();
+
+      const confirmButton = document.body.querySelector<HTMLButtonElement>('.ant-popconfirm-buttons .ant-btn-primary');
+      if (!confirmButton) throw new Error('未找到 AntDV 真实确认按钮');
+
+      // 阶段 1：点击确定，未调 close，即便 resolve 也不关弹层，loading 一直保持
+      confirmButton.click();
+      await flushPromises();
+      expect(clickFn).toHaveBeenCalledTimes(1);
+      const confirm = wrapper.getComponent(Popconfirm);
+      expect(confirm.props('open')).toBe(true);
+      expect(confirmButton.classList.contains('ant-btn-loading')).toBe(true);
+
+      // 阶段 2：调 hideLoading()，loading 停止且弹层保留供重试
+      capturedHelpers.hideLoading();
+      await flushPromises();
+      expect(confirm.props('open')).toBe(true);
+      expect(confirmButton.classList.contains('ant-btn-loading')).toBe(false);
+
+      // 阶段 3：用户再次点击确定重试
+      confirmButton.click();
+      await flushPromises();
+      expect(clickFn).toHaveBeenCalledTimes(2);
+      expect(confirm.props('open')).toBe(true);
+      expect(confirmButton.classList.contains('ant-btn-loading')).toBe(true);
+
+      // 阶段 4：调 close()，弹层关闭
+      capturedHelpers.close();
+      await flushPromises();
+      expect(confirm.props('open')).toBe(false);
+    });
+  });
+
+  it('1.7.6 测试 6: pending 期间行身份变化 / 更多菜单关闭 / 卸载后晚到的 resolve/reject 被忽略', async () => {
+    let resolveOld: () => void = () => {};
+    let rejectOld: (e: any) => void = () => {};
+    const clickFn = vi.fn(() => {
+      return new Promise<void>((resolve, reject) => {
+        resolveOld = resolve;
+        rejectOld = reject;
+      });
+    });
+
+    const wrapper = createButton({
+      confirmProps: { needLoading: true },
+      clickFn,
+    });
+
+    await wrapper.get('button.y-table-action-link').trigger('click');
+    await flushPromises();
+
+    const confirmButton = document.body.querySelector<HTMLButtonElement>('.ant-popconfirm-buttons .ant-btn-primary');
+    if (!confirmButton) throw new Error('未找到 AntDV 真实确认按钮');
+    confirmButton.click();
+    await flushPromises();
+
+    const confirm = wrapper.getComponent(Popconfirm);
+    expect(confirm.props('open')).toBe(true);
+    expect(confirm.props('okButtonProps')?.loading).toBe(true);
+
+    // 行身份换到第 2 行，原弹层应关闭且清理 loading
+    await wrapper.setProps({ scope: { row: { id: 2 } } });
+    expect(confirm.props('open')).toBe(false);
+    expect(confirm.props('okButtonProps')?.loading).toBe(false);
+
+    // 旧行的 resolve 晚到，直接被忽略
+    resolveOld();
+    await flushPromises();
+    expect(confirm.props('open')).toBe(false);
+
+    // 换到第 3 行并重新打开确认层，旧行的 reject 晚到，直接被忽略且不报错
+    await wrapper.setProps({ scope: { row: { id: 3 } } });
+    confirm.vm.$emit('update:open', true);
+    await nextTick();
+    expect(confirm.props('open')).toBe(true);
+
+    rejectOld(new Error('过期异步异常'));
+    await flushPromises();
+    expect(confirm.props('open')).toBe(true);
+  });
+
+  it('1.7.6 测试 6 补充: pending 期间更多菜单关闭后晚到的 resolve 被忽略且不报错', async () => {
+    let resolveClick: () => void = () => {};
+    const clickFn = vi.fn(() => {
+      return new Promise<void>(resolve => {
+        resolveClick = resolve;
+      });
+    });
+
+    const wrapper = mount(ActionButton, {
+      props: {
+        scope: { row: { id: 1 } },
+        config: { text: '删除', isConfirm: true, confirmProps: { needLoading: true }, clickFn },
+        menuOpen: true,
+      },
+      attachTo: document.body,
+    });
+    wrappers.push(wrapper);
+
+    const confirm = wrapper.getComponent(Popconfirm);
+    confirm.vm.$emit('update:open', true);
+    await nextTick();
+
+    const confirmButton = document.body.querySelector<HTMLButtonElement>('.ant-popconfirm-buttons .ant-btn-primary');
+    confirmButton?.click();
+    await flushPromises();
+    expect(confirm.props('open')).toBe(true);
+
+    // 更多菜单收起
+    await wrapper.setProps({ menuOpen: false });
+    expect(confirm.props('open')).toBe(false);
+
+    // 晚到的 resolve 被安全丢弃
+    resolveClick();
+    await flushPromises();
+    expect(confirm.props('open')).toBe(false);
   });
 
   it('普通按钮配 needLoading，调 hideLoading 后 errorHandler 不会被调用', async () => {

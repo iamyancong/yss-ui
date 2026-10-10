@@ -456,7 +456,8 @@ const actionConfig: YTableActionConfig = {
 | title | `string` | `确定要执行此操作吗？` | 确认框标题 |
 | okText | `string` | `确定` | 确认按钮文字 |
 | cancelText | `string` | `取消` | 取消按钮文字 |
-| needLoading | `boolean` | `false` | 是否在确认后显示 loading 状态（成功调用 `helpers.close()`，失败调用 `helpers.hideLoading()`，两个都不调用时 loading 会一直保持） |
+| needLoading | `boolean` | `false` | 是否在确认后显示 loading 状态（异步回调正常 resolve 视为成功自动关闭并清理 loading，也可显式调用 `helpers.close()` 立即关闭；异常或 reject 自动停止 loading 并保持弹层供重试） |
+| manualClose | `boolean` | `false` | 是否启用受控手动关闭模式：开启后必须显式调用 `helpers.close()` 才关闭弹层，`helpers.hideLoading()` 仅停止 loading 并保持弹层供重试（1.7.5 受控语义） |
 | popProps | `Record<string, any>` | - | 透传给 `Popconfirm` 的其他属性（如 `placement`、`icon` 等） |
 
 **clickFn 回调参数**：
@@ -469,7 +470,7 @@ click?: (scope, btn, helpers) => void | Promise<void>
 // btn: ActionButtonConfig - 当前按钮配置
 // helpers: {
 //   close: () => void        // 关闭确认框（仅 isConfirm=true 时有效）
-//   hideLoading: () => void  // 关闭 loading 状态（仅 needLoading=true 时有效）
+//   hideLoading: () => void  // 停止 loading 状态（仅 needLoading=true 时有效）
 // }
 ```
 
@@ -477,7 +478,10 @@ click?: (scope, btn, helpers) => void | Promise<void>
 
 > **行身份稳定性与轮询配置**：直显确认与“更多”弹层统一按稳定行身份（优先 `scope.rowid` 即 `rowConfig.keyField`，其次 `row.id`，最后回退至行引用）监听与保持。对于轮询或局部刷新场景，行对象浅拷贝或重建不会误关闭已打开的确认弹层；**建议在轮询表格中显式配置 `:row-config="{ keyField: 'id', useKey: true }"`**（将 `keyField` 设为真实业务主键），确保 `<tr>` 与操作列实例稳定复用。
 
-> **needLoading 与弹层生命周期**：当 `isConfirm` 配合 `needLoading: true` 时，确认后 Popconfirm 保持打开并进入 loading 态；若位于“更多”菜单内，也会延后关闭更多浮层。异步操作成功后必须由业务显式调用 `helpers.close()`（自动清理 loading、关闭 Popconfirm 并收起更多菜单）；若操作失败可调用 `helpers.hideLoading()` 结束 loading 并保持浮层打开供用户重试；若在此期间行身份变化（如翻页/换行）或外部关闭浮层，组件将自动级联清理 loading 与弹层。
+> **needLoading 与弹层生命周期**：当 `isConfirm` 配合 `needLoading: true` 时，确认后 Popconfirm 保持打开并进入 loading 态；若位于“更多”菜单内，也会延后关闭更多浮层。
+> - **默认兼容行为**：`clickFn` 正常 resolve 即可视为成功自动关闭弹层、收起菜单并清理 loading；执行过程中调用 `helpers.close()` 会立即关闭；若在 `finally` 块中调用 `helpers.hideLoading()` 仅停止 loading，待函数正常 resolve 后同样安全关闭；操作抛错或 reject 时自动停止 loading 并保持弹层打开供用户重试。
+> - **受控手动关闭（manualClose: true）**：开启后保留 1.7.5 严格受控语义，必须显式调用 `helpers.close()` 才关闭弹层；调用 `helpers.hideLoading()` 停止 loading 并保留弹层供重试。
+> - 若在此期间行身份变化（如翻页/换行）或外部关闭浮层，组件将自动级联清理 loading 与弹层，晚到的异步结果会被安全忽略。
 
 > **禁用与确认**：更多菜单内普通项、确认项及禁用项统一居中。禁用确认项直接渲染禁用按钮；确认资格失效或当前行、操作标识变化时清理旧确认状态，重新启用不会自动弹出确认框。
 

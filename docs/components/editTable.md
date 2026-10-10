@@ -309,7 +309,7 @@ vxe-table 4.19.x 新增或增强的原生配置也会继续透传，例如 `aggr
 | `hideFn` | `(scope) => boolean` | 返回 `true` 时隐藏 |
 | `disabledFn` | `(scope) => boolean` | 返回 `true` 时禁用 |
 | `isConfirm` | `boolean` | 是否二次确认 |
-| `confirmProps` | `{ title?, okText?, cancelText?, needLoading?, popProps? }` | 二次确认配置 |
+| `confirmProps` | `{ title?, okText?, cancelText?, needLoading?, manualClose?, popProps? }` | 二次确认配置 |
 
 ```typescript
 const actionConfig: YTableActionConfig = {

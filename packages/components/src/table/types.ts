@@ -319,6 +319,12 @@ export interface ActionButtonConfig {
     cancelText?: string;
     /** 是否需要在确认时展示 loading，并由外部手动结束 */
     needLoading?: boolean;
+    /**
+     * 是否启用受控手动关闭模式。
+     * 默认 false（兼容 1.7.4 行为）：clickFn 正常 resolve 即视为成功并关闭弹层，reject 时重置 loading 保持弹层供重试，finally 中调用 hideLoading() 也会在正常 resolve 后安全关闭。
+     * 为 true 时保留受控语义（1.7.5 模式）：必须显式调用 helpers.close() 才关闭弹层，helpers.hideLoading() 停止 loading 并保持弹层供重试。
+     */
+    manualClose?: boolean;
     /** 透传给弹层的属性 */
     popProps?: Record<string, any>;
   };

@@ -2,7 +2,7 @@
   {
     "key": "components",
     "pkg": "@yss-ui/components",
-    "version": "v1.7.5",
+    "version": "v1.7.6",
     "date": "2026-10-10",
     "highlight": "16 个公开组件补齐全量 API 契约，公开类型导出与文档对齐",
     "link": "/changelog/components",
@@ -11,7 +11,7 @@
   {
     "key": "skills",
     "pkg": "@yss-ui/skills",
-    "version": "v1.5.4",
+    "version": "v1.5.5",
     "date": "2026-10-10",
     "highlight": "30 个 skill 的触发路由评测与安全扫描并入发布门禁",
     "link": "/changelog/skills",

@@ -12,10 +12,10 @@ toc: content
 
 | 指标类别 | 全库综合覆盖率 | 目标阈值 | 状态 |
 | :--- | :--- | :--- | :--- |
-| **行覆盖率 (Lines)** | **62.91%** | 45% | ✅ 达标 |
-| **分支覆盖率 (Branches)** | **67.09%** | 62% | ✅ 达标 |
-| **函数覆盖率 (Functions)** | **54.05%** | 48% | ✅ 达标 |
-| **语句覆盖率 (Statements)** | **62.91%** | 45% | ✅ 达标 |
+| **行覆盖率 (Lines)** | **69.77%** | 45% | ✅ 达标 |
+| **分支覆盖率 (Branches)** | **69.46%** | 62% | ✅ 达标 |
+| **函数覆盖率 (Functions)** | **54.52%** | 48% | ✅ 达标 |
+| **语句覆盖率 (Statements)** | **69.77%** | 45% | ✅ 达标 |
 
 ## UI 组件（@yss-ui/components）
 
@@ -24,18 +24,18 @@ toc: content
 | **authority** | 1 | 100% (53/53) | 80% | `🟢 优秀 (100%)` | `authority-dropdown.component.test.ts` |
 | **button** | 1 | 100% (147/147) | 85.29% | `🟢 优秀 (100%)` | `button.component.test.ts` |
 | **card** | 1 | 93.41% (170/182) | 71.43% | `🟢 优秀 (93.41%)` | `card.component.test.ts` |
-| **condition-builder** | 2 | 69.63% (892/1281) | 68.29% | `🟡 良好 (69.63%)` | `condition-builder.component.test.ts`<br/>`use-condition-tree.test.ts` |
+| **condition-builder** | 2 | 74.6% (1037/1390) | 71.19% | `🟡 良好 (74.6%)` | `condition-builder.component.test.ts`<br/>`use-condition-tree.test.ts` |
 | **cron** | 1 | 90.03% (840/933) | 68.97% | `🟢 优秀 (90.03%)` | `cron.component.test.ts` |
-| **echarts** | 1 | 97.73% (258/264) | 68.57% | `🟢 优秀 (97.73%)` | `echarts.component.test.ts` |
-| **edit-table** | 5 | 71.64% (1296/1809) | 53.44% | `🟡 良好 (71.64%)` | `action-config.test.ts`<br/>`dynamic-editor.test.ts`<br/>`edit-table.component.test.ts`<br/>`error-tooltip-scroll.test.ts`<br/>`virtual-scroll.test.ts` |
+| **echarts** | 1 | 97.07% (331/341) | 66.67% | `🟢 优秀 (97.07%)` | `echarts.component.test.ts` |
+| **edit-table** | 5 | 76.82% (1485/1933) | 61.39% | `🟡 良好 (76.82%)` | `action-config.test.ts`<br/>`dynamic-editor.test.ts`<br/>`edit-table.component.test.ts`<br/>`error-tooltip-scroll.test.ts`<br/>`virtual-scroll.test.ts` |
 | **file-import** | 1 | 94.94% (413/435) | 67.8% | `🟢 优秀 (94.94%)` | `file-import.component.test.ts` |
-| **formily** | 4 | 27.69% (694/2506) | 73.49% | `🟠 偏低 (27.69%)` | `collapse.component.test.ts`<br/>`collapse.test.ts`<br/>`feedback.component.test.ts`<br/>`feedback.test.ts` |
-| **locale** | 2 | 96.97% (897/925) | 81.36% | `🟢 优秀 (96.97%)` | `adapters.component.test.ts`<br/>`locale.component.test.ts` |
-| **monaco** | 3 | 39.03% (1609/4122) | 43.18% | `🟠 偏低 (39.03%)` | `monaco.component.test.ts`<br/>`subpath-exports.component.test.ts`<br/>`nginxFormat.test.ts` |
+| **formily** | 5 | 61.72% (1554/2518) | 79.22% | `🟡 良好 (61.72%)` | `collapse.component.test.ts`<br/>`collapse.test.ts`<br/>`feedback.component.test.ts`<br/>`feedback.test.ts`<br/>`subpath-table-formily.component.test.ts` |
+| **locale** | 2 | 96.46% (899/932) | 80% | `🟢 优秀 (96.46%)` | `adapters.component.test.ts`<br/>`locale.component.test.ts` |
+| **monaco** | 3 | 49.58% (2150/4336) | 45.13% | `🟠 偏低 (49.58%)` | `monaco.component.test.ts`<br/>`subpath-exports.component.test.ts`<br/>`nginxFormat.test.ts` |
 | **month-calendar** | 2 | 96.03% (1039/1082) | 84.08% | `🟢 优秀 (96.03%)` | `date-boundary.test.ts`<br/>`month-calendar.component.test.ts` |
 | **sheet** | 1 | 65.47% (567/866) | 53.85% | `🟡 良好 (65.47%)` | `sheet.component.test.ts` |
 | **split-pane** | 1 | 92.45% (1237/1338) | 71.81% | `🟢 优秀 (92.45%)` | `split-pane.component.test.ts` |
-| **table** | 4 | 78.03% (2263/2900) | 69.6% | `🟡 良好 (78.03%)` | `action-column.component.test.ts`<br/>`action-width.test.ts`<br/>`selection.component.test.ts`<br/>`toolbar.component.test.ts` |
+| **table** | 7 | 79.74% (2484/3115) | 74.94% | `🟡 良好 (79.74%)` | `action-button-state.component.test.ts`<br/>`action-column.component.test.ts`<br/>`action-width.test.ts`<br/>`row-identity.test.ts`<br/>`selection.component.test.ts`<br/>`toolbar.component.test.ts`<br/>`subpath-table-formily.component.test.ts` |
 | **trade-calendar-board** | 0 | 0% (0/0) | 0% | `🔴 待补单测` | *(暂无)* |
 | **tree** | 1 | 97.87% (596/609) | 76.4% | `🟢 优秀 (97.87%)` | `tree.component.test.ts` |
 
@@ -74,8 +74,7 @@ toc: content
 
 供 Maintainer 与 Coding Agent（通过 `component-testing` 技能）作为测试补充依据：
 
-- **formily**（UI 组件（@yss-ui/components））：行覆盖率偏低 (27.69%)
-- **monaco**（UI 组件（@yss-ui/components））：行覆盖率偏低 (39.03%)
+- **monaco**（UI 组件（@yss-ui/components））：行覆盖率偏低 (49.58%)
 - **trade-calendar-board**（UI 组件（@yss-ui/components））：尚未建立单测
 - **useFullscreen**（Composables（@yss-ui/hooks））：尚未建立单测
 - **useLoading**（Composables（@yss-ui/hooks））：尚未建立单测

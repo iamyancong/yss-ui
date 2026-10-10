@@ -47,24 +47,32 @@ const antdType = computed(() => {
   return t as any;
 });
 
-let pending: { resolve: () => void; reject: (e?: unknown) => void } | null = null;
+interface ConfirmPending {
+  manualClose: boolean;
+  settled: boolean;
+  resolve: () => void;
+  reject: (e?: unknown) => void;
+}
 
-const hideLoading = () => {
-  loading.value = false;
+let pending: ConfirmPending | null = null;
+
+/** 清理并失效当前 pending 受控 Promise，防止晚到的异步结果污染新状态。 */
+const abortPending = () => {
   if (pending) {
     const p = pending;
     pending = null;
-    p.reject(ACTION_RETRY_SIGNAL);
+    p.settled = true;
+    p.resolve();
   }
+};
+
+const hideLoading = () => {
+  loading.value = false;
 };
 
 const close = () => {
   visible.value = false;
-  if (pending) {
-    const p = pending;
-    pending = null;
-    p.resolve();
-  }
+  abortPending();
 };
 
 const rowIdentity = computed(() => resolveRowIdentity(props.scope));
@@ -101,11 +109,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
-  if (pending) {
-    const p = pending;
-    pending = null;
-    p.resolve();
-  }
+  abortPending();
 });
 
 /** 执行已通过禁用与确认校验的操作。 */
@@ -130,16 +134,67 @@ const handleConfirm = () => {
       // 仅二次确认的 Popconfirm 需要返回受控 Promise，并在按需注册全局 filter 后
       // 允许通过 reject(ACTION_RETRY_SIGNAL) 驱动 AntDV ActionButton 停止 loading 并解锁重试
       ensureRetrySignalFilter();
+      const manualClose = !!props.config?.confirmProps?.manualClose;
+
       return new Promise<void>((resolve, reject) => {
-        pending = { resolve, reject };
-        try {
-          Promise.resolve(clickHandler?.(props.scope, props.config, { close: handleHelperClose, hideLoading })).catch(
-            () => {
-              hideLoading();
+        const currentPending: ConfirmPending = {
+          manualClose,
+          settled: false,
+          resolve,
+          reject,
+        };
+        pending = currentPending;
+
+        const finishSuccess = () => {
+          if (currentPending.settled) return;
+          currentPending.settled = true;
+          loading.value = false;
+          visible.value = false;
+          emit('request-close');
+          currentPending.resolve();
+          if (pending === currentPending) {
+            pending = null;
+          }
+        };
+
+        const finishRetry = () => {
+          if (currentPending.settled) return;
+          currentPending.settled = true;
+          loading.value = false;
+          currentPending.reject(ACTION_RETRY_SIGNAL);
+          if (pending === currentPending) {
+            pending = null;
+          }
+        };
+
+        const helpers = {
+          close: () => {
+            if (pending !== currentPending || currentPending.settled) return;
+            finishSuccess();
+          },
+          hideLoading: () => {
+            loading.value = false;
+            if (pending !== currentPending || currentPending.settled) return;
+            if (manualClose) {
+              finishRetry();
             }
-          );
+          },
+        };
+
+        try {
+          Promise.resolve(clickHandler?.(props.scope, props.config, helpers))
+            .then(() => {
+              if (pending !== currentPending || currentPending.settled) return;
+              if (manualClose) return;
+              finishSuccess();
+            })
+            .catch(() => {
+              if (pending !== currentPending || currentPending.settled) return;
+              finishRetry();
+            });
         } catch {
-          hideLoading();
+          if (pending !== currentPending || currentPending.settled) return;
+          finishRetry();
         }
       });
     }

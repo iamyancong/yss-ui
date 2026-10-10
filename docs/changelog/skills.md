@@ -10,6 +10,16 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.5.5
+
+`2026-10-10`
+
+### 📝 Documentation
+
+- **ytable-usage**：同步更新 `needLoading` 异步回调规范，说明 1.7.6 默认自动按正常 resolve 成功关闭弹层、异常停止 loading 保持弹层供重试，并说明可通过 `manualClose: true` 开启严格受控关闭模式 (#37)。
+
+---
+
 ## v1.5.4
 
 `2026-10-10`
