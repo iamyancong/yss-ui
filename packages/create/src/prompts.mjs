@@ -175,7 +175,7 @@ export const runInteractivePrompts = async (initialInput = {}) => {
     );
   }
 
-  // 7. 描述与 OpenAPI（可选）
+  // 7. 描述（可选）；OpenAPI 地址不再询问，仅通过 --openapi-url 传入
   const description =
     initialInput.description ??
     handleCancel(
@@ -185,14 +185,7 @@ export const runInteractivePrompts = async (initialInput = {}) => {
       })
     );
 
-  const openapiUrl =
-    initialInput.openapiUrl ??
-    handleCancel(
-      await p.text({
-        message: 'OpenAPI 文档地址 (可选):',
-        placeholder: '例如 http://api.internal/v3/api-docs',
-      })
-    );
+  const openapiUrl = initialInput.openapiUrl ?? '';
 
   const answers = {
     name,

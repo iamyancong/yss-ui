@@ -117,8 +117,8 @@ export const customizeGeneratedProject = async (targetProjectRoot, appNameZh, de
  * 执行微应用完整生成流。
  *
  * @param {Record<string, any>} resolved 规范化后的参数对象
- * @param {{ onProgress?: (message: string) => void, scaffoldStdout?: 'inherit' | 'stderr' }} [options]
- *   进度回调与模板脚本 stdout 去向
+ * @param {{ onProgress?: (message: string) => void, scaffoldStdout?: 'inherit' | 'stderr', allowGitPrompt?: boolean }} [options]
+ *   进度回调、模板脚本 stdout 去向，以及是否允许 git 在终端询问凭据（仅交互模式）
  * @returns {Promise<{ targetPath: string, templateCommit: string }>} 生成结果
  */
 export const generate = async (resolved, options = {}) => {
@@ -143,6 +143,7 @@ export const generate = async (resolved, options = {}) => {
       cacheDir: resolved.cacheDir,
       offline: resolved.offline,
       preferOffline: resolved.preferOffline,
+      allowGitPrompt: options.allowGitPrompt === true,
     },
     onProgress
   );

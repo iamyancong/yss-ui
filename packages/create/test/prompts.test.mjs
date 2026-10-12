@@ -47,7 +47,6 @@ describe('prompts 交互提问流程测试', () => {
       if (opts.message.includes('接口请求前缀')) return opts.initialValue || '/api/userCenter';
       if (opts.message.includes('后端代理目标')) return opts.initialValue || 'http://127.0.0.1:3000';
       if (opts.message.includes('项目描述')) return '用户管理微应用';
-      if (opts.message.includes('OpenAPI')) return '';
       return '';
     });
 
@@ -58,6 +57,9 @@ describe('prompts 交互提问流程测试', () => {
     expect(answers.activeRule).toBe('/userCenter');
     expect(answers.port).toBe(8081);
     expect(answers.description).toBe('用户管理微应用');
+    expect(answers.openapiUrl).toBe('');
+    expect(textCalls.some(call => call.message.includes('OpenAPI'))).toBe(false);
+    expect(textCalls.at(-1).message).toContain('项目描述');
 
     // 验证提问顺序
     expect(textCalls[0].message).toContain('中文名');
@@ -67,6 +69,17 @@ describe('prompts 交互提问流程测试', () => {
     expect(textCalls[4].message).toContain('接口请求前缀');
     expect(textCalls[3].initialValue).toBe('8081');
     expect(p.note).not.toHaveBeenCalledWith(expect.anything(), '端口提示');
+  });
+
+  it('不再询问 OpenAPI 地址，但 --openapi-url 传入的值原样保留', async () => {
+    p.text.mockImplementation(
+      async opts => opts.initialValue || (opts.message.includes('英文名') ? 'user-center' : '用户中心')
+    );
+
+    const { answers } = await runInteractivePrompts({ openapiUrl: 'http://api.internal/v3/api-docs' });
+
+    expect(answers.openapiUrl).toBe('http://api.internal/v3/api-docs');
+    expect(p.text.mock.calls.some(([opts]) => opts.message.includes('OpenAPI'))).toBe(false);
   });
 
   it('8081 被占用时端口 initialValue 为探测到的空闲端口，并给出提示', async () => {

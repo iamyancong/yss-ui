@@ -19,6 +19,7 @@ YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 - **page-module-development**：标记为软废弃（加入 `deprecatedSkills`，并从 `categories.app` 移除），保留旧项目兼容别名壳，新业务页面统一主推 `yss-ui-business-page-generation` (#50)。
 - **yss-create-microapp**：统一 activeRule 为雨燕驼峰规范，支持从应用英文名自动推导单段路由；执行脚本重构为基于 `@yss-ui/create` 共享核心 `core` 的薄包装，零外部依赖保持独立运行 (#48)。
 - **skills.config**：将 `yss-create-microapp` 从 `library` 分类移至 `app` 默认同步分类，不带 `--all` 参数默认同步即可安装使用 (#48)。
+- **yss-create-microapp**：默认模板改为 GitHub 公开仓库 `iamyancong/microapp-template-vue3`（分支 `main`）；模板拉取失败时提示检查 GitHub 访问或用 `--template-url` / `YSS_FRONTEND_TEMPLATE_URL` 覆盖，脚本非交互运行不再挂起等待 git 凭据 (#51)。
 
 ### ⚠️ 行为变化与升级说明
 

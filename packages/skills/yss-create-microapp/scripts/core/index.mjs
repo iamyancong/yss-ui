@@ -35,7 +35,7 @@ export { probeFreePort } from './port.mjs';
 
 export { resolveOptions } from './options.mjs';
 
-export { runGit, syncTemplate } from './template.mjs';
+export { diagnoseGitFailure, getGitErrorDetail, runGit, syncTemplate } from './template.mjs';
 
 export { customizeGeneratedProject, generate, runScaffoldScript } from './generator.mjs';
 

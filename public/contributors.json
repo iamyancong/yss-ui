@@ -31,6 +31,15 @@
       "url": "https://github.com/cursoragent"
     }
   ],
+  "/changelog/create": [
+    {
+      "name": "iamyancong",
+      "email": "wangyancong@ysstech.com",
+      "commits": 1,
+      "avatar": "https://github.com/iamyancong.png?size=64",
+      "url": "https://github.com/iamyancong"
+    }
+  ],
   "/changelog/hooks": [
     {
       "name": "iamyancong",
@@ -60,7 +69,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 13,
+      "commits": 14,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     },
@@ -238,6 +247,15 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
+      "commits": 2,
+      "avatar": "https://github.com/iamyancong.png?size=64",
+      "url": "https://github.com/iamyancong"
+    }
+  ],
+  "/guide/create-app": [
+    {
+      "name": "iamyancong",
+      "email": "wangyancong@ysstech.com",
       "commits": 1,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
@@ -256,7 +274,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 10,
+      "commits": 11,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     }

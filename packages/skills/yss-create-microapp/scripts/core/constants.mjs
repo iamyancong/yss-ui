@@ -29,14 +29,15 @@ export const BRANCH_PATTERN = /^(?!.*(?:^|\/)\.\.(?:\/|$))[A-Za-z0-9._/-]+$/;
 export const DEFAULT_PROXY_TARGET = 'http://127.0.0.1:3000';
 
 /**
- * 默认微应用模板仓库地址（环境变量 YSS_FRONTEND_TEMPLATE_URL 由 resolveOptions 在运行时读取）。
+ * 默认微应用模板仓库地址（GitHub 公开仓库）。
+ * 环境变量 YSS_FRONTEND_TEMPLATE_URL 由 resolveOptions 在运行时读取。
  */
-export const DEFAULT_TEMPLATE_URL = 'https://github.com/ycwang-dev/yss-frontend-template.git';
+export const DEFAULT_TEMPLATE_URL = 'https://github.com/iamyancong/microapp-template-vue3.git';
 
 /**
  * 默认微应用模板分支。
  */
-export const DEFAULT_TEMPLATE_BRANCH = 'template';
+export const DEFAULT_TEMPLATE_BRANCH = 'main';
 
 /**
  * 默认模板缓存目录名称（必须以 yss-frontend-template 开头）。

@@ -12,6 +12,16 @@ npx @yss-ui/create
 
 交互模式只需填写应用中文名与英文名，激活路由、端口、接口前缀、代理目标会自动推导，并在预览表中标注来源。
 
+## 模板与网络
+
+默认模板为 GitHub 公开仓库 [iamyancong/microapp-template-vue3](https://github.com/iamyancong/microapp-template-vue3)（分支 `main`），无需凭据。使用其他模板：
+
+```bash
+npx @yss-ui/create --template-url https://git.example.com/fe/my-template.git
+# 或
+YSS_FRONTEND_TEMPLATE_URL=https://git.example.com/fe/my-template.git npx @yss-ui/create
+```
+
 非交互 / CI / AI Agent：
 
 ```bash
@@ -37,7 +47,7 @@ npx @yss-ui/create --apply ./plan.json
 | 2 | 参数缺失、非法或拼写错误 |
 | 3 | 目标目录已存在（不提供覆盖） |
 | 4 | `--apply` 计划校验失败 |
-| 5 | 模板拉取失败 |
+| 5 | 模板拉取失败（无法访问 GitHub、仓库或分支不存在等） |
 | 6 | 模板生成脚本失败 |
 | 130 | 用户取消 |
 

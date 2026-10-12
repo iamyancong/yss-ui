@@ -494,25 +494,19 @@ export const runCli = async (rawArgv = process.argv) => {
       return;
     }
 
-    // 5. 正式执行生成
-    const spin = !isNonInteractive ? p.spinner() : null;
-    if (spin) {
-      spin.start('正在拉取模板并生成微应用工程...');
-    } else {
-      log(pc.cyan('🔄 正在同步模板并生成微应用工程...'));
-    }
+    // 5. 正式执行生成：交互模式逐行输出进度（不用 spinner，避免遮挡 git 的账号密码输入提示）
+    if (isNonInteractive) log(pc.cyan('🔄 正在同步模板并生成微应用工程...'));
 
     const genResult = await generate(resolvedOptions, {
       onProgress: msg => {
-        if (spin) spin.message(msg);
-        else log(pc.dim(msg));
+        if (isNonInteractive) log(pc.dim(msg));
+        else p.log.step(msg);
       },
       scaffoldStdout,
+      allowGitPrompt: !isNonInteractive,
     });
 
-    if (spin) {
-      spin.stop('微应用骨架代码生成完毕！');
-    }
+    if (!isNonInteractive) p.log.success('微应用骨架代码生成完毕！');
 
     // 6. 后置动作：非交互只认显式开关；交互模式对未显式指定的项逐个询问
     const postActions = isNonInteractive

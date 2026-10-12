@@ -29,6 +29,22 @@ npx @yss-ui/create
 pnpm create yss-app my-order-app
 ```
 
+### 模板来源与网络要求
+
+默认模板为 GitHub 公开仓库 [iamyancong/microapp-template-vue3](https://github.com/iamyancong/microapp-template-vue3)（分支 `main`）：
+
+```text
+https://github.com/iamyancong/microapp-template-vue3.git
+```
+
+- 公开仓库，无需凭据，只要能访问 GitHub 即可。
+- 使用需要凭据的私有模板时，交互模式下 git 会在终端询问账号密码；`--yes` / `--json` / CI 等非交互模式不会询问，没有凭据时立即失败（退出码 5）。
+- 需要使用其他模板时，优先级为：`--template-url` > 环境变量 `YSS_FRONTEND_TEMPLATE_URL` > 默认 GitHub 地址，分支用 `--template-branch` 覆盖。
+
+```bash
+YSS_FRONTEND_TEMPLATE_URL=https://git.example.com/fe/my-template.git pnpm create yss-app
+```
+
 ---
 
 ## 交互式创建流程
@@ -41,8 +57,9 @@ pnpm create yss-app my-order-app
 4. **本地开发端口**：默认自动从 `8081` 向上探测空闲端口，若已被占用会自动提示并推荐下一个可用端口（如 `8082`）。
 5. **接口请求前缀 (apiBase)**：默认自动推导为 `/api${activeRule}`。
 6. **代理目标 (proxyTarget)**：自动读取环境变量 `YSS_PROXY_TARGET` 或系统测试环境预设地址。
-7. **参数预览与确认**：向导会在终端表格中完整展示所有字段、配置值与来源（用户指定、自动推导、环境变量、默认预设），经用户二次确认后开始写入。
-8. **后续可选动作**：交互式询问是否立即安装依赖、同步官方 AI Skills 规范及初始化 Git 仓库。
+7. **项目描述**：可选；OpenAPI 文档地址不在向导中询问，需要时通过 `--openapi-url` 传入。
+8. **参数预览与确认**：向导会在终端表格中完整展示所有字段、配置值与来源（用户指定、自动推导、环境变量、默认预设），经用户二次确认后开始写入。
+9. **后续可选动作**：交互式询问是否立即安装依赖、同步官方 AI Skills 规范及初始化 Git 仓库。
 
 ---
 
@@ -58,7 +75,9 @@ pnpm create yss-app my-order-app
 | `--proxy-target <url>` | URL | 本地开发服务器代理目标 | 优先级：`--proxy-target` > `YSS_PROXY_TARGET` > 常量 |
 | `--target-dir <dir>` | 路径 | 项目生成的父级目录 | 默认当前工作目录 `process.cwd()` |
 | `--description <str>` | 字符串 | 项目描述（同步写入 `micro-config.json` 与 `package.json`） | 默认为空 |
-| `--openapi-url <url>` | URL | OpenAPI JSON 文档接口地址 | 可选 |
+| `--openapi-url <url>` | URL | OpenAPI JSON 文档接口地址（交互向导不询问，仅通过参数传入） | 可选 |
+| `--template-url <url>` | URL | 模板仓库地址（http / https / file） | 优先级：`--template-url` > `YSS_FRONTEND_TEMPLATE_URL` > 默认 GitHub 地址 |
+| `--template-branch <name>` | 字符串 | 模板分支 | `main` |
 | `-y, --yes` | 布尔 | 全自动非交互模式，未显式指定的参数均采纳推导与预设 | - |
 | `--dry-run` | 布尔 | 预检解析参数与路径校验，不拉取模板、不写盘 | - |
 | `--json` | 布尔 | 机器可读模式：stdout 仅输出一行 JSON，CLI 日志与模板脚本输出全部转走 stderr | - |
@@ -147,7 +166,7 @@ npx @yss-ui/create --apply ./plan.json
 | `2` | `INVALID_ARGUMENTS` | 参数缺失、格式不合法、未知/拼错参数或端口完全耗尽 | 检查参数格式（如 `name` 需字母开头，`activeRule` 需单段路径），`--help` 查看全部参数 |
 | `3` | `TARGET_EXISTS` | 目标项目目录已存在（交互 / `--yes` / `--dry-run` 流程） | CLI **坚决不提供强制覆盖**；请更换项目英文名或指定其他父目录 |
 | `4` | `PLAN_MISMATCH` | `--apply` 流程中计划文件损坏或缺失、签名不符、参数未通过重新校验、目标目录已存在 | 重新执行 `--plan-out` 生成有效计划文件 |
-| `5` | `TEMPLATE_SYNC_FAILED` | 模板仓库拉取或缓存校验失败（网络异常或 remote 不符） | 检查网络连接，或清除本地临时缓存 |
+| `5` | `TEMPLATE_SYNC_FAILED` | 模板仓库拉取或缓存校验失败（无法访问 GitHub、无仓库权限或凭据、分支不存在、remote 不符） | 按报错中的诊断处理：检查能否访问 GitHub，或用 `--template-url` / `YSS_FRONTEND_TEMPLATE_URL` 指定其他模板 |
 | `6` | `SCAFFOLD_FAILED` | 模板工程内部生成脚本执行报错 | 检查模板脚本报错日志 |
 | `130` | `CANCELLED` | 用户在交互过程中按下 Ctrl+C 取消 | 退出操作，未写入任何脏数据 |
 
@@ -162,7 +181,7 @@ npx @yss-ui/create --apply ./plan.json
 **不能**。为了保障开发者本地代码绝对安全，CLI 遵循零风险原则，发现目标目录存在时会立即终止（退出码 3），防止误操作清空或覆盖既有工作区。
 
 ### 3. 本地离线开发时如何拉取模板？
-CLI 支持 `--prefer-offline` 与 `--offline` 模式。只要本地先前执行过一次，即可直接复用位于临时目录的模板缓存，无需访问远端 GitHub。
+CLI 支持 `--prefer-offline` 与 `--offline` 模式。只要本地先前联网执行过一次，即可直接复用位于临时目录的模板缓存，无需再访问模板仓库。
 
 ### 4. CLI 与雨燕平台的关系是什么？
 - `@yss-ui/create` **专注于本地前端工程骨架的秒级初始化**，包含微前端环境配置、API 对接代理与 AI 研发生态集成。
