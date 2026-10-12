@@ -26,7 +26,8 @@ toc: content
 - `page-form-module`：新增/编辑/查看表单模块（mode 0/1/2、数据回显、弹窗销毁、列表刷新）；
 - `yss-formily` + formily 四件套：表单基础 / 联动 / 三态插槽 / 分步流程；
 - `api-integration`：Orval API 对接（mutator 错误契约、长整型精度）；
-- `theme-token-usage`：主题 Token 与换肤（禁止硬编码色值）。
+- `theme-token-usage`：主题 Token 与换肤（禁止硬编码色值）；
+- `yss-create-microapp`：新建本地微应用（已纳入默认同步，一键生成标准微前端子应用骨架）。
 
 完整清单与内容见 [Skills 文档区](/skills)。所有 skill 经过仓库级质量门禁（结构校验、触发路由评测、安全扫描）后才会发布。
 

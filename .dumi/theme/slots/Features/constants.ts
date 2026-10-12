@@ -120,7 +120,18 @@ export const HOME_STATS = [
   { key: 'demos', value: 171, suffix: '+', label: '官方 Demo 索引', detail: 'AI 可直接取用源码' },
 ] as const;
 
-/** 首页快速接入的三条命令。 */
+/** 首页快速接入：新建微应用路径（一条命令）。 */
+export const HOME_CREATE_APP_STEP = {
+  key: 'create-app',
+  title: '新建微应用工程',
+  badge: '一键脚手架',
+  detail: '秒级生成 Vue 3 + TypeScript + qiankun 标准子应用骨架，已内置组件库与 AI 研发生态。',
+  command: 'npm create yss-app@latest',
+  link: '/guide/create-app',
+  linkText: '微应用 CLI 指南',
+} as const;
+
+/** 首页快速接入的三条命令（已有项目接入路径）。 */
 export const HOME_QUICKSTART_STEPS = [
   {
     key: 'install',

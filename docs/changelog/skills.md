@@ -17,6 +17,23 @@ YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 ### 🚀 Features
 
 - **page-module-development**：标记为软废弃（加入 `deprecatedSkills`，并从 `categories.app` 移除），保留旧项目兼容别名壳，新业务页面统一主推 `yss-ui-business-page-generation` (#50)。
+- **yss-create-microapp**：统一 activeRule 为雨燕驼峰规范，支持从应用英文名自动推导单段路由；执行脚本重构为基于 `@yss-ui/create` 共享核心 `core` 的薄包装，零外部依赖保持独立运行 (#48)。
+- **skills.config**：将 `yss-create-microapp` 从 `library` 分类移至 `app` 默认同步分类，不带 `--all` 参数默认同步即可安装使用 (#48)。
+
+### ⚠️ 行为变化与升级说明
+
+本次为 minor 版本：`yss-create-microapp` 的脚本 `scripts/create.mjs` 对旧用法有以下不兼容变化，升级后请核对调用参数与下游脚本 (#48)。
+
+| 项 | 旧行为 | 新行为 | 升级建议 |
+| --- | --- | --- | --- |
+| `--active-rule` 校验 | 允许大写开头、任意数字开头，如 `/OrderCenter`、`/1order` | 对齐雨燕规则 `^\/(?:[a-z]+(?:[A-Z][a-z0-9]+)*\|[a-z]+(?:-[a-z0-9]+)*)$`，`/OrderCenter`、`/1order`、`/order_center` 退出码 2 | 改为小驼峰 `/orderCenter` 或短横线 `/order-center` |
+| `--name` 校验 | 允许数字开头，如 `1app` | 必须以小写字母开头（`^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`），`1app` 退出码 2 | 改为字母开头，如 `app1` |
+| `--active-rule` 默认值 | 固定 `/micro` | 由 `--name` 推导小驼峰：`order-center → /orderCenter`；推导结果不合法时退回短横线形式（`app-1 → /app-1`、`crm2 → /crm-2`） | 依赖 `/micro` 的主应用注册配置请显式传 `--active-rule /micro` |
+| `--api-base` 默认值 | `/api/micro` | 跟随新的 activeRule 推导，如 `/api/orderCenter` | 需要固定值时显式传 `--api-base` |
+| `--port` 默认值 | 固定 `8081` | 从 `8081` 起向上探测首个空闲端口，被占用时自动变为 `8082` 等并输出提示 | CI 或需要固定端口时显式传 `--port 8081` |
+| `--proxy-target` 默认值 | `http://localhost:3000` | 优先级 `--proxy-target` > `YSS_PROXY_TARGET` 环境变量 > 常量 `http://127.0.0.1:3000` | 依赖 `localhost` 字面量的代理配置请显式传参或设置环境变量 |
+
+以上变化在 `@yss-ui/create` CLI 与本 skill 脚本中同时生效，两者基于同一份 core 代码，生成结果逐文件一致。
 
 ---
 

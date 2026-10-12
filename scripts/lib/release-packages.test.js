@@ -14,6 +14,8 @@ const {
   ensureDerivedMcpPublish,
   validateMcpIndex,
   hasChangelogVersion,
+  getLatestChangelogVersion,
+  resolveFirstReleaseAction,
   ensureMcpIndexChangelog,
 } = require('./release-packages');
 
@@ -26,7 +28,11 @@ const keys = files => detectChangedPackages(files).sort();
 assert.ok(PACKAGES.mcp.extraInputs.includes('docs/components/'));
 assert.equal(PACKAGES.mcp.indexHashFile, 'packages/mcp/index.hash');
 assert.deepEqual(orderReleaseKeys(['mcp', 'components', 'skills', 'components']), ['components', 'skills', 'mcp']);
+assert.deepEqual(orderReleaseKeys(['mcp', 'create', 'components']), ['components', 'create', 'mcp']);
 assert.deepEqual(orderReleaseKeys(['mcp', 'unknown']), ['mcp', 'unknown']);
+
+assert.deepEqual(keys(['packages/create/src/cli.mjs']), ['create']);
+assert.deepEqual(keys(['packages/create-yss-app/index.mjs']), ['create-yss-app']);
 
 assert.deepEqual(keys(['docs/components/table.md']), ['mcp']);
 assert.deepEqual(keys(['docs/components/demos/table/x.vue']), ['mcp']);
@@ -170,6 +176,37 @@ fs.writeFileSync(
   })
 );
 assert.throws(() => validateMcpIndex({ indexPath: validIndexPath, componentsPackagePath }), /MCP 索引版本未对齐组件包/);
+
+// 新包首发：registry 不存在 → 按当前版本首发；仅当前版本已发布且无新日志 → 跳过；老包始终 bump
+assert.equal(getLatestChangelogVersion(changelogPath), '0.1.2');
+assert.equal(getLatestChangelogVersion(path.join(tmpDir, 'missing.md')), null);
+assert.equal(getLatestChangelogVersion(undefined), null);
+
+assert.equal(
+  resolveFirstReleaseAction({ publishedVersions: null, currentVersion: '1.0.0', latestChangelogVersion: '1.0.0' }),
+  'first-release'
+);
+assert.equal(
+  resolveFirstReleaseAction({ publishedVersions: ['1.0.0'], currentVersion: '1.0.0', latestChangelogVersion: '1.0.0' }),
+  'skip'
+);
+assert.equal(
+  resolveFirstReleaseAction({ publishedVersions: ['1.0.0'], currentVersion: '1.0.0', latestChangelogVersion: '1.0.1' }),
+  'bump'
+);
+assert.equal(
+  resolveFirstReleaseAction({
+    publishedVersions: ['1.1.2', '1.1.3'],
+    currentVersion: '1.1.3',
+    latestChangelogVersion: '1.1.3',
+  }),
+  'bump'
+);
+assert.equal(
+  resolveFirstReleaseAction({ publishedVersions: ['1.0.0'], currentVersion: '1.0.0', latestChangelogVersion: null }),
+  'bump'
+);
+assert.equal(PACKAGES['create-yss-app'].changelog, PACKAGES.create.changelog);
 
 fs.rmSync(tmpDir, { recursive: true, force: true });
 

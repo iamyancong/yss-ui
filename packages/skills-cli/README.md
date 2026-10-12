@@ -51,6 +51,8 @@ yss-skills sync [options]
 | `--no-links` | — | `false` | 跳过为其他 IDE 创建兼容符号链接 |
 | `--local` | — | `false` | 使用本地 monorepo 中的 `packages/skills` 源码（仅供组件库维护者使用） |
 
+> **说明**：微应用创建技能（`yss-create-microapp`）已纳入默认业务技能分类，默认执行 `sync` 即可开箱即用，无需传 `--all`。
+
 ### 常见使用示例
 
 ```bash

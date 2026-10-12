@@ -17,6 +17,8 @@ const {
   validateMcpIndex,
   persistMcpIndexHash,
   hasChangelogVersion,
+  getLatestChangelogVersion,
+  resolveFirstReleaseAction,
   ensureMcpIndexChangelog,
 } = require('./lib/release-packages');
 const { generateHomeReleases } = require('./generate-home-releases');
@@ -43,6 +45,59 @@ function readJSON(filePath) {
 
 function writeJSON(filePath, data) {
   fs.writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
+}
+
+/**
+ * 查询包在 registry 上的全部已发布版本。
+ *
+ * @param {string} name 包名
+ * @param {string} registry registry 地址
+ * @returns {string[] | null} 已发布版本列表；包不存在 (E404) 时返回 null，其他错误直接抛出
+ */
+function fetchPublishedVersions(name, registry) {
+  try {
+    const out = run(`npm view ${name} versions --json --registry=${registry}`);
+    const parsed = out ? JSON.parse(out) : [];
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch (err) {
+    const detail = `${err.stdout || ''}${err.stderr || ''}${err.message || ''}`;
+    if (/E404|404 Not Found/.test(detail)) return null;
+    throw new Error(`查询 ${name} 已发布版本失败: ${detail.trim()}`);
+  }
+}
+
+/**
+ * 处理新包首发：registry 上不存在的包按当前版本首发；仅当前版本已发布且无新 changelog 的包跳过。
+ *
+ * @param {string[]} changed 变更包 key 列表
+ * @param {string} registry registry 地址
+ * @returns {{ changed: string[], firstReleaseKeys: Set<string> }}
+ */
+function applyFirstReleaseRules(changed, registry) {
+  const firstReleaseKeys = new Set();
+  const kept = changed.filter(key => {
+    const meta = PACKAGES[key];
+    const pkgJsonPath = meta && path.join(meta.dir, 'package.json');
+    if (!pkgJsonPath || !fs.existsSync(pkgJsonPath)) return true;
+
+    const currentVersion = readJSON(pkgJsonPath).version;
+    const action = resolveFirstReleaseAction({
+      publishedVersions: fetchPublishedVersions(meta.name, registry),
+      currentVersion,
+      latestChangelogVersion: getLatestChangelogVersion(meta.changelog),
+    });
+
+    if (action === 'skip') {
+      log(`${meta.name}@${currentVersion} 已完成首发且无新版本日志，本批跳过`);
+      return false;
+    }
+    if (action === 'first-release') {
+      firstReleaseKeys.add(key);
+      log(`${meta.name} 尚未发布，将按当前版本 ${currentVersion} 首发（不 bump）`);
+    }
+    return true;
+  });
+  return { changed: kept, firstReleaseKeys };
 }
 
 function bumpSemver(version, bump) {
@@ -247,7 +302,7 @@ function detectChangedFiles(baseRef) {
  * @param {string} bump - 版本升级类型
  * @returns {Array<{key: string, meta: object, pkgJsonPath: string, oldVersion: string, newVersion: string, pkg: object}>}
  */
-function createReleasePlan(changed, bump) {
+function createReleasePlan(changed, bump, firstReleaseKeys = new Set()) {
   const plan = [];
   for (const key of changed) {
     const meta = PACKAGES[key];
@@ -259,7 +314,7 @@ function createReleasePlan(changed, bump) {
     }
     const pkg = readJSON(pkgJsonPath);
     const oldVersion = pkg.version;
-    const newVersion = bumpSemver(oldVersion, bump);
+    const newVersion = firstReleaseKeys.has(key) ? oldVersion : bumpSemver(oldVersion, bump);
     plan.push({ key, meta, pkgJsonPath, oldVersion, newVersion, pkg });
   }
   return plan;
@@ -334,7 +389,9 @@ async function main() {
   const { bump, base, dryRun, overrideReason } = parseArgs(process.argv);
   if (!bump) {
     // eslint-disable-next-line no-console
-    console.error('用法: node scripts/release-changed.js <patch|minor|major> [--base=<git-ref>] [--dry] [--override-reason="..."]');
+    console.error(
+      '用法: node scripts/release-changed.js <patch|minor|major> [--base=<git-ref>] [--dry] [--override-reason="..."]'
+    );
     process.exit(1);
   }
 
@@ -345,6 +402,10 @@ async function main() {
   changed = refineMcpPublish(changed, files, { log });
   changed = ensureDerivedMcpPublish(changed, { log });
   changed = orderReleaseKeys(changed);
+  const publishRegistry = process.env.NPM_PUBLISH_REGISTRY || 'https://registry.npmjs.org/';
+  const firstRelease = applyFirstReleaseRules(changed, publishRegistry);
+  changed = firstRelease.changed;
+  const { firstReleaseKeys } = firstRelease;
   if (changed.length === 0) {
     log('未检测到需要发布的包，已退出');
     // 清理上一次可能遗留的摘要文件
@@ -368,6 +429,11 @@ async function main() {
 
   for (const key of changed) {
     const meta = PACKAGES[key];
+    if (firstReleaseKeys.has(key)) {
+      gateSummaries.push({ key, version: '首发', requiredBump: '-', ok: true, overridden: false });
+      // eslint-disable-next-line no-continue
+      continue;
+    }
     let pkgVersion = '1.0.0';
     if (meta) {
       const pkgJsonPath = path.join(meta.dir, 'package.json');
@@ -446,11 +512,13 @@ async function main() {
       console.error(`  📦 [${f.key}@${f.version}] 要求升级至 ≥ ${f.requiredBump}：`);
       f.reasons.forEach(r => console.error(`     - ${r}`));
     });
-    console.error('\n如确需以当前版本类型强制发布，请提供 --override-reason="说明原因" 或设置 RELEASE_OVERRIDE_REASON 环境变量。\n');
+    console.error(
+      '\n如确需以当前版本类型强制发布，请提供 --override-reason="说明原因" 或设置 RELEASE_OVERRIDE_REASON 环境变量。\n'
+    );
     process.exit(1);
   }
 
-  const releasePlan = createReleasePlan(changed, bump);
+  const releasePlan = createReleasePlan(changed, bump, firstReleaseKeys);
   if (releasePlan.length === 0) {
     log('未生成有效发布计划，已退出');
     return;
@@ -516,7 +584,6 @@ async function main() {
     }
 
     // 发布
-    const publishRegistry = process.env.NPM_PUBLISH_REGISTRY || 'https://registry.npmjs.org/';
     log(`发布 ${meta.name}@${newVersion} 至 ${publishRegistry}`);
     try {
       run(`pnpm --filter ${meta.name} publish --no-git-checks --registry=${publishRegistry}`, { stdio: 'inherit' });
@@ -535,7 +602,7 @@ async function main() {
   log('发布流程完成');
   // 将本次发布摘要写入文件，供 CI 读取生成更清晰的提交信息
   if (!dryRun) {
-    saveReleaseSummary(releaseSummaryEntries, gateResult);
+    saveReleaseSummary(releaseSummaryEntries, { overrideReason, packages: gateSummaries });
     try {
       generateHomeReleases();
     } catch (_) {

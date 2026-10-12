@@ -43,10 +43,12 @@ module.exports = {
         '@yss-ui/hooks', // Hooks 库
         '@yss-ui/utils', // 工具库
         '@yss-ui/theme', // 主题配置
+        '@yss-ui/create', // 微应用创建 CLI（含别名包 create-yss-app）
         'components', // 组件库（简写）
         'hooks', // Hooks 库（简写）
         'utils', // 工具库（简写）
         'theme', // 主题配置（简写）
+        'create', // 微应用创建 CLI（简写）
         'docs', // 文档
         'scripts', // 脚本
         'config', // 配置文件

@@ -25,6 +25,8 @@ const PACKAGES = {
   hooks: { dir: 'packages/hooks', name: '@yss-ui/hooks', changelog: 'docs/changelog/hooks.md' },
   theme: { dir: 'packages/theme', name: '@yss-ui/theme' },
   utils: { dir: 'packages/utils', name: '@yss-ui/utils', changelog: 'docs/changelog/utils.md' },
+  create: { dir: 'packages/create', name: '@yss-ui/create', changelog: 'docs/changelog/create.md' },
+  'create-yss-app': { dir: 'packages/create-yss-app', name: 'create-yss-app', changelog: 'docs/changelog/create.md' },
   'skills-cli': { dir: 'packages/skills-cli', name: '@yss-ui/skills-cli' },
   skills: { dir: 'packages/skills', name: '@yss-ui/skills', changelog: 'docs/changelog/skills.md' },
   mcp: {
@@ -41,7 +43,17 @@ const PACKAGES = {
  *
  * @type {string[]}
  */
-const RELEASE_ORDER = ['components', 'hooks', 'theme', 'utils', 'skills-cli', 'skills', 'mcp'];
+const RELEASE_ORDER = [
+  'components',
+  'hooks',
+  'theme',
+  'utils',
+  'create',
+  'create-yss-app',
+  'skills-cli',
+  'skills',
+  'mcp',
+];
 
 /** MCP 索引 JSON 路径（gitignore，发布时由 build-index 生成）。 */
 const MCP_INDEX_JSON = 'packages/mcp/data/index.json';
@@ -326,6 +338,36 @@ function hasChangelogVersion(filePath, version) {
 }
 
 /**
+ * 读取 changelog 中最新（最靠前）的版本号。
+ *
+ * @param {string} filePath changelog 路径
+ * @returns {string | null} 例如 '1.0.0'；文件不存在或没有版本标题时返回 null
+ */
+function getLatestChangelogVersion(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return null;
+  const match = fs.readFileSync(filePath, 'utf8').match(/^##\s+v(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\s*$/m);
+  return match ? match[1] : null;
+}
+
+/**
+ * 判定新包首发的处理方式。只依据 registry 上的已发布版本，已有多个历史版本的老包始终走常规 bump。
+ *
+ * - 包在 registry 上不存在 → 'first-release'：按 package.json 当前版本发布，不 bump；
+ * - registry 上仅有当前版本，且 changelog 最新版本也是它（首发已在本地完成、无新日志）→ 'skip'；
+ * - 其他 → 'bump'。
+ *
+ * @param {{ publishedVersions: string[] | null, currentVersion: string, latestChangelogVersion: string | null }} params
+ *   publishedVersions 为 null 表示包在 registry 上不存在
+ * @returns {'first-release' | 'skip' | 'bump'}
+ */
+function resolveFirstReleaseAction({ publishedVersions, currentVersion, latestChangelogVersion }) {
+  if (publishedVersions === null) return 'first-release';
+  const onlyCurrentPublished = publishedVersions.length === 1 && publishedVersions[0] === currentVersion;
+  if (onlyCurrentPublished && latestChangelogVersion === currentVersion) return 'skip';
+  return 'bump';
+}
+
+/**
  * 本地日历日 YYYY-MM-DD。
  *
  * @param {Date} [now]
@@ -395,6 +437,8 @@ module.exports = {
   refineMcpPublish,
   ensureDerivedMcpPublish,
   hasChangelogVersion,
+  getLatestChangelogVersion,
+  resolveFirstReleaseAction,
   todayLocal,
   ensureMcpIndexChangelog,
 };
