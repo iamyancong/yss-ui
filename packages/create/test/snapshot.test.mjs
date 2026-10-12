@@ -14,6 +14,12 @@ const cliEntry = path.resolve(__dirname, '../bin/index.mjs');
 const skillScript = path.resolve(__dirname, '../../skills/yss-create-microapp/scripts/create.mjs');
 
 /**
+ * 固定端口：默认会从 8081 探测空闲端口，并行测试中的其他 CLI 进程探测时会短暂占用 8081，
+ * 导致两次生成拿到不同端口、micro-config.json 不一致。
+ */
+const FIXED_PORT = '18571';
+
+/**
  * 递归收集目录下的所有相对路径及对应 sha256。
  *
  * @param {string} dirPath 根目录
@@ -145,6 +151,8 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
               '演示应用',
               '--description',
               '统一测试描述',
+              '--port',
+              FIXED_PORT,
               '--template-url',
               templateUrl,
               '--template-branch',
@@ -171,6 +179,8 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
               '演示应用',
               '--description',
               '统一测试描述',
+              '--port',
+              FIXED_PORT,
               '--template-url',
               templateUrl,
               '--template-branch',
@@ -205,6 +215,8 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
         '演示应用',
         '--description',
         '统一测试描述',
+        '--port',
+        FIXED_PORT,
         '--template-url',
         templateUrl,
         '--template-branch',
@@ -235,6 +247,8 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
         '演示应用',
         '--description',
         '统一测试描述',
+        '--port',
+        FIXED_PORT,
         '--template-url',
         templateUrl,
         '--template-branch',
