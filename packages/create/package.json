@@ -1,6 +1,6 @@
 {
   "name": "@yss-ui/create",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "企业级微应用一键脚手架 CLI",
   "license": "MIT",
   "scripts": {
