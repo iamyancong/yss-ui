@@ -43,6 +43,23 @@ export const showIntro = cliVersion => {
 };
 
 /**
+ * 发现新版本时询问是否切换到新版本继续创建；默认「否」，一路回车不会切换。
+ *
+ * @param {import('./update.mjs').UpdateInfo} info 版本信息
+ * @returns {Promise<boolean>} 是否切换
+ */
+export const confirmUseLatest = async ({ currentVersion, latestVersion }) => {
+  p.note(pc.yellow(`当前 ${currentVersion} → 最新 ${latestVersion}`), '发现新版本');
+  const accepted = handleCancel(
+    await p.confirm({
+      message: `是否下载 ${latestVersion} 并用新版本继续创建？`,
+      initialValue: false,
+    })
+  );
+  return Boolean(accepted);
+};
+
+/**
  * 交互式问答主流程（标题由 showIntro 单独打印）。
  *
  * @param {Record<string, any>} initialInput 预设输入参数

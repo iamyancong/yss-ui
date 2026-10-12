@@ -12,7 +12,7 @@ npx @yss-ui/create
 
 交互模式只需填写应用中文名与英文名，激活路由、端口、接口前缀、代理目标会自动推导，并在预览表中标注来源。
 
-标题会显示当前版本号。registry 上有更新的正式版时，会在流程结束后打印提示框（只提示、不自动升级，最新版本号缓存 24 小时）。`npm create yss-app` 不带 `@latest` 会复用本机缓存的旧版本，请始终带上 `@latest`。用 `--no-update-check` 或环境变量 `YSS_CREATE_NO_UPDATE_CHECK=1` 关闭检查；没有交互终端、`--json`、`--dry-run`、`--offline`、`CI=true` 时自动不检查。
+标题会显示当前版本号。registry 上有更新的正式版时，交互模式会在第一个问题前询问是否切换到新版本继续创建（默认「否」，选「是」才通过 `npx` 下载新版本并带上原参数继续）；非交互模式在结尾打印提示框。最新版本号缓存 24 小时。`npm create yss-app` 不带 `@latest` 会复用本机缓存的旧版本，请始终带上 `@latest`。用 `--no-update-check` 或环境变量 `YSS_CREATE_NO_UPDATE_CHECK=1` 关闭检查；没有交互终端、`--json`、`--dry-run`、`--offline`、`CI=true` 时自动不检查。
 
 ## 模板与网络
 

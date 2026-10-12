@@ -23,15 +23,19 @@ import { runGitInit, runInstall, runSkillsSync } from './post.mjs';
 import { formatPreviewTable } from './preview.mjs';
 import {
   confirmCreation,
+  confirmUseLatest,
   promptPostActions,
   resolveInteractiveAnswers,
   runInteractivePrompts,
   showIntro,
 } from './prompts.mjs';
 import {
+  canRelaunch,
   CLI_PACKAGE_NAME,
+  CORE_PACKAGE_NAME,
   formatUpdateNotice,
   getCliVersion,
+  relaunchWithVersion,
   shouldCheckForUpdate,
   startUpdateCheck,
 } from './update.mjs';
@@ -257,6 +261,31 @@ const printJson = payload => {
 };
 
 /**
+ * 交互模式在第一个问题前处理新版本：等待检查结果（缓存命中立即返回，否则最多等超时时间），
+ * 有新版本时询问是否切换，用户同意后由新版本接管本次创建。
+ *
+ * @param {Awaited<ReturnType<typeof startUpdateCheck>>['result'] | undefined} result 后台检查结果
+ * @param {string[]} args 原始命令行参数（不含 node 与脚本路径）
+ * @returns {Promise<{ offered: boolean, exitCode: number | null }>} 是否已询问过；切换后新版本进程的退出码
+ */
+const offerLatestVersion = async (result, args) => {
+  const info = await result;
+  if (!info || !canRelaunch(args)) return { offered: false, exitCode: null };
+
+  if (!(await confirmUseLatest(info))) {
+    p.log.info(`继续使用当前版本 ${info.currentVersion}，下次可用 npm create yss-app@latest 运行最新版`);
+    return { offered: true, exitCode: null };
+  }
+
+  p.log.step(`正在通过 npx 下载 ${CORE_PACKAGE_NAME}@${info.latestVersion}，完成后自动继续创建...`);
+  const exitCode = await relaunchWithVersion(info.latestVersion, args);
+  if (exitCode === null) {
+    p.log.warn('无法启动 npx，继续使用当前版本。');
+  }
+  return { offered: true, exitCode };
+};
+
+/**
  * 执行生成后的可选动作（安装依赖 / 同步 Skills / git init）。
  *
  * @param {string} targetPath 生成的项目目录
@@ -332,8 +361,10 @@ export const runCli = async (rawArgv = process.argv) => {
     }
   };
   const scaffoldStdout = isJsonMode ? 'stderr' : 'inherit';
-  /** 后台新版本检查句柄：不阻塞任何流程，结束时已返回才提示；看不到提示的场景不发起请求。 */
+  /** 后台新版本检查句柄；看不到提示的场景不发起请求。 */
   let updateCheck = null;
+  /** 交互模式已询问过是否切换时，结尾不再重复提示。 */
+  let updateOffered = false;
   const beginUpdateCheck = flags => {
     if (shouldCheckForUpdate({ ...flags, json: isJsonMode })) {
       updateCheck = startUpdateCheck({ currentVersion: CLI_VERSION });
@@ -427,8 +458,15 @@ export const runCli = async (rawArgv = process.argv) => {
     let finalTargetPath;
 
     if (!isNonInteractive) {
-      // 交互模式流程
+      // 交互模式流程：先显示版本并处理新版本，再开始提问
       showIntro(CLI_VERSION);
+      const offer = await offerLatestVersion(updateCheck?.result, rawArgv.slice(2));
+      updateOffered = offer.offered;
+      if (offer.exitCode !== null) {
+        process.exitCode = offer.exitCode;
+        return;
+      }
+
       const promptResult = await runInteractivePrompts(initialInput);
       const res = await resolveInteractiveAnswers(initialInput, promptResult);
       resolvedOptions = res.resolved;
@@ -578,10 +616,10 @@ export const runCli = async (rawArgv = process.argv) => {
     }
     process.exitCode = exitCode;
   } finally {
-    // 不等待检查结果：已返回则在结尾提示，未返回则直接取消，不拖慢退出
+    // 非交互流程不等待检查结果：已返回则在结尾提示，未返回则直接取消，不拖慢退出
     const info = updateCheck?.peek();
     updateCheck?.cancel();
-    if (info) {
+    if (info && !updateOffered) {
       // eslint-disable-next-line no-console
       console.error(`\n${formatUpdateNotice(info)}`);
     }

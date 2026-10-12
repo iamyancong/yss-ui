@@ -1,8 +1,10 @@
 /**
  * @fileoverview CLI 版本信息与新版本提示。
- * 只向 registry 发 GET 读取公开元数据，不上报任何信息；任何失败都静默跳过，只提示、不自动升级。
+ * 只向 registry 发 GET 读取公开元数据，不上报任何信息；任何失败都静默跳过。
+ * 不会自动升级：只有用户在交互模式中明确选择后，才通过 npx 运行新版本。
  */
 
+import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import os from 'node:os';
@@ -32,8 +34,15 @@ export const UPDATE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 /** 默认缓存文件，与模板缓存一样放在系统临时目录。 */
 export const DEFAULT_UPDATE_CACHE_FILE = path.join(os.tmpdir(), 'yss-create-update-check.json');
 
-/** 关闭新版本检查的环境变量。 */
+/** 关闭新版本检查的环境变量；切换到新版本时也用它防止子进程再次检查。 */
 export const NO_UPDATE_CHECK_ENV = 'YSS_CREATE_NO_UPDATE_CHECK';
+
+/**
+ * Windows 下 npx 为 .cmd 包装脚本，必须经 shell 启动；此时参数会被 cmd 重新解析，
+ * 因此只在参数全部由安全字符组成时才允许切换版本。
+ */
+const needsShell = process.platform === 'win32';
+const SHELL_SAFE_ARG = /^[\p{L}\p{N}@._:/=+,-]+$/u;
 
 /**
  * @typedef {{ currentVersion: string, latestVersion: string }} UpdateInfo
@@ -259,3 +268,32 @@ export const formatUpdateNotice = ({ currentVersion, latestVersion }) => {
   const body = lines.map(line => `│  ${line}${' '.repeat(width - displayWidth(line))}  │`);
   return pc.yellow([`╭${border}╮`, ...body, `╰${border}╯`].join('\n'));
 };
+
+/**
+ * 判断当前参数能否安全地交给 npx 重新执行。
+ *
+ * @param {string[]} args 原始命令行参数
+ * @param {boolean} [shell=needsShell] 是否经 shell 启动
+ * @returns {boolean}
+ */
+export const canRelaunch = (args, shell = needsShell) => !shell || args.every(arg => SHELL_SAFE_ARG.test(arg));
+
+/**
+ * 通过 npx 下载并运行指定版本的 CLI，原样透传参数，并禁止子进程再次检查新版本。
+ *
+ * @param {string} version 目标版本
+ * @param {string[]} args 原始命令行参数（不含 node 与脚本路径）
+ * @param {{ spawnImpl?: typeof spawn, env?: Record<string, string | undefined> }} [deps] 可注入依赖（测试用）
+ * @returns {Promise<number | null>} 子进程退出码；npx 无法启动时返回 null
+ */
+export const relaunchWithVersion = (version, args, { spawnImpl = spawn, env = process.env } = {}) =>
+  new Promise(resolve => {
+    const npxArgs = ['--yes', `--package=${CORE_PACKAGE_NAME}@${version}`, '--', CLI_PACKAGE_NAME, ...args];
+    const child = spawnImpl('npx', npxArgs, {
+      stdio: 'inherit',
+      shell: needsShell,
+      env: { ...env, [NO_UPDATE_CHECK_ENV]: '1' },
+    });
+    child.once('error', () => resolve(null));
+    child.once('exit', (code, signal) => resolve(signal ? 130 : (code ?? 1)));
+  });

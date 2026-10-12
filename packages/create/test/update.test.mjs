@@ -1,16 +1,19 @@
+import { EventEmitter } from 'node:events';
 import fs from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import * as p from '@clack/prompts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { showIntro } from '../src/prompts.mjs';
+import { confirmUseLatest, showIntro } from '../src/prompts.mjs';
 import {
+  canRelaunch,
   checkForUpdate,
   formatUpdateNotice,
   getCliVersion,
   isNewerVersion,
   NO_UPDATE_CHECK_ENV,
+  relaunchWithVersion,
   resolveRegistry,
   shouldCheckForUpdate,
   startUpdateCheck,
@@ -234,5 +237,73 @@ describe('结尾提示框', () => {
     expect(lines[2]).toContain('下次请用 npm create yss-app@latest');
     const width = line => [...line].reduce((sum, char) => sum + (/[\u4e00-\u9fff\uff00-\uff60]/.test(char) ? 2 : 1), 0);
     expect(new Set(lines.map(width)).size).toBe(1);
+  });
+});
+
+describe('切换到新版本', () => {
+  /** 构造一个可控的子进程 mock。 */
+  const createSpawnMock = emit =>
+    vi.fn(() => {
+      const child = new EventEmitter();
+      queueMicrotask(() => emit(child));
+      return child;
+    });
+
+  it('询问是否切换时默认选「否」，一路回车不会切换', async () => {
+    p.confirm.mockImplementationOnce(async opts => opts.initialValue);
+    const accepted = await confirmUseLatest({ currentVersion: '1.2.0', latestVersion: '1.3.0' });
+
+    expect(accepted).toBe(false);
+    expect(p.confirm).toHaveBeenCalledWith(expect.objectContaining({ initialValue: false }));
+    expect(p.note).toHaveBeenCalledWith(expect.stringContaining('当前 1.2.0 → 最新 1.3.0'), '发现新版本');
+  });
+
+  it('用户明确选择后才返回 true', async () => {
+    p.confirm.mockResolvedValueOnce(true);
+    expect(await confirmUseLatest({ currentVersion: '1.2.0', latestVersion: '1.3.0' })).toBe(true);
+  });
+
+  it('用 npx 运行指定版本的 @yss-ui/create 并透传参数，子进程不再检查', async () => {
+    const spawnImpl = createSpawnMock(child => child.emit('exit', 0, null));
+    const code = await relaunchWithVersion('1.3.0', ['my-app', '--name-zh', '订单中心'], {
+      spawnImpl,
+      env: { PATH: '/usr/bin' },
+    });
+
+    expect(code).toBe(0);
+    const [command, args, options] = spawnImpl.mock.calls[0];
+    expect(command).toBe('npx');
+    expect(args).toEqual([
+      '--yes',
+      '--package=@yss-ui/create@1.3.0',
+      '--',
+      'create-yss-app',
+      'my-app',
+      '--name-zh',
+      '订单中心',
+    ]);
+    expect(options.stdio).toBe('inherit');
+    expect(options.env).toEqual({ PATH: '/usr/bin', [NO_UPDATE_CHECK_ENV]: '1' });
+  });
+
+  it('透传子进程退出码；被信号中断视为 130', async () => {
+    expect(await relaunchWithVersion('1.3.0', [], { spawnImpl: createSpawnMock(c => c.emit('exit', 5, null)) })).toBe(
+      5
+    );
+    expect(
+      await relaunchWithVersion('1.3.0', [], { spawnImpl: createSpawnMock(c => c.emit('exit', null, 'SIGINT')) })
+    ).toBe(130);
+  });
+
+  it('npx 无法启动时返回 null，交给调用方回退到当前版本', async () => {
+    const spawnImpl = createSpawnMock(child => child.emit('error', new Error('spawn npx ENOENT')));
+    expect(await relaunchWithVersion('1.3.0', [], { spawnImpl })).toBeNull();
+  });
+
+  it('需要经 shell 启动时，参数含空格或特殊字符就不切换', () => {
+    expect(canRelaunch(['my-app', '--name-zh', '订单中心'], true)).toBe(true);
+    expect(canRelaunch(['--name-zh', '订单 中心'], true)).toBe(false);
+    expect(canRelaunch(['--description', 'a&b'], true)).toBe(false);
+    expect(canRelaunch(['--name-zh', '订单 中心'], false)).toBe(true);
   });
 });
