@@ -10,6 +10,26 @@ toc: content
 
 YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
+## v1.8.0
+
+`2026-10-12`
+
+> 本版本没有新增或变更公开 API。版本号为次版本，是因为与 Hooks、Skills、MCP 等包同批发布 (#50)。
+
+### ⚠️ 行为变化与升级说明
+
+- **needLoading 重试信号过滤改为页面级只注册一次**：`needLoading` 用于重试的内部信号会被 `unhandledrejection` 监听吞掉，避免控制台报未处理的 Promise 拒绝。之前每份组件库副本各自注册监听，并且只认本副本创建的信号对象。现在通过 `window` 上的全局标记保证整个页面只注册一次，并按错误名 `YssActionRetry` 识别信号，因此 qiankun 主子应用各自打包组件库时，其他副本抛出的重试信号也会被正确过滤。业务代码无需调整；过滤只阻止浏览器在控制台打印默认报错，业务自己注册的 `unhandledrejection` 监听仍会收到该事件 (#50)。
+
+### 🐛 Bug Fixes
+
+- **Table / 操作列**：多份组件库副本共存（如微前端主子应用）时，不再重复注册 `unhandledrejection` 监听，跨副本的 `needLoading` 重试信号不再在控制台报未处理的 Promise 拒绝 (#50)。
+
+### 🧪 Tests
+
+- 补齐 ActionButton 行为契约单测、表格轮询回归场景 B/C，以及 `actionRetry` 单测 (#50)。
+
+---
+
 ## v1.7.7
 
 `2026-10-10`
