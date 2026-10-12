@@ -12,6 +12,8 @@ npx @yss-ui/create
 
 交互模式只需填写应用中文名与英文名，激活路由、端口、接口前缀、代理目标会自动推导，并在预览表中标注来源。
 
+标题会显示当前版本号。registry 上有更新的正式版时，会在流程结束后打印提示框（只提示、不自动升级，最新版本号缓存 24 小时）。`npm create yss-app` 不带 `@latest` 会复用本机缓存的旧版本，请始终带上 `@latest`。用 `--no-update-check` 或环境变量 `YSS_CREATE_NO_UPDATE_CHECK=1` 关闭检查；没有交互终端、`--json`、`--dry-run`、`--offline`、`CI=true` 时自动不检查。
+
 ## 模板与网络
 
 默认模板为 GitHub 公开仓库 [iamyancong/microapp-template-vue3](https://github.com/iamyancong/microapp-template-vue3)（分支 `main`），无需凭据。使用其他模板：
@@ -53,7 +55,7 @@ npx @yss-ui/create --apply ./plan.json
 
 ## 隐私
 
-不收集任何遥测数据，不上报使用信息。网络访问仅限拉取模板仓库，以及你显式选择的依赖安装与 `@yss-ui/skills-cli` 同步。
+不收集任何遥测数据，不上报使用信息。网络访问仅限拉取模板仓库、你显式选择的依赖安装与 `@yss-ui/skills-cli` 同步，以及向当前 registry 发 GET 请求读取 `@yss-ui/create` 的最新版本号（公开元数据，不携带任何使用信息，24 小时内最多一次）。
 
 ## 许可证
 

@@ -34,7 +34,16 @@ const handleCancel = value => {
 };
 
 /**
- * 交互式问答主流程。
+ * 打印交互模式标题，标题中带当前 CLI 版本号，便于用户确认运行的是哪个版本。
+ *
+ * @param {string} cliVersion 当前 CLI 版本
+ */
+export const showIntro = cliVersion => {
+  p.intro(pc.bgCyan(pc.black(` YSS 微应用创建 v${cliVersion} `)));
+};
+
+/**
+ * 交互式问答主流程（标题由 showIntro 单独打印）。
  *
  * @param {Record<string, any>} initialInput 预设输入参数
  * @returns {Promise<{
@@ -43,8 +52,6 @@ const handleCancel = value => {
  * }>} 用户应答，以及实际弹出过的问题的初始值（用于区分「用户修改」与「直接回车采纳」）
  */
 export const runInteractivePrompts = async (initialInput = {}) => {
-  p.intro(pc.bgCyan(pc.black(' YSS 微应用创建 ')));
-
   // 1. 中文名称（必填）
   let nameZh = initialInput.nameZh;
   if (!nameZh) {

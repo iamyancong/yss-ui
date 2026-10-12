@@ -23,6 +23,8 @@ pnpm create yss-app
 npx @yss-ui/create
 ```
 
+> `npm create yss-app` 不带 `@latest` 时，npx 会直接复用本机缓存里的旧版本，请始终带上 `@latest`。CLI 启动时会显示当前版本号，并检查是否有新版本，详见下方常见问题「运行的不是最新版本」。
+
 可直接通过位置参数传递项目英文名：
 
 ```bash
@@ -49,7 +51,7 @@ YSS_FRONTEND_TEMPLATE_URL=https://git.example.com/fe/my-template.git pnpm create
 
 ## 交互式创建流程
 
-在终端执行命令后，CLI 会启动友好的分步向导（基于 `@clack/prompts`）：
+在终端执行命令后，CLI 会启动友好的分步向导（基于 `@clack/prompts`）。标题会显示当前版本（如 `YSS 微应用创建 v1.2.0`）；如果 registry 上有更新的版本，会在流程结束后打印一个提示框，不打断提问，也不会自动升级。
 
 1. **应用中文名**：例如 `订单中心`、`资产管理平台`（必填）。
 2. **应用英文名**：例如 `order-center`、`crm`（必填，以小写字母开头，支持中划线）。
@@ -88,6 +90,8 @@ YSS_FRONTEND_TEMPLATE_URL=https://git.example.com/fe/my-template.git pnpm create
 | `--skills / --no-skills` | 布尔 | 创建完成后是否自动同步 `@yss-ui/skills` 规范 | 交互模式询问；非交互默认否 |
 | `--git / --no-git` | 布尔 | 创建完成后是否自动初始化 Git 并生成首个 commit | 交互模式询问；非交互默认否 |
 | `--pm <pnpm\|npm\|yarn>` | 字符串 | 指定包管理器，其他值退出码 2 | 默认根据 `npm_config_user_agent` 检测，兜底 pnpm |
+| `--no-update-check` | 布尔 | 不检查新版本；也可设置环境变量 `YSS_CREATE_NO_UPDATE_CHECK=1` | 没有交互终端、`--json`、`--dry-run`、`--offline`、`CI=true` 时自动不检查 |
+| `-v, --version` | 布尔 | 打印当前 CLI 版本号 | - |
 
 > 参数采用严格解析：未知或拼错的参数（如 `--dryrun`）、多余的位置参数都会立即报错并以退出码 2 结束，不会静默忽略后继续拉取模板。
 
@@ -116,11 +120,12 @@ npx @yss-ui/create order-center \
 npx @yss-ui/create order-center --name-zh "订单中心" --dry-run --json
 ```
 
-预检输出格式：
+预检输出格式（所有 JSON 输出，包括失败结果，都带 `cliVersion`）：
 
 ```json
 {
   "ok": true,
+  "cliVersion": "1.2.0",
   "resolved": {
     "name": "order-center",
     "nameZh": "订单中心",
@@ -186,3 +191,46 @@ CLI 支持 `--prefer-offline` 与 `--offline` 模式。只要本地先前联网�
 ### 4. CLI 与雨燕平台的关系是什么？
 - `@yss-ui/create` **专注于本地前端工程骨架的秒级初始化**，包含微前端环境配置、API 对接代理与 AI 研发生态集成。
 - 如果需要创建企业 GitLab 远程仓库、申请流水线集成以及一键全流程发布部署，请配合使用 **雨燕云研发生态平台**。
+
+### 5. 运行的不是最新版本？
+
+典型现象：已经发布了新版本，执行后仍看到旧版本的行为（例如 1.0.0 才有的「OpenAPI 文档地址」提问）。
+
+**先确认版本**：交互模式的标题会显示版本号（如 `YSS 微应用创建 v1.2.0`），也可以直接查：
+
+```bash
+npx create-yss-app@latest --version
+```
+
+**常见原因与处理：**
+
+- **没带 `@latest`**：`npm create yss-app` 不带版本时，npx 只要在本机缓存里找到能用的版本就直接运行，不会查 registry 上有没有新版。请改用 `npm create yss-app@latest`。
+- **镜像同步有延迟**：用 `npm config get registry` 查看当前源。如果是 npmmirror 等镜像，新版本可能要过一段时间才同步过来，可以临时指定官方源：
+
+  ```bash
+  npm create yss-app@latest --registry=https://registry.npmjs.org/
+  ```
+
+- **全局装过旧版本**：全局安装的 `create-yss-app` 可能优先于 npx 下载的版本，删掉即可：
+
+  ```bash
+  npm rm -g create-yss-app @yss-ui/create
+  ```
+
+- **npx 缓存里有旧版本**：清理 npx 缓存后重新执行：
+
+  ```bash
+  rm -rf ~/.npm/_npx
+  ```
+
+  Windows 下删除 `%LocalAppData%\npm-cache\_npx` 目录。
+
+**新版本提示**：CLI 启动时会在后台查询当前 registry（`npm_config_registry`，默认 `https://registry.npmjs.org/`）上 `@yss-ui/create`（`create-yss-app` 的实现包，两者版本同步）的最新版本。
+
+- 不等查询结果，提问和生成照常进行；流程结束时如果已经查到更新的正式版，会打印提示框，例如「发现新版本：当前 1.2.0 → 最新 1.3.0，下次请用 npm create yss-app@latest」。CLI 只提示，不会自动升级。
+- 预发布版（版本号带 `-`，如 `1.3.0-beta.1`）不算新版本。
+- 查到的最新版本号会在系统临时目录缓存 24 小时（`yss-create-update-check.json`），同一天创建多个项目不会重复联网；切换 registry 后会重新查询。
+- 超时（1.5 秒）、离线或请求失败时直接跳过，不影响创建。
+- 以下情况不检查也不提示：没有交互终端、`--json`、`--dry-run`、`--offline`、`CI=true`、`--no-update-check`，或设置了环境变量 `YSS_CREATE_NO_UPDATE_CHECK=1`。
+
+> 1.1.0 及更早版本没有新版本提示。如果本机缓存的是这些版本，需要先按上面的方法清理一次。

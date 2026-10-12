@@ -21,7 +21,23 @@ import {
 import { assertSupportedPackageManager, detectPackageManager, getNextSteps } from './pm.mjs';
 import { runGitInit, runInstall, runSkillsSync } from './post.mjs';
 import { formatPreviewTable } from './preview.mjs';
-import { confirmCreation, promptPostActions, resolveInteractiveAnswers, runInteractivePrompts } from './prompts.mjs';
+import {
+  confirmCreation,
+  promptPostActions,
+  resolveInteractiveAnswers,
+  runInteractivePrompts,
+  showIntro,
+} from './prompts.mjs';
+import {
+  CLI_PACKAGE_NAME,
+  formatUpdateNotice,
+  getCliVersion,
+  shouldCheckForUpdate,
+  startUpdateCheck,
+} from './update.mjs';
+
+/** 当前 CLI 版本（来自自身 package.json）。 */
+const CLI_VERSION = getCliVersion();
 
 /** 命令行参数定义（strict 模式下未声明的参数直接报错，退出码 2）。 */
 const CLI_OPTIONS = {
@@ -51,6 +67,7 @@ const CLI_OPTIONS = {
   'no-git': { type: 'boolean' },
   offline: { type: 'boolean' },
   'prefer-offline': { type: 'boolean' },
+  'no-update-check': { type: 'boolean' },
   pm: { type: 'string' },
   help: { type: 'boolean', short: 'h' },
   version: { type: 'boolean', short: 'v' },
@@ -173,6 +190,7 @@ ${pc.bold('进阶与调试:')}
   --cache-dir <dir>           自定义模板本地安全缓存目录
   --offline                   纯离线模式，仅使用已有缓存
   --prefer-offline            优先离线模式
+  --no-update-check           不检查新版本 (也可设置环境变量 YSS_CREATE_NO_UPDATE_CHECK=1)
   -h, --help                  查看帮助信息
   -v, --version               查看版本号
 `);
@@ -229,13 +247,13 @@ const readConfigFile = async sourceFile => {
 };
 
 /**
- * 输出 JSON 结果到 stdout（--json 模式下 stdout 只允许出现这一行）。
+ * 输出 JSON 结果到 stdout（--json 模式下 stdout 只允许出现这一行），统一附带 cliVersion。
  *
  * @param {Record<string, any>} payload 输出对象
  */
 const printJson = payload => {
   // eslint-disable-next-line no-console
-  console.log(JSON.stringify(payload));
+  console.log(JSON.stringify({ ok: payload.ok, cliVersion: CLI_VERSION, ...payload }));
 };
 
 /**
@@ -314,6 +332,13 @@ export const runCli = async (rawArgv = process.argv) => {
     }
   };
   const scaffoldStdout = isJsonMode ? 'stderr' : 'inherit';
+  /** 后台新版本检查句柄：不阻塞任何流程，结束时已返回才提示；看不到提示的场景不发起请求。 */
+  let updateCheck = null;
+  const beginUpdateCheck = flags => {
+    if (shouldCheckForUpdate({ ...flags, json: isJsonMode })) {
+      updateCheck = startUpdateCheck({ currentVersion: CLI_VERSION });
+    }
+  };
 
   try {
     const { values, positionals } = parseCliArgs(rawArgv.slice(2));
@@ -324,10 +349,8 @@ export const runCli = async (rawArgv = process.argv) => {
     }
 
     if (values.version) {
-      const pkgPath = new URL('../package.json', import.meta.url);
-      const pkg = JSON.parse(await fs.readFile(pkgPath, 'utf8'));
       // eslint-disable-next-line no-console
-      console.log(pkg.version);
+      console.log(CLI_VERSION);
       return;
     }
 
@@ -335,8 +358,16 @@ export const runCli = async (rawArgv = process.argv) => {
     assertSupportedPackageManager(values.pm);
     const detectedPm = detectPackageManager(values.pm);
 
+    const isNonInteractive =
+      Boolean(values.yes) || !process.stdout.isTTY || Boolean(process.env.CI) || Boolean(values.config) || isJsonMode;
+    if ((isNonInteractive || values.apply) && !isJsonMode) {
+      // eslint-disable-next-line no-console
+      console.error(pc.dim(`${CLI_PACKAGE_NAME} v${CLI_VERSION}`));
+    }
+
     // 1. --apply <file>：按计划执行。hash 只防误改，verifyPlan 会按当前规则重新校验全部参数。
     if (values.apply) {
+      beginUpdateCheck({ offline: values.offline, noUpdateCheck: values['no-update-check'] });
       const plan = await readPlanFile(values.apply);
       const { resolved } = await verifyPlan(plan);
 
@@ -384,8 +415,11 @@ export const runCli = async (rawArgv = process.argv) => {
       preferOffline: Boolean(values['prefer-offline'] || fileConfig.preferOffline),
     };
 
-    const isNonInteractive =
-      Boolean(values.yes) || !process.stdout.isTTY || Boolean(process.env.CI) || Boolean(values.config) || isJsonMode;
+    beginUpdateCheck({
+      offline: initialInput.offline,
+      dryRun: initialInput.dryRun,
+      noUpdateCheck: values['no-update-check'],
+    });
 
     let resolvedOptions;
     let sourcesMap;
@@ -394,6 +428,7 @@ export const runCli = async (rawArgv = process.argv) => {
 
     if (!isNonInteractive) {
       // 交互模式流程
+      showIntro(CLI_VERSION);
       const promptResult = await runInteractivePrompts(initialInput);
       const res = await resolveInteractiveAnswers(initialInput, promptResult);
       resolvedOptions = res.resolved;
@@ -542,5 +577,13 @@ export const runCli = async (rawArgv = process.argv) => {
       console.error(error.stack);
     }
     process.exitCode = exitCode;
+  } finally {
+    // 不等待检查结果：已返回则在结尾提示，未返回则直接取消，不拖慢退出
+    const info = updateCheck?.peek();
+    updateCheck?.cancel();
+    if (info) {
+      // eslint-disable-next-line no-console
+      console.error(`\n${formatUpdateNotice(info)}`);
+    }
   }
 };
