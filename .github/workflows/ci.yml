@@ -135,6 +135,7 @@ jobs:
 
       - name: Run Vitest Unit Tests & Node Test Suites
         run: |
+          pnpm mcp:index
           pnpm test:coverage
           pnpm test:node
 

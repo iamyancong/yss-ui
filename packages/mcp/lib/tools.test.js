@@ -21,7 +21,30 @@ const MOCK_INDEX = {
       demos: [],
     },
   ],
-  skills: [],
+  skills: [
+    {
+      name: 'yss-ui-business-page-generation',
+      category: 'app',
+      description: '指导生成或改造 Vue3 YSS UI 业务页面',
+      content: '# Skill: yss-ui-business-page-generation\n\n指导生成业务页面',
+      references: [
+        {
+          path: 'references/hooks-map.md',
+          content: '# Hooks 映射表\n\nhooks-map.md 内容',
+        },
+      ],
+      scripts: [
+        {
+          path: 'scripts/create.mjs',
+          size: 1024,
+          firstLineComment: '脚手架入口',
+          content: '// 脚手架入口\nconsole.log(1);',
+        },
+      ],
+      hasReferences: true,
+      hasScripts: true,
+    },
+  ],
   codegenRules: '',
   schemas: {
     table: {
@@ -63,6 +86,10 @@ const store = fs.existsSync(INDEX_PATH) ? new DocStore(INDEX_PATH) : new DocStor
 // 干净环境或 CI 未生成 coverage-summary.json 时回退 mock 覆盖率数据，确保单测独立自洽
 if (!store.index.coverage) {
   store.index.coverage = MOCK_INDEX.coverage;
+}
+// 干净环境或 CI 未生成 index.json 时回退 mock skills 数据
+if (!store.index.skills || store.index.skills.length === 0) {
+  store.index.skills = MOCK_INDEX.skills;
 }
 
 test('MCP 工具定义包含新增工具', () => {
@@ -185,4 +212,3 @@ test('get_skill 支持 include 与精确 file 查询', () => {
   assert.ok(notFoundFile.includes('未找到'), '未找到文件应提示');
   assert.ok(notFoundFile.includes('可用附属文件'), '应列出可用附属文件');
 });
-
