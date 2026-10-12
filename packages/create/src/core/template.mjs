@@ -58,7 +58,10 @@ export const diagnoseGitFailure = detail => {
   return '';
 };
 
-/** 模板仓库拉取失败时的统一处置建议。 */
+/**
+ * 模板仓库拉取失败时的统一处置建议。
+ * TODO (#52): 仅默认模板地址提示 GitHub，自定义地址改为提示检查该地址的可访问性与权限。
+ */
 const TEMPLATE_ACCESS_HINT =
   '请检查能否访问 GitHub，或通过 --template-url / 环境变量 YSS_FRONTEND_TEMPLATE_URL 指定其他模板';
 
@@ -73,6 +76,7 @@ const TEMPLATE_ACCESS_HINT =
  * @returns {Promise<string>} 标准输出内容
  */
 export const runGit = async (args, cwd, { allowPrompt = false, failure } = {}) => {
+  // TODO (#52): clone/fetch 增加超时（退出码 5），非交互模式补充 GCM_INTERACTIVE=never。
   const env = allowPrompt ? process.env : { ...process.env, GIT_TERMINAL_PROMPT: '0' };
   try {
     const { stdout = '' } = await execFile('git', args, { cwd, env, maxBuffer: 10 * 1024 * 1024 });

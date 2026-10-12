@@ -26,6 +26,7 @@ const PACKAGES = {
   theme: { dir: 'packages/theme', name: '@yss-ui/theme' },
   utils: { dir: 'packages/utils', name: '@yss-ui/utils', changelog: 'docs/changelog/utils.md' },
   create: { dir: 'packages/create', name: '@yss-ui/create', changelog: 'docs/changelog/create.md' },
+  // TODO (#52): create 发版时 create-yss-app 必须一起 bump 并发布，目前两者各自按目录变更检测。
   'create-yss-app': { dir: 'packages/create-yss-app', name: 'create-yss-app', changelog: 'docs/changelog/create.md' },
   'skills-cli': { dir: 'packages/skills-cli', name: '@yss-ui/skills-cli' },
   skills: { dir: 'packages/skills', name: '@yss-ui/skills', changelog: 'docs/changelog/skills.md' },

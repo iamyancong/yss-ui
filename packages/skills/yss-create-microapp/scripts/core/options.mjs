@@ -182,6 +182,7 @@ export const resolveOptions = async (input = {}, options = {}) => {
     templateUrl = DEFAULT_TEMPLATE_URL;
     sources.templateUrl = 'default';
   }
+  // TODO (#52): 带账号的地址（https://user:token@host）需拒绝或在日志、报错、--json、计划文件中打码。
   validateHttpUrl(templateUrl, 'template-url', TEMPLATE_URL_PROTOCOLS);
 
   // 10. templateBranch
