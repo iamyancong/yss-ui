@@ -23,6 +23,8 @@ const {
   isMcpRuntimeChange,
   orderReleaseKeys,
   refineMcpPublish,
+  matchesPackageDir,
+  matchesExtraInput,
   ensureDerivedMcpPublish,
   rebuildMcpIndex,
   validateMcpIndex,
@@ -70,11 +72,16 @@ function bumpSemver(version, bump) {
 }
 
 function parseArgs(argv) {
-  const result = { bump: null, dryRun: false };
+  const result = {
+    bump: null,
+    dryRun: false,
+    overrideReason: process.env.RELEASE_OVERRIDE_REASON || '',
+  };
   const positional = [];
   for (let i = 2; i < argv.length; i += 1) {
     const a = argv[i];
     if (a === '--dry' || a === '--dry-run') result.dryRun = true;
+    else if (a.startsWith('--override-reason=')) result.overrideReason = a.slice('--override-reason='.length);
     else positional.push(a);
   }
   if (positional[0] && ['patch', 'minor', 'major'].includes(positional[0])) {
@@ -96,6 +103,61 @@ function findLastReleaseTag() {
 }
 
 /**
+ * 获取比较区间内的提交对象列表。
+ *
+ * @param {string} baseRef 基准 commit
+ * @param {string[]} [paths] 过滤路径列表
+ * @returns {Array<{hash: string, message: string, body: string}>}
+ */
+function getCommitsBetween(baseRef, paths = []) {
+  if (!baseRef) return [];
+  try {
+    const pathArg = Array.isArray(paths) && paths.length > 0 ? `-- ${paths.map(p => `"${p}"`).join(' ')}` : '';
+    const raw = run(`git log --format="%H%x1f%s%x1f%b%x1e" ${baseRef}..HEAD ${pathArg}`.trim());
+    if (!raw) return [];
+    return raw
+      .split('\x1e')
+      .map(block => {
+        const parts = block.trim().split('\x1f');
+        return {
+          hash: parts[0] || '',
+          message: parts[1] || '',
+          body: parts[2] || '',
+        };
+      })
+      .filter(c => c.hash || c.message);
+  } catch (err) {
+    throw new Error(`获取提交记录失败 (${baseRef}..HEAD): ${err.message}`);
+  }
+}
+
+/**
+ * 校验发版范围内 API 快照是否发生变化。
+ *
+ * @param {string} baseRef 基准 tag 或 commit
+ * @param {string[]} [files] 变更文件列表
+ * @returns {{ changed: boolean, files: string[] }}
+ */
+function getSnapshotDiffInRange(baseRef, files = []) {
+  if (baseRef) {
+    try {
+      const out = run(`git diff --name-only ${baseRef}..HEAD -- api-snapshot/`);
+      const snapshotFiles = out
+        ? out
+            .split('\n')
+            .map(s => s.trim().replace(/\\/g, '/'))
+            .filter(Boolean)
+        : [];
+      return { changed: snapshotFiles.length > 0, files: snapshotFiles };
+    } catch (err) {
+      throw new Error(`检测发版范围内 API 快照变动失败 (${baseRef}..HEAD): ${err.message}`);
+    }
+  }
+  const snapshotFiles = files.map(f => f.replace(/\\/g, '/')).filter(f => f.startsWith('api-snapshot/'));
+  return { changed: snapshotFiles.length > 0, files: snapshotFiles };
+}
+
+/**
  * 检测从 baseRef 到 HEAD 之间变更的文件
  */
 function detectChangedFiles(baseRef) {
@@ -112,9 +174,9 @@ function detectChangedFiles(baseRef) {
 }
 
 async function main() {
-  const { bump, dryRun } = parseArgs(process.argv);
+  const { bump, dryRun, overrideReason } = parseArgs(process.argv);
   if (!bump) {
-    console.error('用法: node scripts/release-smart.js <patch|minor|major> [--dry]');
+    console.error('用法: node scripts/release-smart.js <patch|minor|major> [--dry] [--override-reason="..."]');
     process.exit(1);
   }
 
@@ -133,6 +195,97 @@ async function main() {
   }
 
   log(`检测到变更包: ${changed.join(', ')}`);
+
+  // 发版 bump 门禁 G1（按包独立评估）
+  const snapshotRes = getSnapshotDiffInRange(lastTag, files);
+
+  const { checkReleaseBumpGate } = require('./lib/release-bump-gate');
+  const gateFailures = [];
+  const gateSummaries = [];
+
+  for (const key of changed) {
+    const meta = PACKAGES[key];
+    let pkgVersion = '1.0.0';
+    if (meta) {
+      const pkgJsonPath = path.join(meta.dir, 'package.json');
+      if (fs.existsSync(pkgJsonPath)) {
+        try {
+          pkgVersion = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8')).version || '1.0.0';
+        } catch (_) {}
+      }
+    }
+    const isZeroMajor = pkgVersion.startsWith('0.');
+
+    const pkgPaths = meta ? [meta.dir, ...(meta.extraInputs || [])] : [];
+    if (key === 'components') {
+      pkgPaths.push('api-snapshot/', ':(exclude)api-snapshot/hooks.json');
+    } else if (key === 'hooks') {
+      pkgPaths.push('api-snapshot/hooks.json');
+    }
+
+    const pkgCommits = lastTag ? getCommitsBetween(lastTag, pkgPaths) : [];
+    const pkgFiles = files.filter(f => {
+      const norm = f.replace(/\\/g, '/');
+      if (meta && matchesPackageDir(norm, meta.dir)) return true;
+      if (meta && meta.extraInputs && meta.extraInputs.some(input => matchesExtraInput(norm, input))) return true;
+      if (key === 'components' && norm.startsWith('api-snapshot/') && norm !== 'api-snapshot/hooks.json') return true;
+      if (key === 'hooks' && norm === 'api-snapshot/hooks.json') return true;
+      return false;
+    });
+
+    let pkgSnapshotChanged = false;
+    if (key === 'components') {
+      pkgSnapshotChanged = snapshotRes.files.some(f => f !== 'api-snapshot/hooks.json');
+    } else if (key === 'hooks') {
+      pkgSnapshotChanged = snapshotRes.files.includes('api-snapshot/hooks.json');
+    }
+
+    const gateResult = checkReleaseBumpGate({
+      commits: pkgCommits,
+      files: pkgFiles,
+      targetBump: bump,
+      overrideReason,
+      snapshotChanged: pkgSnapshotChanged,
+      isZeroMajor,
+    });
+
+    gateSummaries.push({
+      key,
+      version: pkgVersion,
+      requiredBump: gateResult.requiredBump,
+      ok: gateResult.ok,
+      overridden: gateResult.overridden,
+      overrideReason: gateResult.overrideReason,
+    });
+
+    if (!gateResult.ok) {
+      gateFailures.push({
+        key,
+        version: pkgVersion,
+        requiredBump: gateResult.requiredBump,
+        reasons: gateResult.reasons,
+      });
+    }
+  }
+
+  log(`[gate] 待发包 bump 门禁评估:`);
+  gateSummaries.forEach(s => {
+    log(
+      `  - [${s.key}@${s.version}] 最低要求=${s.requiredBump}, 当前目标=${bump}, 校验=${s.ok ? '通过' : '未通过'}${
+        s.overridden ? ` (已通过 override 放行: ${s.overrideReason})` : ''
+      }`
+    );
+  });
+
+  if (gateFailures.length > 0) {
+    console.error('\n❌ [release-smart] 发版 bump 门禁拦截！以下待发包未满足最低版本要求：');
+    gateFailures.forEach(f => {
+      console.error(`  📦 [${f.key}@${f.version}] 要求升级至 ≥ ${f.requiredBump}：`);
+      f.reasons.forEach(r => console.error(`     - ${r}`));
+    });
+    console.error('\n如确需以当前版本类型强制发布，请提供 --override-reason="说明原因" 或设置 RELEASE_OVERRIDE_REASON 环境变量。\n');
+    process.exit(1);
+  }
 
   // 只更新有变更的包的版本号
   const summary = [];

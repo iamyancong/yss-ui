@@ -180,6 +180,9 @@ jobs:
       - name: Validate Skills & Security Scan
         run: pnpm validate:skills
 
+      - name: Check API Snapshot Contract
+        run: pnpm check:api-snapshot
+
   build:
     name: Build Packages & Docs
     needs: [lint, type-check, unit-tests, skills-security]

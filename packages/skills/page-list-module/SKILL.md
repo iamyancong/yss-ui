@@ -1,6 +1,6 @@
 ---
 name: page-list-module
-description: 指导实现 YSS UI 标准列表、远程分页、查询重置、YTable 工具栏、行操作、批量操作和左树右表模块；当页面需要查询、表格、分页或 CRUD 列表闭环时使用。
+description: 指导实现 YSS UI 标准列表模块、远程服务端分页、查询条件重置、YTable 顶部工具栏、行操作按钮权限、批量选择与左树右表联动；当实现具体的数据查询列表、表格交互与 CRUD 列表闭环时使用。整页全套架构编排请使用 yss-ui-business-page-generation，独立表单请使用 page-form-module。
 ---
 
 # Page List Module Skill

@@ -1,0 +1,350 @@
+{
+  "name": "edit-table",
+  "propsCount": 40,
+  "props": {
+    "loading": {
+      "name": "loading",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "disabled": {
+      "name": "disabled",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "data": {
+      "name": "data",
+      "type": "array",
+      "tsType": "any[]",
+      "required": false,
+      "default": "[]",
+      "isCore": true
+    },
+    "columns": {
+      "name": "columns",
+      "type": "array",
+      "tsType": "YEditTableColumn[]",
+      "required": false,
+      "default": "[]",
+      "isCore": true
+    },
+    "tableConfig": {
+      "name": "tableConfig",
+      "type": "object",
+      "tsType": "Record<string, any>",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "optionsMap": {
+      "name": "optionsMap",
+      "type": "object",
+      "tsType": "Record<string, any[]>",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "rowOptionsFieldName": {
+      "name": "rowOptionsFieldName",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "'options'",
+      "isCore": true
+    },
+    "maxHeight": {
+      "name": "maxHeight",
+      "type": "any",
+      "tsType": "string | number",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "actionConfig": {
+      "name": "actionConfig",
+      "type": "object",
+      "tsType": "YTableActionConfig",
+      "required": false,
+      "default": "{ buttons: [] as ActionButtonConfig[] }",
+      "isCore": true
+    },
+    "rowDragable": {
+      "name": "rowDragable",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "showDragHandle": {
+      "name": "showDragHandle",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "dragHandleWidth": {
+      "name": "dragHandleWidth",
+      "type": "any",
+      "tsType": "string | number",
+      "required": false,
+      "default": "46",
+      "isCore": true
+    },
+    "dragHandlePlacement": {
+      "name": "dragHandlePlacement",
+      "type": "string",
+      "tsType": "\"left\" | \"right\"",
+      "required": false,
+      "default": "'left'",
+      "isCore": true
+    },
+    "dragHandleFixed": {
+      "name": "dragHandleFixed",
+      "type": "any",
+      "tsType": "boolean | \"left\" | \"right\"",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "toolbarConfig": {
+      "name": "toolbarConfig",
+      "type": "object",
+      "tsType": "{ custom?: boolean; }",
+      "required": false,
+      "default": "{ custom: false }",
+      "isCore": true
+    },
+    "expandConfig": {
+      "name": "expandConfig",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.ExpandConfig<any>",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "pageable": {
+      "name": "pageable",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "pagination": {
+      "name": "pagination",
+      "type": "object",
+      "tsType": "{ current: number; pageSize: number; total?: number; showSizeChanger?: boolean; showQuickJumper?: boolean; pageSizeOptions?: (string | number)[]; remote?: boolean; }",
+      "required": false,
+      "default": "{\n    current: 1,\n    pageSize: 20,\n    total: 0,\n    showSizeChanger: true,\n    showQuickJumper: true,\n    pageSizeOptions: ['10', '20', '50', '100'],\n    remote: false,\n}",
+      "isCore": true
+    },
+    "addable": {
+      "name": "addable",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "addBtnText": {
+      "name": "addBtnText",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "''",
+      "isCore": true
+    },
+    "addPosition": {
+      "name": "addPosition",
+      "type": "string",
+      "tsType": "\"top\" | \"bottom\"",
+      "required": false,
+      "default": "'bottom'",
+      "isCore": false
+    },
+    "autoScrollOnAdd": {
+      "name": "autoScrollOnAdd",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": false
+    },
+    "errorTooltipConfig": {
+      "name": "errorTooltipConfig",
+      "type": "object",
+      "tsType": "false | YEditTableErrorTooltipConfig",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "rowDragConfig": {
+      "name": "rowDragConfig",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.RowDragConfig<any>",
+      "required": false,
+      "isCore": true
+    },
+    "virtualXConfig": {
+      "name": "virtualXConfig",
+      "type": "object",
+      "tsType": "VxeTablePropTypes.VirtualXConfig",
+      "required": false,
+      "isCore": true
+    },
+    "virtualYConfig": {
+      "name": "virtualYConfig",
+      "type": "object",
+      "tsType": "VxeTablePropTypes.VirtualYConfig",
+      "required": false,
+      "isCore": true
+    },
+    "scrollX": {
+      "name": "scrollX",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.ScrollX",
+      "required": false,
+      "isCore": true
+    },
+    "scrollY": {
+      "name": "scrollY",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.ScrollY",
+      "required": false,
+      "isCore": true
+    },
+    "key": {
+      "name": "key",
+      "type": "any",
+      "tsType": "PropertyKey",
+      "required": false,
+      "isCore": false
+    },
+    "ref": {
+      "name": "ref",
+      "type": "any",
+      "tsType": "VNodeRef",
+      "required": false,
+      "isCore": false
+    },
+    "ref_for": {
+      "name": "ref_for",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ref_key": {
+      "name": "ref_key",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeMount": {
+      "name": "onVue:beforeMount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:mounted": {
+      "name": "onVue:mounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUpdate": {
+      "name": "onVue:beforeUpdate",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:updated": {
+      "name": "onVue:updated",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUnmount": {
+      "name": "onVue:beforeUnmount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:unmounted": {
+      "name": "onVue:unmounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "class": {
+      "name": "class",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "style": {
+      "name": "style",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    }
+  },
+  "emits": [
+    {
+      "name": "add",
+      "type": "[]"
+    },
+    {
+      "name": "update:data",
+      "type": "[data: any[]]"
+    },
+    {
+      "name": "updateRow",
+      "type": "[payload: { row: any; key: string; value: any; }]"
+    },
+    {
+      "name": "page-change",
+      "type": "[payload: { current: number; pageSize: number; }]"
+    },
+    {
+      "name": "size-change",
+      "type": "[size: number]"
+    },
+    {
+      "name": "filter-change",
+      "type": "[params: any]"
+    },
+    {
+      "name": "delete",
+      "type": "[scope: any, btn: any, helpers: { close: () => void; hideLoading: () => void; }]"
+    }
+  ],
+  "slots": [],
+  "exposed": [
+    {
+      "name": "getTableInstance",
+      "type": "() => any"
+    },
+    {
+      "name": "validate",
+      "type": "() => Promise<any>"
+    }
+  ]
+}

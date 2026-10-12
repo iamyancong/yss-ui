@@ -1,6 +1,6 @@
 ---
 name: changelog-generation
-description: 根据真实变更、Git 历史和待发包版本生成 YSS UI 更新日志；当修改 packages 下的组件、Hooks、Utils 或 Skills，或准备提交、发版时使用。
+description: 根据真实代码变更、Git 提交历史和待发包版本目标，为 yss-ui 自动生成规范的更新日志与破坏性变更说明；当修改 packages 下的组件、Hooks、Utils 或 Skills，或准备提交和发版前补齐日志时使用。端到端自动化发版流水线请使用 release-workflow。
 ---
 
 # 更新日志生成

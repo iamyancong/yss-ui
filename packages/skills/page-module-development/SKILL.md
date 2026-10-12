@@ -1,6 +1,6 @@
 ---
 name: page-module-development
-description: （已废弃/Deprecated）兼容旧项目的 Vue3 YSS UI 页面模块开发指令别名；新页面统一使用 yss-ui-business-page-generation。
+description: （已废弃/Deprecated）兼容历史项目与旧指令的 Vue3 YSS UI 页面模块开发指令别名；本技能已软废弃，仅作为历史指令引导壳。新业务页面、CRUD 与完整模块开发请统一使用主规则 yss-ui-business-page-generation，细分模块参考 page-list-module 和 page-form-module。
 ---
 
 # 页面模块开发 Skill

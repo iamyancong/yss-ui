@@ -1,0 +1,255 @@
+{
+  "name": "formily",
+  "propsCount": 26,
+  "props": {
+    "schema": {
+      "name": "schema",
+      "type": "any",
+      "tsType": "YssFormilyValues",
+      "required": true,
+      "isCore": true
+    },
+    "initialValues": {
+      "name": "initialValues",
+      "type": "any",
+      "tsType": "YssFormilyValues",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "form": {
+      "name": "form",
+      "type": "any",
+      "tsType": "Form<any>",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "components": {
+      "name": "components",
+      "type": "any",
+      "tsType": "YssFormilyValues",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "scope": {
+      "name": "scope",
+      "type": "any",
+      "tsType": "YssFormilyValues",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "readPretty": {
+      "name": "readPretty",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "gridDefaults": {
+      "name": "gridDefaults",
+      "type": "any",
+      "tsType": "YssFormilyValues",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "mode": {
+      "name": "mode",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "0",
+      "isCore": true
+    },
+    "detailOptions": {
+      "name": "detailOptions",
+      "type": "any",
+      "tsType": "YssFormilyValues",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "modelValue": {
+      "name": "modelValue",
+      "type": "any",
+      "tsType": "YssFormilyValues",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "collapsible": {
+      "name": "collapsible",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "expanded": {
+      "name": "expanded",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "defaultExpanded": {
+      "name": "defaultExpanded",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "collapsedRows": {
+      "name": "collapsedRows",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "1",
+      "isCore": true
+    },
+    "key": {
+      "name": "key",
+      "type": "any",
+      "tsType": "PropertyKey",
+      "required": false,
+      "isCore": false
+    },
+    "ref": {
+      "name": "ref",
+      "type": "any",
+      "tsType": "VNodeRef",
+      "required": false,
+      "isCore": false
+    },
+    "ref_for": {
+      "name": "ref_for",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ref_key": {
+      "name": "ref_key",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeMount": {
+      "name": "onVue:beforeMount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:mounted": {
+      "name": "onVue:mounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUpdate": {
+      "name": "onVue:beforeUpdate",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:updated": {
+      "name": "onVue:updated",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUnmount": {
+      "name": "onVue:beforeUnmount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:unmounted": {
+      "name": "onVue:unmounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "class": {
+      "name": "class",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "style": {
+      "name": "style",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    }
+  },
+  "emits": [
+    {
+      "name": "update:modelValue",
+      "type": "[values: YssFormilyValues]"
+    },
+    {
+      "name": "update:expanded",
+      "type": "[expanded: boolean]"
+    },
+    {
+      "name": "toggle",
+      "type": "[expanded: boolean]"
+    }
+  ],
+  "slots": [
+    {
+      "name": "actions",
+      "type": "{ showTrigger: boolean; form: Form<any>; getValues: () => YssFormilyValues; submit: () => Promise<any>; expanded: boolean; rowCount: number; collapsedRows: number; toggle: () => void; expand: () => void; collapse: () => void; }"
+    },
+    {
+      "name": "default",
+      "type": "{}"
+    }
+  ],
+  "exposed": [
+    {
+      "name": "getValues",
+      "type": "() => object"
+    },
+    {
+      "name": "setValues",
+      "type": "(values: AnyObject) => void"
+    },
+    {
+      "name": "submit",
+      "type": "() => Promise<unknown>"
+    },
+    {
+      "name": "setFieldState",
+      "type": "(...args: any[]) => any"
+    },
+    {
+      "name": "toggle",
+      "type": "() => void"
+    },
+    {
+      "name": "expand",
+      "type": "() => void"
+    },
+    {
+      "name": "collapse",
+      "type": "() => void"
+    }
+  ]
+}

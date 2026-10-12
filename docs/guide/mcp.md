@@ -25,8 +25,8 @@ toc: content
 | `list_components` | 列出全部组件/Hooks/工具函数，杜绝虚构 Y 前缀组件 |
 | `get_component_docs` | 查询组件 API 章节（props/events/slots/methods）或完整文档 |
 | `get_demo` | 获取官方 Demo 完整源码（如 `formily/modes` 三态切换） |
-| `search_docs` | 中文关键词全文搜索组件文档与 Skills |
-| `list_skills` / `get_skill` | 浏览并读取开发技能规范 |
+| `search_docs` | 中文关键词全文搜索组件文档与 Skills（含 references 参考文档） |
+| `list_skills` / `get_skill` | 浏览并读取开发技能规范，支持通过 `include` 附带或 `file` 精准提取 references 参考文档与 scripts 脚本 |
 | `get_consumption_contract` | 按 `componentsVersion?` 核对单包、入口、Vite 插件与样式契约；未知版本要求读取实际 exports |
 | `get_codegen_rules` | 获取业务代码生成硬规则（样式导入、SFC 结构等） |
 | `get_component_schema` | 获取组件精确 JSON Schema（Props约束/枚举值/默认值/Emits/Slots），防止属性名幻觉 |

@@ -10,6 +10,16 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.6.0
+
+`2026-10-10`
+
+### 🚀 Features
+
+- **page-module-development**：标记为软废弃（加入 `deprecatedSkills`，并从 `categories.app` 移除），保留旧项目兼容别名壳，新业务页面统一主推 `yss-ui-business-page-generation` (#50)。
+
+---
+
 ## v1.5.5
 
 `2026-10-10`

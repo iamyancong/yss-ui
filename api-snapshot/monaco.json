@@ -1,0 +1,371 @@
+{
+  "name": "monaco",
+  "propsCount": 36,
+  "props": {
+    "modelValue": {
+      "name": "modelValue",
+      "type": "string",
+      "tsType": "string",
+      "required": true,
+      "default": "\"\"",
+      "isCore": true
+    },
+    "language": {
+      "name": "language",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "\"sql\"",
+      "isCore": true
+    },
+    "theme": {
+      "name": "theme",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": true
+    },
+    "width": {
+      "name": "width",
+      "type": "any",
+      "tsType": "string | number",
+      "required": false,
+      "default": "\"100%\"",
+      "isCore": true
+    },
+    "height": {
+      "name": "height",
+      "type": "any",
+      "tsType": "string | number",
+      "required": false,
+      "default": "300",
+      "isCore": true
+    },
+    "options": {
+      "name": "options",
+      "type": "object",
+      "tsType": "Record<string, unknown>",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "readonly": {
+      "name": "readonly",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "autoLayout": {
+      "name": "autoLayout",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "showBorder": {
+      "name": "showBorder",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "nls": {
+      "name": "nls",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "fullscreenTarget": {
+      "name": "fullscreenTarget",
+      "type": "any",
+      "tsType": "string | HTMLElement",
+      "required": false,
+      "isCore": true
+    },
+    "fullscreenZIndex": {
+      "name": "fullscreenZIndex",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "10000",
+      "isCore": true
+    },
+    "sqlSchema": {
+      "name": "sqlSchema",
+      "type": "any",
+      "tsType": "SqlSchema | null",
+      "required": false,
+      "isCore": true
+    },
+    "sqlSuggest": {
+      "name": "sqlSuggest",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": true
+    },
+    "formatOnMount": {
+      "name": "formatOnMount",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "formatLanguages": {
+      "name": "formatLanguages",
+      "type": "array",
+      "tsType": "string[]",
+      "required": false,
+      "default": "[\"sql\"]",
+      "isCore": true
+    },
+    "logMode": {
+      "name": "logMode",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": true
+    },
+    "maxLines": {
+      "name": "maxLines",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "isCore": true
+    },
+    "scrollThreshold": {
+      "name": "scrollThreshold",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "isCore": true
+    },
+    "autoScroll": {
+      "name": "autoScroll",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": true
+    },
+    "showToolbar": {
+      "name": "showToolbar",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "toolbarOptions": {
+      "name": "toolbarOptions",
+      "type": "object",
+      "tsType": "{ copy?: boolean; fullscreen?: boolean; download?: boolean; }",
+      "required": false,
+      "isCore": true
+    },
+    "toolbarTooltip": {
+      "name": "toolbarTooltip",
+      "type": "any",
+      "tsType": "boolean | YMonacoToolbarTooltipOptions",
+      "required": false,
+      "default": "{\n    placement: \"top\",\n    mouseEnterDelay: 0.2,\n    mouseLeaveDelay: 0.05,\n}",
+      "isCore": true
+    },
+    "fullscreenTransition": {
+      "name": "fullscreenTransition",
+      "type": "any",
+      "tsType": "boolean | YMonacoFullscreenTransitionOptions",
+      "required": false,
+      "default": "{\n    duration: 220,\n    easing: \"cubic-bezier(0.22, 1, 0.36, 1)\",\n}",
+      "isCore": true
+    },
+    "key": {
+      "name": "key",
+      "type": "any",
+      "tsType": "PropertyKey",
+      "required": false,
+      "isCore": false
+    },
+    "ref": {
+      "name": "ref",
+      "type": "any",
+      "tsType": "VNodeRef",
+      "required": false,
+      "isCore": false
+    },
+    "ref_for": {
+      "name": "ref_for",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ref_key": {
+      "name": "ref_key",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeMount": {
+      "name": "onVue:beforeMount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:mounted": {
+      "name": "onVue:mounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUpdate": {
+      "name": "onVue:beforeUpdate",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:updated": {
+      "name": "onVue:updated",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUnmount": {
+      "name": "onVue:beforeUnmount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:unmounted": {
+      "name": "onVue:unmounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "class": {
+      "name": "class",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "style": {
+      "name": "style",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    }
+  },
+  "emits": [
+    {
+      "name": "update:modelValue",
+      "type": "any[]"
+    },
+    {
+      "name": "change",
+      "type": "any[]"
+    },
+    {
+      "name": "blur",
+      "type": "any[]"
+    },
+    {
+      "name": "selectedText",
+      "type": "any[]"
+    },
+    {
+      "name": "run",
+      "type": "any[]"
+    },
+    {
+      "name": "scroll-end",
+      "type": "any[]"
+    },
+    {
+      "name": "line-exceed",
+      "type": "any[]"
+    }
+  ],
+  "slots": [
+    {
+      "name": "toolbar",
+      "type": "{ editor: any; fullscreen: boolean; toggleFullscreen: () => Promise<void>; }"
+    },
+    {
+      "name": "toolbar-prefix",
+      "type": "{ editor: any; fullscreen: boolean; toggleFullscreen: () => Promise<void>; }"
+    },
+    {
+      "name": "toolbar-suffix",
+      "type": "{ editor: any; fullscreen: boolean; toggleFullscreen: () => Promise<void>; }"
+    }
+  ],
+  "exposed": [
+    {
+      "name": "getInstance",
+      "type": "() => any"
+    },
+    {
+      "name": "setValue",
+      "type": "(value: string) => void"
+    },
+    {
+      "name": "insertText",
+      "type": "(text: string) => void"
+    },
+    {
+      "name": "insertTextAtPosition",
+      "type": "(text: string, context?: { editor?: any; monaco?: any; } | undefined) => void"
+    },
+    {
+      "name": "setLanguage",
+      "type": "(lang: string) => void"
+    },
+    {
+      "name": "setTheme",
+      "type": "(theme: string) => void"
+    },
+    {
+      "name": "toggleReadonly",
+      "type": "(readonly?: boolean | undefined) => void"
+    },
+    {
+      "name": "toggleFullscreen",
+      "type": "() => void"
+    },
+    {
+      "name": "layout",
+      "type": "() => void"
+    },
+    {
+      "name": "appendContent",
+      "type": "(text: string) => void"
+    },
+    {
+      "name": "clearContent",
+      "type": "() => void"
+    },
+    {
+      "name": "scrollToBottom",
+      "type": "() => void"
+    },
+    {
+      "name": "getLineCount",
+      "type": "() => number"
+    }
+  ]
+}

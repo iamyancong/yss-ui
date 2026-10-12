@@ -76,6 +76,16 @@ function linkToFilePath(link) {
  * @param {string} baseDir 相对化基准目录
  * @returns {Array<{path: string, content: string}>} 文件列表
  */
+const ALLOWED_DEMO_EXTS = /\.(?:vue|ts|tsx|js|jsx|md|json)$/i;
+const MAX_INDEX_FILE_SIZE = 100 * 1024; // 100KB 限制
+
+/**
+ * 递归读取目录下符合类型的文件（排除样式文件，限制 100KB 以内）。
+ *
+ * @param {string} dirPath 目录绝对路径
+ * @param {string} baseDir 相对化基准目录
+ * @returns {Array<{path: string, content: string}>} 文件列表
+ */
 function readDirFiles(dirPath, baseDir) {
   const files = [];
   if (!fs.existsSync(dirPath)) return files;
@@ -85,7 +95,9 @@ function readDirFiles(dirPath, baseDir) {
       files.push(...readDirFiles(fullPath, baseDir));
       continue;
     }
-    if (!/\.(?:vue|ts|tsx|js|jsx|less|css|md|json)$/.test(entry.name)) continue;
+    if (!ALLOWED_DEMO_EXTS.test(entry.name)) continue;
+    const stat = fs.statSync(fullPath);
+    if (stat.size > MAX_INDEX_FILE_SIZE) continue;
     files.push({ path: path.relative(baseDir, fullPath), content: fs.readFileSync(fullPath, 'utf8') });
   }
   return files;
@@ -168,10 +180,63 @@ function buildEntries(sidebarConfig, type) {
   return entries;
 }
 
+const ALLOWED_SKILL_EXTS = /\.(?:md|mjs|js|ts|json)$/i;
+
 /**
- * 读取全部 skill（按 skills.config.json 分类）。
+ * 递归收集目录下的文件（只收录 md、mjs、js、ts、json，单个文件限制 100KB 以内）。
  *
- * @returns {Array<{name: string, category: string, description: string, content: string}>} skill 列表
+ * @param {string} dirPath 目录路径
+ * @param {string} baseDir 基准目录
+ * @returns {Array<{path: string, content: string, size: number}>}
+ */
+function readSkillDirFiles(dirPath, baseDir) {
+  const files = [];
+  if (!fs.existsSync(dirPath)) return files;
+  for (const entry of fs.readdirSync(dirPath, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    const fullPath = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...readSkillDirFiles(fullPath, baseDir));
+      continue;
+    }
+    if (!ALLOWED_SKILL_EXTS.test(entry.name)) {
+      continue;
+    }
+    const stat = fs.statSync(fullPath);
+    if (stat.size > MAX_INDEX_FILE_SIZE) {
+      console.warn(`WARN 跳过超过 100KB 的文件: ${path.relative(baseDir, fullPath)} (${stat.size} bytes)`);
+      continue;
+    }
+    files.push({
+      path: path.relative(baseDir, fullPath).split(path.sep).join('/'),
+      content: fs.readFileSync(fullPath, 'utf8'),
+      size: stat.size,
+    });
+  }
+  return files;
+}
+
+/**
+ * 提取文件首行有效注释。
+ *
+ * @param {string} content 文件内容
+ * @returns {string} 注释文本
+ */
+function extractFirstLineComment(content) {
+  const lines = content.split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#!')) continue;
+    if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*') || trimmed.startsWith('#')) {
+      return trimmed.replace(/^(\/\/|\/\*|\*|#)\s*/, '').replace(/\*\/$/, '').trim();
+    }
+  }
+  return '';
+}
+
+/**
+ * 读取全部 skill（按 skills.config.json 分类，含 references 和 scripts 索引）。
+ *
+ * @returns {Array<{name: string, category: string, description: string, content: string, references: Array<object>, scripts: Array<object>, hasReferences: boolean, hasScripts: boolean}>} skill 列表
  */
 function buildSkills() {
   const config = JSON.parse(fs.readFileSync(path.join(SKILLS_DIR, 'skills.config.json'), 'utf8'));
@@ -190,11 +255,33 @@ function buildSkills() {
     const skillPath = path.join(SKILLS_DIR, entry.name, 'SKILL.md');
     if (!fs.existsSync(skillPath)) continue;
     const content = fs.readFileSync(skillPath, 'utf8');
+
+    const refDir = path.join(SKILLS_DIR, entry.name, 'references');
+    const references = fs.existsSync(refDir)
+      ? readSkillDirFiles(refDir, refDir)
+          .filter(f => f.path.endsWith('.md'))
+          .map(f => ({ path: f.path, content: f.content }))
+      : [];
+
+    const scriptDir = path.join(SKILLS_DIR, entry.name, 'scripts');
+    const scripts = fs.existsSync(scriptDir)
+      ? readSkillDirFiles(scriptDir, scriptDir).map(f => ({
+          path: f.path,
+          size: f.size,
+          firstLineComment: extractFirstLineComment(f.content),
+          content: f.content,
+        }))
+      : [];
+
     skills.push({
       name: entry.name,
       category: categoryOf[entry.name] || 'other',
       description: content.match(/^description:\s*(.+)$/m)?.[1]?.trim() || '',
       content: stripFrontmatter(content),
+      references,
+      scripts,
+      hasReferences: references.length > 0,
+      hasScripts: scripts.length > 0,
     });
   }
   return skills;

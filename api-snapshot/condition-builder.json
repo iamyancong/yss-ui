@@ -1,0 +1,253 @@
+{
+  "name": "condition-builder",
+  "propsCount": 27,
+  "props": {
+    "modelValue": {
+      "name": "modelValue",
+      "type": "any",
+      "tsType": "ConditionGroup",
+      "required": false,
+      "isCore": true
+    },
+    "segments": {
+      "name": "segments",
+      "type": "array",
+      "tsType": "SegmentSchema[]",
+      "required": false,
+      "isCore": true
+    },
+    "maxDepth": {
+      "name": "maxDepth",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "3",
+      "isCore": true
+    },
+    "operatorOptions": {
+      "name": "operatorOptions",
+      "type": "array",
+      "tsType": "OperatorOption[]",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "getOperators": {
+      "name": "getOperators",
+      "type": "function",
+      "tsType": "((field: unknown) => OperatorOption[] | Promise<OperatorOption[]>)",
+      "required": false,
+      "isCore": true
+    },
+    "loadFields": {
+      "name": "loadFields",
+      "type": "function",
+      "tsType": "((q: string) => Promise<OptionItem[]>)",
+      "required": false,
+      "isCore": true
+    },
+    "loadValues": {
+      "name": "loadValues",
+      "type": "function",
+      "tsType": "((args: { q: string; field: unknown; operator: string; node: ConditionLeaf; }) => Promise<OptionItem[]>)",
+      "required": false,
+      "isCore": true
+    },
+    "disabled": {
+      "name": "disabled",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "readonly": {
+      "name": "readonly",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": true
+    },
+    "fieldMode": {
+      "name": "fieldMode",
+      "type": "string",
+      "tsType": "\"autocomplete\" | \"select\"",
+      "required": false,
+      "default": "\"autocomplete\"",
+      "isCore": true
+    },
+    "strictMode": {
+      "name": "strictMode",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "andText": {
+      "name": "andText",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "undefined",
+      "isCore": false
+    },
+    "orText": {
+      "name": "orText",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "undefined",
+      "isCore": false
+    },
+    "isRoot": {
+      "name": "isRoot",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": false
+    },
+    "depth": {
+      "name": "depth",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "1",
+      "isCore": false
+    },
+    "key": {
+      "name": "key",
+      "type": "any",
+      "tsType": "PropertyKey",
+      "required": false,
+      "isCore": true
+    },
+    "ref": {
+      "name": "ref",
+      "type": "any",
+      "tsType": "VNodeRef",
+      "required": false,
+      "isCore": false
+    },
+    "ref_for": {
+      "name": "ref_for",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ref_key": {
+      "name": "ref_key",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeMount": {
+      "name": "onVue:beforeMount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:mounted": {
+      "name": "onVue:mounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUpdate": {
+      "name": "onVue:beforeUpdate",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:updated": {
+      "name": "onVue:updated",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUnmount": {
+      "name": "onVue:beforeUnmount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:unmounted": {
+      "name": "onVue:unmounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "class": {
+      "name": "class",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "style": {
+      "name": "style",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    }
+  },
+  "emits": [
+    {
+      "name": "validate",
+      "type": "[valid: boolean]"
+    },
+    {
+      "name": "update:modelValue",
+      "type": "[v: ConditionGroup]"
+    },
+    {
+      "name": "change",
+      "type": "[v: ConditionGroup]"
+    },
+    {
+      "name": "blur",
+      "type": "[v: ConditionGroup]"
+    },
+    {
+      "name": "remove",
+      "type": "[]"
+    }
+  ],
+  "slots": [],
+  "exposed": [
+    {
+      "name": "validate",
+      "type": "() => boolean"
+    },
+    {
+      "name": "getValue",
+      "type": "(mode?: \"normalized\" | \"legacy\" | undefined) => ConditionGroup"
+    },
+    {
+      "name": "setValue",
+      "type": "(v: ConditionGroup) => void"
+    },
+    {
+      "name": "addLeaf",
+      "type": "(path?: number[] | undefined, index?: number | undefined) => void"
+    },
+    {
+      "name": "addGroup",
+      "type": "(path?: number[] | undefined, index?: number | undefined) => void"
+    },
+    {
+      "name": "remove",
+      "type": "(path: number[]) => void"
+    }
+  ]
+}

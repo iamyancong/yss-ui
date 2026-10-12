@@ -1,0 +1,182 @@
+{
+  "name": "echarts",
+  "propsCount": 21,
+  "props": {
+    "options": {
+      "name": "options",
+      "type": "any",
+      "tsType": "ECBasicOption",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "width": {
+      "name": "width",
+      "type": "any",
+      "tsType": "string | number",
+      "required": false,
+      "default": "\"100%\"",
+      "isCore": true
+    },
+    "height": {
+      "name": "height",
+      "type": "any",
+      "tsType": "string | number",
+      "required": false,
+      "default": "360",
+      "isCore": true
+    },
+    "theme": {
+      "name": "theme",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "\"light\"",
+      "isCore": true
+    },
+    "renderer": {
+      "name": "renderer",
+      "type": "string",
+      "tsType": "\"canvas\" | \"svg\"",
+      "required": false,
+      "default": "\"canvas\"",
+      "isCore": true
+    },
+    "autoresize": {
+      "name": "autoresize",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "darkMode": {
+      "name": "darkMode",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "initOptions": {
+      "name": "initOptions",
+      "type": "any",
+      "tsType": "EChartsInitOpts",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "setOptionOpts": {
+      "name": "setOptionOpts",
+      "type": "any",
+      "tsType": "SetOptionOpts",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "key": {
+      "name": "key",
+      "type": "any",
+      "tsType": "PropertyKey",
+      "required": false,
+      "isCore": false
+    },
+    "ref": {
+      "name": "ref",
+      "type": "any",
+      "tsType": "VNodeRef",
+      "required": false,
+      "isCore": false
+    },
+    "ref_for": {
+      "name": "ref_for",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ref_key": {
+      "name": "ref_key",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeMount": {
+      "name": "onVue:beforeMount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:mounted": {
+      "name": "onVue:mounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUpdate": {
+      "name": "onVue:beforeUpdate",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:updated": {
+      "name": "onVue:updated",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUnmount": {
+      "name": "onVue:beforeUnmount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:unmounted": {
+      "name": "onVue:unmounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "class": {
+      "name": "class",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "style": {
+      "name": "style",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    }
+  },
+  "emits": [],
+  "slots": [],
+  "exposed": [
+    {
+      "name": "getInstance",
+      "type": "() => EChartsType | null"
+    },
+    {
+      "name": "resize",
+      "type": "() => void"
+    },
+    {
+      "name": "setOption",
+      "type": "(option: ECBasicOption | undefined, notMerge?: boolean | undefined, setOptionOpts?: SetOptionOpts | undefined) => void"
+    },
+    {
+      "name": "dispose",
+      "type": "() => void"
+    }
+  ]
+}

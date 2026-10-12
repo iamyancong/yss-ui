@@ -1,0 +1,355 @@
+{
+  "name": "month-calendar",
+  "propsCount": 36,
+  "props": {
+    "modelValue": {
+      "name": "modelValue",
+      "type": "any",
+      "tsType": "Dayjs",
+      "required": false,
+      "isCore": true
+    },
+    "defaultValue": {
+      "name": "defaultValue",
+      "type": "any",
+      "tsType": "Dayjs",
+      "required": false,
+      "isCore": true
+    },
+    "month": {
+      "name": "month",
+      "type": "any",
+      "tsType": "Dayjs",
+      "required": false,
+      "isCore": true
+    },
+    "defaultMonth": {
+      "name": "defaultMonth",
+      "type": "any",
+      "tsType": "Dayjs",
+      "required": false,
+      "isCore": true
+    },
+    "loading": {
+      "name": "loading",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "validRange": {
+      "name": "validRange",
+      "type": "any",
+      "tsType": "[Dayjs, Dayjs]",
+      "required": false,
+      "isCore": true
+    },
+    "disabledDate": {
+      "name": "disabledDate",
+      "type": "function",
+      "tsType": "((date: Dayjs) => boolean)",
+      "required": false,
+      "isCore": true
+    },
+    "showHeader": {
+      "name": "showHeader",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "appearance": {
+      "name": "appearance",
+      "type": "any",
+      "tsType": "YMonthCalendarAppearance",
+      "required": false,
+      "default": "\"glass\"",
+      "isCore": true
+    },
+    "cellLayout": {
+      "name": "cellLayout",
+      "type": "any",
+      "tsType": "YMonthCalendarCellLayout",
+      "required": false,
+      "default": "\"card\"",
+      "isCore": true
+    },
+    "responsive": {
+      "name": "responsive",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "fillHeight": {
+      "name": "fillHeight",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "headerActions": {
+      "name": "headerActions",
+      "type": "any",
+      "tsType": "YMonthCalendarHeaderActions",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "showOutsideDays": {
+      "name": "showOutsideDays",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "navigateOnOutsideSelect": {
+      "name": "navigateOnOutsideSelect",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "selectOnContextMenu": {
+      "name": "selectOnContextMenu",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "contextMenuEnabled": {
+      "name": "contextMenuEnabled",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "cellHeight": {
+      "name": "cellHeight",
+      "type": "any",
+      "tsType": "string | number",
+      "required": false,
+      "default": "DEFAULT_MONTH_CALENDAR_CELL_HEIGHT",
+      "isCore": true
+    },
+    "todayText": {
+      "name": "todayText",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "todayIndicator": {
+      "name": "todayIndicator",
+      "type": "any",
+      "tsType": "YMonthCalendarTodayIndicator",
+      "required": false,
+      "default": "\"date\"",
+      "isCore": true
+    },
+    "cellClassName": {
+      "name": "cellClassName",
+      "type": "function",
+      "tsType": "((context: YMonthCalendarCellContext) => YMonthCalendarCellClass)",
+      "required": false,
+      "isCore": true
+    },
+    "cellStyle": {
+      "name": "cellStyle",
+      "type": "function",
+      "tsType": "((context: YMonthCalendarCellContext) => CSSProperties)",
+      "required": false,
+      "isCore": true
+    },
+    "rootStyle": {
+      "name": "rootStyle",
+      "type": "any",
+      "tsType": "CSSProperties",
+      "required": false,
+      "isCore": true
+    },
+    "loadingTip": {
+      "name": "loadingTip",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "key": {
+      "name": "key",
+      "type": "any",
+      "tsType": "PropertyKey",
+      "required": false,
+      "isCore": false
+    },
+    "ref": {
+      "name": "ref",
+      "type": "any",
+      "tsType": "VNodeRef",
+      "required": false,
+      "isCore": false
+    },
+    "ref_for": {
+      "name": "ref_for",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ref_key": {
+      "name": "ref_key",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeMount": {
+      "name": "onVue:beforeMount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:mounted": {
+      "name": "onVue:mounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUpdate": {
+      "name": "onVue:beforeUpdate",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:updated": {
+      "name": "onVue:updated",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUnmount": {
+      "name": "onVue:beforeUnmount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:unmounted": {
+      "name": "onVue:unmounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "class": {
+      "name": "class",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "style": {
+      "name": "style",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    }
+  },
+  "emits": [
+    {
+      "name": "select",
+      "type": "[payload: YMonthCalendarSelectPayload]"
+    },
+    {
+      "name": "update:modelValue",
+      "type": "[value: Dayjs]"
+    },
+    {
+      "name": "update:month",
+      "type": "[value: Dayjs]"
+    },
+    {
+      "name": "cell-click",
+      "type": "[payload: YMonthCalendarPointerPayload]"
+    },
+    {
+      "name": "cell-dblclick",
+      "type": "[payload: YMonthCalendarPointerPayload]"
+    },
+    {
+      "name": "cell-contextmenu",
+      "type": "[payload: YMonthCalendarPointerPayload]"
+    },
+    {
+      "name": "panel-change",
+      "type": "[payload: YMonthCalendarPanelChangePayload]"
+    }
+  ],
+  "slots": [
+    {
+      "name": "header",
+      "type": "{ month: Dayjs; previousDisabled: boolean; nextDisabled: boolean; todayDisabled: boolean; previous: () => void; next: () => void; today: () => void; }"
+    },
+    {
+      "name": "header-left",
+      "type": "{ month: Dayjs; }"
+    },
+    {
+      "name": "header-right-before",
+      "type": "{ month: Dayjs; }"
+    },
+    {
+      "name": "header-right-after",
+      "type": "{ month: Dayjs; }"
+    },
+    {
+      "name": "weekday",
+      "type": "{ index: number; label: string; }"
+    },
+    {
+      "name": "date-cell",
+      "type": "{ date: Dayjs; dateKey: string; isToday: boolean; isSelected: boolean; isCurrentMonth: boolean; isDisabled: boolean; }"
+    },
+    {
+      "name": "date-cell-extra",
+      "type": "{ date: Dayjs; dateKey: string; isToday: boolean; isSelected: boolean; isCurrentMonth: boolean; isDisabled: boolean; }"
+    },
+    {
+      "name": "loading",
+      "type": "{}"
+    },
+    {
+      "name": "context-menu",
+      "type": "{ close: () => void; date: Dayjs; dateKey: string; isToday: boolean; isSelected: boolean; isCurrentMonth: boolean; isDisabled: boolean; }"
+    }
+  ],
+  "exposed": [
+    {
+      "name": "focusDate",
+      "type": "(date: Dayjs) => Promise<void>"
+    },
+    {
+      "name": "closeContextMenu",
+      "type": "() => void"
+    },
+    {
+      "name": "goToday",
+      "type": "() => void"
+    }
+  ]
+}

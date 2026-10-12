@@ -12,6 +12,26 @@ YSS UI Hooks 库（`@yss-ui/hooks`）的版本更新记录。
 
 ---
 
+## v1.2.0
+`2026-10-12`
+
+### ⚠️ 行为变化与升级说明
+
+- **useLoading**: 修复 `keepLoadingOnError: true` 配置失效的问题。
+  - **历史行为**: 以前当设置 `keepLoadingOnError: true` 时，异步操作抛出异常后计数仍会被清零，导致 loading 状态被意外关闭。
+  - **调整后行为**: 修复后，当设置 `keepLoadingOnError: true` 且执行出错时，loading 状态将正确保持为 `true`。
+  - **业务升级指导**: 若业务代码先前依赖了「出错后 loading 会自动关闭」的旧有 bug 行为，升级至本版本后，需在捕获异常或后续流程中显式调用 `hideLoading()` 手动关闭 loading，或者移除 `keepLoadingOnError: true` 配置。
+
+### 🐞 Bug Fixes
+
+- **useLoading**: 修复 `keepLoadingOnError` 模式下错误处理分支重置计数导致 loading 提早关闭的问题，补充完整的单测覆盖（行覆盖率 100%）。
+
+### 🧪 Tests
+
+- **usePollingTask / useFullscreen**: 补充高频 Hooks 单元测试套件，行覆盖率分别达到 94%+ 与 97%+。
+
+---
+
 ## v1.1.3
 `2026-09-01`
 

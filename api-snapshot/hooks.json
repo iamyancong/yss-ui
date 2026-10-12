@@ -1,0 +1,106 @@
+{
+  "useLoading": {
+    "name": "useLoading",
+    "type": "(initialValue?: boolean) => import(\"@yss-ui/hooks/src/useLoading/constant\").UseLoadingReturn"
+  },
+  "useFullscreen": {
+    "name": "useFullscreen",
+    "type": "(target: import(\"@yss-ui/hooks/src/useFullscreen/types\").Target, options?: import(\"@yss-ui/hooks/src/useFullscreen/types\").UseFullscreenOptions) => import(\"@yss-ui/hooks/src/useFullscreen/types\").UseFullscreenReturn"
+  },
+  "UseTreeHeightOptions": {
+    "name": "UseTreeHeightOptions",
+    "type": "any"
+  },
+  "UseTreeHeightReturn": {
+    "name": "UseTreeHeightReturn",
+    "type": "any"
+  },
+  "YTREE_SEARCH_HEIGHT": {
+    "name": "YTREE_SEARCH_HEIGHT",
+    "type": "48"
+  },
+  "useTreeHeight": {
+    "name": "useTreeHeight",
+    "type": "(treeAreaRef: import(\"@yss-ui/hooks/src/useTreeHeight/types\").UseTreeHeightOptions) => import(\"@yss-ui/hooks/src/useTreeHeight/types\").UseTreeHeightReturn"
+  },
+  "UseTableHeightOptions": {
+    "name": "UseTableHeightOptions",
+    "type": "any"
+  },
+  "UseTableHeightReturn": {
+    "name": "UseTableHeightReturn",
+    "type": "any"
+  },
+  "YTABLE_PAGINATION_HEIGHT": {
+    "name": "YTABLE_PAGINATION_HEIGHT",
+    "type": "48"
+  },
+  "YTABLE_TOOLBAR_HEIGHT": {
+    "name": "YTABLE_TOOLBAR_HEIGHT",
+    "type": "48"
+  },
+  "YEDITTABLE_ADD_BTN_HEIGHT": {
+    "name": "YEDITTABLE_ADD_BTN_HEIGHT",
+    "type": "40"
+  },
+  "useTableHeight": {
+    "name": "useTableHeight",
+    "type": "(tableAreaRef: import(\"@yss-ui/hooks/src/useTableHeight/types\").UseTableHeightOptions) => import(\"@yss-ui/hooks/src/useTableHeight/types\").UseTableHeightReturn"
+  },
+  "usePollingTask": {
+    "name": "usePollingTask",
+    "type": "(task: (context: import(\"@yss-ui/hooks/src/usePollingTask/types\").PollingContext) => Promise<void> | void, options?: import(\"@yss-ui/hooks/src/usePollingTask/types\").UsePollingTaskOptions) => import(\"@yss-ui/hooks/src/usePollingTask/types\").UsePollingTaskReturn"
+  },
+  "PollingContext": {
+    "name": "PollingContext",
+    "type": "any"
+  },
+  "PollingResumeMode": {
+    "name": "PollingResumeMode",
+    "type": "any"
+  },
+  "PollingStartOptions": {
+    "name": "PollingStartOptions",
+    "type": "any"
+  },
+  "UsePollingTaskOptions": {
+    "name": "UsePollingTaskOptions",
+    "type": "any"
+  },
+  "UsePollingTaskReturn": {
+    "name": "UsePollingTaskReturn",
+    "type": "any"
+  },
+  "UrlNavigationMode": {
+    "name": "UrlNavigationMode",
+    "type": "any"
+  },
+  "UrlStateActionOptions": {
+    "name": "UrlStateActionOptions",
+    "type": "any"
+  },
+  "UrlStatePatch": {
+    "name": "UrlStatePatch",
+    "type": "any"
+  },
+  "UrlUpdateStrategy": {
+    "name": "UrlUpdateStrategy",
+    "type": "any"
+  },
+  "UrlStateValue": {
+    "name": "UrlStateValue",
+    "type": "any"
+  },
+  "UseUrlStateOptions": {
+    "name": "UseUrlStateOptions",
+    "type": "any"
+  },
+  "UseUrlStateReturn": {
+    "name": "UseUrlStateReturn",
+    "type": "any"
+  },
+  "useUrlState": {
+    "name": "useUrlState",
+    "type": "(options?: import(\"@yss-ui/hooks/src/useUrlState/types\").UseUrlStateOptions) => import(\"@yss-ui/hooks/src/useUrlState/types\").UseUrlStateReturn"
+  }
+}

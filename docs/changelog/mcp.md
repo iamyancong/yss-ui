@@ -10,6 +10,19 @@ toc: content
 
 YSS MCP 文档服务（`@yss-ui/mcp`）的版本更新记录。
 
+## v0.4.0
+
+`2026-10-12`
+
+### 🚀 Features
+
+- **skills 资源覆盖**：`build-index.js` 全量索引各 Skill 的 `references/**/*.md` 全文与 `scripts/**` 清单及注释元数据 (#50)。
+- **get_skill 扩展**：支持 `include: ['references', 'scripts']` 参数提取参考文档与辅助脚本，支持 `file` 参数精准读取单个指定附属文件 (#50)。
+- **list_skills 增强**：输出列表中补充 `references` 和 `scripts` 附属资源标记与数量 (#50)。
+- **search_docs 增强**：支持跨 Skill references 内容全文检索 (#50)。
+
+---
+
 ## v0.3.9
 
 `2026-10-10`

@@ -1,12 +1,12 @@
 ---
 name: formily-foundation
-description: 指导 YFormily 基础表单开发；当创建或修复普通单页表单、字段校验、提交链路、查询表单布局、scope 表达式或导入边界时使用。
+description: 指导基于 @yss-ui/components 的 YFormily 基础表单开发，覆盖字段校验规则、提交链路、查询表单栅格布局、scope 表达式与规范导入边界；当创建单页基础表单、配置普通校验或排查基础表单提交时使用。复杂动态联动请转至 formily-linkage-effects，分步向导请使用 formily-step-flow。
 toc: content
 ---
 
 # Formily Foundation Skill
 
-> 指导 YFormily 基础表单开发；当创建或修复普通单页表单、字段校验、提交链路、查询表单布局、scope 表达式或导入边界时使用。
+> 指导基于 @yss-ui/components 的 YFormily 基础表单开发，覆盖字段校验规则、提交链路、查询表单栅格布局、scope 表达式与规范导入边界；当创建单页基础表单、配置普通校验或排查基础表单提交时使用。复杂动态联动请转至 formily-linkage-effects，分步向导请使用 formily-step-flow。
 
 
 ## 触发条件

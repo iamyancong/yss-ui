@@ -1,12 +1,12 @@
 ---
 name: component-development
-description: 在 yss-ui 组件库源码中新建、修改或重构 Vue3 组件，覆盖真实 API 设计、TypeScript 类型、hooks 拆分、主题 Token、导出、文档 Demo 与验证。
+description: 在 yss-ui 组件库源码中新建、修改或重构 Vue3 组件，严格遵守真实 API 设计、TypeScript 类型定义、Composable 逻辑拆分、主题 Token 适配与文档 Demo 验证；当开发或演进底层 UI 组件时使用。业务微应用内的具体业务页面与模块开发请使用 yss-ui-business-page-generation。
 toc: content
 ---
 
 # YSS UI 组件开发
 
-> 在 yss-ui 组件库源码中新建、修改或重构 Vue3 组件，覆盖真实 API 设计、TypeScript 类型、hooks 拆分、主题 Token、导出、文档 Demo 与验证。
+> 在 yss-ui 组件库源码中新建、修改或重构 Vue3 组件，严格遵守真实 API 设计、TypeScript 类型定义、Composable 逻辑拆分、主题 Token 适配与文档 Demo 验证；当开发或演进底层 UI 组件时使用。业务微应用内的具体业务页面与模块开发请使用 yss-ui-business-page-generation。
 
 
 ## 触发条件

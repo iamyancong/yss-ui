@@ -50,16 +50,18 @@ test('用户级同步只替换 YSS 同名项并保留第三方 Skills', async ()
     await createSkill(sourceRoot, 'frontend-commit');
     await createSkill(targetRoot, 'third-party-skill');
     await createSkill(targetRoot, 'microapp-commit');
+    await createSkill(targetRoot, 'page-module-development');
 
     await syncSkillEntries(sourceRoot, targetRoot, ['frontend-commit'], {
       link: true,
       label: 'test',
-      deprecatedSkills: ['microapp-commit'],
+      deprecatedSkills: ['microapp-commit', 'page-module-development'],
       writeManifest: true,
     });
 
     assert.equal(await fs.pathExists(path.join(targetRoot, 'third-party-skill/SKILL.md')), true);
     assert.equal(await fs.pathExists(path.join(targetRoot, 'microapp-commit')), false);
+    assert.equal(await fs.pathExists(path.join(targetRoot, 'page-module-development')), false);
     assert.equal(await fs.pathExists(path.join(targetRoot, 'frontend-commit/SKILL.md')), true);
 
     const manifest = await fs.readJson(path.join(targetRoot, '.yss-skills-manifest.json'));
@@ -78,10 +80,18 @@ test('项目级 IDE 目录已有第三方 Skills 时不会被整目录覆盖', a
   try {
     await createSkill(primaryRoot, 'frontend-commit');
     await createSkill(legacyRoot, 'third-party-skill');
+    await createSkill(legacyRoot, 'page-module-development');
 
-    await createIdeLinks(tempRoot, '.agents/skills', ['.agent/skills'], ['frontend-commit'], ['microapp-commit']);
+    await createIdeLinks(
+      tempRoot,
+      '.agents/skills',
+      ['.agent/skills'],
+      ['frontend-commit'],
+      ['microapp-commit', 'page-module-development']
+    );
 
     assert.equal(await fs.pathExists(path.join(legacyRoot, 'third-party-skill/SKILL.md')), true);
+    assert.equal(await fs.pathExists(path.join(legacyRoot, 'page-module-development')), false);
     assert.equal(await fs.pathExists(path.join(legacyRoot, 'frontend-commit/SKILL.md')), true);
     assert.equal(
       await fs.realpath(path.join(legacyRoot, 'frontend-commit')),
@@ -217,6 +227,25 @@ test('ensurePrettierIgnore 自动为项目创建或补齐 .prettierignore 规则
     assert.equal(content.includes('.cursorrules'), true);
     assert.equal(content.includes('.cursor/'), true);
   } finally {
+    await fs.remove(tempRoot);
+  }
+});
+
+test('默认同步（未指定 --all）包含 yss-create-microapp', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'yss-skills-default-sync-'));
+  const previousCwd = process.cwd();
+
+  try {
+    process.chdir(tempRoot);
+    await syncSkills({ local: true, links: false });
+
+    const createSkillPath = path.join(tempRoot, '.agents/skills/yss-create-microapp/SKILL.md');
+    assert.equal(await fs.pathExists(createSkillPath), true);
+
+    const manifest = await fs.readJson(path.join(tempRoot, '.agents/skills/.yss-skills-manifest.json'));
+    assert.equal(manifest.skills.includes('yss-create-microapp'), true);
+  } finally {
+    process.chdir(previousCwd);
     await fs.remove(tempRoot);
   }
 });

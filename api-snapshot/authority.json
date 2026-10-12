@@ -1,0 +1,142 @@
+{
+  "name": "authority",
+  "propsCount": 17,
+  "props": {
+    "permissionCode": {
+      "name": "permissionCode",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": true
+    },
+    "dropdownItems": {
+      "name": "dropdownItems",
+      "type": "array",
+      "tsType": "AuthorityDropdownItem[]",
+      "required": false,
+      "default": "[]",
+      "isCore": true
+    },
+    "options": {
+      "name": "options",
+      "type": "object",
+      "tsType": "{ label?: string; value?: string; }",
+      "required": false,
+      "default": "{ label: \"text\", value: \"id\" }",
+      "isCore": true
+    },
+    "buttonProps": {
+      "name": "buttonProps",
+      "type": "object",
+      "tsType": "Record<string, any>",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "fallback": {
+      "name": "fallback",
+      "type": "string",
+      "tsType": "\"hide\" | \"disable\"",
+      "required": false,
+      "default": "\"hide\"",
+      "isCore": true
+    },
+    "key": {
+      "name": "key",
+      "type": "any",
+      "tsType": "PropertyKey",
+      "required": false,
+      "isCore": false
+    },
+    "ref": {
+      "name": "ref",
+      "type": "any",
+      "tsType": "VNodeRef",
+      "required": false,
+      "isCore": false
+    },
+    "ref_for": {
+      "name": "ref_for",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ref_key": {
+      "name": "ref_key",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeMount": {
+      "name": "onVue:beforeMount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:mounted": {
+      "name": "onVue:mounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUpdate": {
+      "name": "onVue:beforeUpdate",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:updated": {
+      "name": "onVue:updated",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUnmount": {
+      "name": "onVue:beforeUnmount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:unmounted": {
+      "name": "onVue:unmounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "class": {
+      "name": "class",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "style": {
+      "name": "style",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    }
+  },
+  "emits": [
+    {
+      "name": "command",
+      "type": "[record: AuthorityDropdownItem]"
+    }
+  ],
+  "slots": [
+    {
+      "name": "default",
+      "type": "{}"
+    }
+  ],
+  "exposed": []
+}

@@ -1,6 +1,6 @@
 ---
 name: release-management
-description: 规划、预检和验证 yss-ui 多包发版，覆盖 release-changed 待发包检测、版本类型、changelog 门禁、CI 发布与发布后核验。
+description: 检测哪些包需要发版、评估包依赖与版本类型，发版前预检 changelog 门禁与 release-changed 检测待发包输出，核验敏感行为文件与发版条件；当需要了解哪些包待发布、检测包变更或执行发版前合规预检时使用。一键自动执行提交与发布流水线请使用 release-workflow。
 ---
 
 # 发版管理

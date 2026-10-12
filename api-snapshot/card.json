@@ -1,0 +1,289 @@
+{
+  "name": "card",
+  "propsCount": 34,
+  "props": {
+    "padding": {
+      "name": "padding",
+      "type": "any",
+      "tsType": "string | number",
+      "required": false,
+      "default": "16",
+      "isCore": true
+    },
+    "bodyStyle": {
+      "name": "bodyStyle",
+      "type": "any",
+      "tsType": "CSSProperties",
+      "required": false,
+      "isCore": true
+    },
+    "className": {
+      "name": "className",
+      "type": "array",
+      "tsType": "string | string[]",
+      "required": false,
+      "isCore": true
+    },
+    "customStyle": {
+      "name": "customStyle",
+      "type": "any",
+      "tsType": "CSSProperties",
+      "required": false,
+      "isCore": true
+    },
+    "metaTitle": {
+      "name": "metaTitle",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": true
+    },
+    "metaDescription": {
+      "name": "metaDescription",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": true
+    },
+    "type": {
+      "name": "type",
+      "type": "string",
+      "tsType": "\"inner\"",
+      "required": false,
+      "isCore": false
+    },
+    "prefixCls": {
+      "name": "prefixCls",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "size": {
+      "name": "size",
+      "type": "any",
+      "tsType": "CardSize",
+      "required": false,
+      "isCore": true
+    },
+    "loading": {
+      "name": "loading",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": true
+    },
+    "title": {
+      "name": "title",
+      "type": "any",
+      "tsType": "any",
+      "required": true,
+      "isCore": false
+    },
+    "extra": {
+      "name": "extra",
+      "type": "any",
+      "tsType": "any",
+      "required": true,
+      "isCore": false
+    },
+    "bordered": {
+      "name": "bordered",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "headStyle": {
+      "name": "headStyle",
+      "type": "any",
+      "tsType": "CSSProperties",
+      "required": false,
+      "isCore": false
+    },
+    "hoverable": {
+      "name": "hoverable",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "actions": {
+      "name": "actions",
+      "type": "any",
+      "tsType": "any",
+      "required": true,
+      "isCore": false
+    },
+    "tabList": {
+      "name": "tabList",
+      "type": "array",
+      "tsType": "CardTabListType[]",
+      "required": false,
+      "isCore": false
+    },
+    "tabBarExtraContent": {
+      "name": "tabBarExtraContent",
+      "type": "any",
+      "tsType": "any",
+      "required": true,
+      "isCore": false
+    },
+    "activeTabKey": {
+      "name": "activeTabKey",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "defaultActiveTabKey": {
+      "name": "defaultActiveTabKey",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "cover": {
+      "name": "cover",
+      "type": "any",
+      "tsType": "any",
+      "required": true,
+      "isCore": false
+    },
+    "onTabChange": {
+      "name": "onTabChange",
+      "type": "function",
+      "tsType": "((key: string) => void)",
+      "required": false,
+      "isCore": false
+    },
+    "key": {
+      "name": "key",
+      "type": "any",
+      "tsType": "PropertyKey",
+      "required": false,
+      "isCore": false
+    },
+    "ref": {
+      "name": "ref",
+      "type": "any",
+      "tsType": "VNodeRef",
+      "required": false,
+      "isCore": false
+    },
+    "ref_for": {
+      "name": "ref_for",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ref_key": {
+      "name": "ref_key",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeMount": {
+      "name": "onVue:beforeMount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:mounted": {
+      "name": "onVue:mounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUpdate": {
+      "name": "onVue:beforeUpdate",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:updated": {
+      "name": "onVue:updated",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUnmount": {
+      "name": "onVue:beforeUnmount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:unmounted": {
+      "name": "onVue:unmounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "class": {
+      "name": "class",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "style": {
+      "name": "style",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    }
+  },
+  "emits": [],
+  "slots": [
+    {
+      "name": "title",
+      "type": "{}"
+    },
+    {
+      "name": "extra",
+      "type": "{}"
+    },
+    {
+      "name": "cover",
+      "type": "{}"
+    },
+    {
+      "name": "actions",
+      "type": "{}"
+    },
+    {
+      "name": "tabBarExtraContent",
+      "type": "{}"
+    },
+    {
+      "name": "meta",
+      "type": "{}"
+    },
+    {
+      "name": "meta-avatar",
+      "type": "{}"
+    },
+    {
+      "name": "meta-title",
+      "type": "{}"
+    },
+    {
+      "name": "meta-description",
+      "type": "{}"
+    },
+    {
+      "name": "default",
+      "type": "{}"
+    }
+  ],
+  "exposed": []
+}

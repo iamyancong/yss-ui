@@ -1,0 +1,363 @@
+{
+  "name": "tree",
+  "propsCount": 40,
+  "props": {
+    "loading": {
+      "name": "loading",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "loadingTip": {
+      "name": "loadingTip",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "treeData": {
+      "name": "treeData",
+      "type": "array",
+      "tsType": "any[]",
+      "required": false,
+      "default": "[]",
+      "isCore": true
+    },
+    "virtual": {
+      "name": "virtual",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "fieldNames": {
+      "name": "fieldNames",
+      "type": "any",
+      "tsType": "YTreeFieldNames",
+      "required": false,
+      "default": "{ title: 'title', key: 'key', children: 'children' }",
+      "isCore": true
+    },
+    "filterable": {
+      "name": "filterable",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "searchValue": {
+      "name": "searchValue",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "''",
+      "isCore": true
+    },
+    "searchProps": {
+      "name": "searchProps",
+      "type": "object",
+      "tsType": "Record<string, any>",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "ellipsisTooltip": {
+      "name": "ellipsisTooltip",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "tooltipDelay": {
+      "name": "tooltipDelay",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "500",
+      "isCore": true
+    },
+    "showActions": {
+      "name": "showActions",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "getNodeActions": {
+      "name": "getNodeActions",
+      "type": "function",
+      "tsType": "((node: any) => YTreeActionItem[])",
+      "required": false,
+      "default": "[] as YTreeActionItem[]",
+      "isCore": true
+    },
+    "actionTrigger": {
+      "name": "actionTrigger",
+      "type": "string",
+      "tsType": "\"click\" | \"hover\" | \"contextmenu\" | (\"click\" | \"hover\" | \"contextmenu\")[]",
+      "required": false,
+      "default": "'click'",
+      "isCore": true
+    },
+    "selectOnActionClick": {
+      "name": "selectOnActionClick",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "selectable": {
+      "name": "selectable",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "blockNode": {
+      "name": "blockNode",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "height": {
+      "name": "height",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "isCore": true
+    },
+    "key": {
+      "name": "key",
+      "type": "any",
+      "tsType": "PropertyKey",
+      "required": false,
+      "isCore": true
+    },
+    "ref": {
+      "name": "ref",
+      "type": "any",
+      "tsType": "VNodeRef",
+      "required": false,
+      "isCore": false
+    },
+    "ref_for": {
+      "name": "ref_for",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ref_key": {
+      "name": "ref_key",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeMount": {
+      "name": "onVue:beforeMount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:mounted": {
+      "name": "onVue:mounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUpdate": {
+      "name": "onVue:beforeUpdate",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:updated": {
+      "name": "onVue:updated",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUnmount": {
+      "name": "onVue:beforeUnmount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:unmounted": {
+      "name": "onVue:unmounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "class": {
+      "name": "class",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "style": {
+      "name": "style",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "rootStyle": {
+      "name": "rootStyle",
+      "type": "object",
+      "tsType": "Record<string, any>",
+      "required": false,
+      "isCore": true
+    },
+    "direction": {
+      "name": "direction",
+      "type": "string",
+      "tsType": "\"ltr\" | \"rtl\"",
+      "required": false,
+      "isCore": true
+    },
+    "itemHeight": {
+      "name": "itemHeight",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "isCore": true
+    },
+    "rootClassName": {
+      "name": "rootClassName",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": true
+    },
+    "selectedKeys": {
+      "name": "selectedKeys",
+      "type": "array",
+      "tsType": "YTreeKey[]",
+      "required": false,
+      "isCore": true
+    },
+    "expandedKeys": {
+      "name": "expandedKeys",
+      "type": "array",
+      "tsType": "YTreeKey[]",
+      "required": false,
+      "isCore": true
+    },
+    "checkedKeys": {
+      "name": "checkedKeys",
+      "type": "any",
+      "tsType": "YTreeKey[] | { checked: YTreeKey[]; halfChecked: YTreeKey[]; }",
+      "required": false,
+      "isCore": true
+    },
+    "loadedKeys": {
+      "name": "loadedKeys",
+      "type": "array",
+      "tsType": "YTreeKey[]",
+      "required": false,
+      "isCore": true
+    },
+    "defaultSelectedKeys": {
+      "name": "defaultSelectedKeys",
+      "type": "array",
+      "tsType": "YTreeKey[]",
+      "required": false,
+      "isCore": true
+    },
+    "defaultExpandedKeys": {
+      "name": "defaultExpandedKeys",
+      "type": "array",
+      "tsType": "YTreeKey[]",
+      "required": false,
+      "isCore": true
+    },
+    "defaultCheckedKeys": {
+      "name": "defaultCheckedKeys",
+      "type": "array",
+      "tsType": "YTreeKey[]",
+      "required": false,
+      "isCore": true
+    }
+  },
+  "emits": [
+    {
+      "name": "select",
+      "type": "[selectedKeys: (string | number)[], info: { node: any; selected: boolean; }]"
+    },
+    {
+      "name": "action",
+      "type": "[payload: { key: string; node: any; }]"
+    },
+    {
+      "name": "update:searchValue",
+      "type": "[value: string]"
+    },
+    {
+      "name": "update:selectedKeys",
+      "type": "[keys: (string | number)[]]"
+    }
+  ],
+  "slots": [
+    {
+      "name": "header-left",
+      "type": "{}"
+    },
+    {
+      "name": "search",
+      "type": "{}"
+    },
+    {
+      "name": "header-right",
+      "type": "{}"
+    },
+    {
+      "name": "title",
+      "type": "any"
+    },
+    {
+      "name": "node-prefix",
+      "type": "{ node: any; }"
+    },
+    {
+      "name": "node-title",
+      "type": "{ node: any; text: string; }"
+    },
+    {
+      "name": "node-suffix",
+      "type": "{ node: any; }"
+    },
+    {
+      "name": "switcherIcon",
+      "type": "any"
+    },
+    {
+      "name": "icon",
+      "type": "any"
+    },
+    {
+      "name": "default",
+      "type": "{}"
+    }
+  ],
+  "exposed": []
+}

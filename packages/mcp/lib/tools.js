@@ -80,11 +80,20 @@ const TOOL_DEFINITIONS = [
   {
     name: 'get_skill',
     description:
-      '获取指定 Skill 的完整内容（触发条件、硬约束、标准代码骨架、失败兜底）。实现列表页/表单/可编辑表格等业务模块前按 list_skills 选择并读取对应 Skill。',
+      '获取指定 Skill 的完整内容（触发条件、硬约束、标准代码骨架、失败兜底）。支持通过 include 包含 references 参考文档与 scripts 辅助脚本，或通过 file 直接读取指定附属文件内容。',
     inputSchema: {
       type: 'object',
       properties: {
         name: { type: 'string', description: 'Skill 名称，如 page-form-module、ytable-usage' },
+        include: {
+          type: 'array',
+          items: { type: 'string', enum: ['references', 'scripts'] },
+          description: '可选附带内容：references（参考文档全文）、scripts（辅助脚本清单与内容）',
+        },
+        file: {
+          type: 'string',
+          description: '可选：指定读取 references/ 或 scripts/ 下的具体文件相对路径（如 "references/hooks-map.md" 或 "scripts/create.mjs"）',
+        },
       },
       required: ['name'],
       additionalProperties: false,
@@ -275,7 +284,15 @@ function handleToolCall(store, name, args = {}) {
       for (const [category, skills] of byCategory) {
         lines.push(`## ${category}`, '');
         for (const skill of skills) {
-          lines.push(`- ${skill.name}: ${skill.description}`);
+          const tags = [];
+          if (skill.hasReferences || (skill.references && skill.references.length > 0)) {
+            tags.push(`references: ${skill.references?.length || 1}`);
+          }
+          if (skill.hasScripts || (skill.scripts && skill.scripts.length > 0)) {
+            tags.push(`scripts: ${skill.scripts?.length || 1}`);
+          }
+          const tagSuffix = tags.length > 0 ? ` [${tags.join(', ')}]` : '';
+          lines.push(`- ${skill.name}${tagSuffix}: ${skill.description}`);
         }
         lines.push('');
       }
@@ -292,7 +309,66 @@ function handleToolCall(store, name, args = {}) {
       if (!skill) {
         return `未找到 Skill "${args.name}"。用 list_skills 查看全部可用 Skill。`;
       }
-      return `# Skill: ${skill.name}\n\n> ${skill.description}\n\n${skill.content}`;
+
+      if (args.file) {
+        const cleanFile = String(args.file).replace(/^\.?\/+/, '').replace(/\\/g, '/');
+        const refTarget = cleanFile.replace(/^references\//, '');
+        const refFile = (skill.references || []).find(
+          r => r.path === cleanFile || r.path === refTarget
+        );
+        if (refFile) {
+          return `# Skill: ${skill.name} > references/${refFile.path}\n\n${refFile.content}`;
+        }
+        const scriptTarget = cleanFile.replace(/^scripts\//, '');
+        const scriptFile = (skill.scripts || []).find(
+          s => s.path === cleanFile || s.path === scriptTarget
+        );
+        if (scriptFile) {
+          const lang = scriptFile.path.split('.').pop() || '';
+          return `# Skill: ${skill.name} > scripts/${scriptFile.path} (${scriptFile.size} bytes)\n\n\`\`\`${lang}\n${scriptFile.content}\n\`\`\``;
+        }
+        const available = [
+          ...(skill.references || []).map(r => `references/${r.path}`),
+          ...(skill.scripts || []).map(s => `scripts/${s.path}`),
+        ];
+        return `未找到 Skill "${skill.name}" 下的文件 "${args.file}"。可用附属文件:\n${available.map(f => `- ${f}`).join('\n') || '（无附属文件）'}`;
+      }
+
+      let output = `# Skill: ${skill.name}\n\n> ${skill.description}\n\n${skill.content}`;
+      const includes = Array.isArray(args.include) ? args.include : [];
+
+      if (includes.includes('references') && skill.references && skill.references.length > 0) {
+        output += '\n\n---\n## 📚 参考文档（References）\n';
+        for (const ref of skill.references) {
+          output += `\n### ${ref.path}\n\n${ref.content}\n`;
+        }
+      }
+
+      if (includes.includes('scripts') && skill.scripts && skill.scripts.length > 0) {
+        output += '\n\n---\n## 🛠️ 辅助脚本（Scripts）\n';
+        for (const s of skill.scripts) {
+          const desc = s.firstLineComment ? ` - ${s.firstLineComment}` : '';
+          const lang = s.path.split('.').pop() || '';
+          output += `\n### ${s.path} (${s.size} bytes)${desc}\n\n\`\`\`${lang}\n${s.content}\n\`\`\`\n`;
+        }
+      }
+
+      const metaParts = [];
+      if (!includes.includes('references') && skill.references && skill.references.length > 0) {
+        metaParts.push(
+          `参考文档: ${skill.references.map(r => r.path).join(', ')}（传 include: ["references"] 或 file: "..." 查看）`
+        );
+      }
+      if (!includes.includes('scripts') && skill.scripts && skill.scripts.length > 0) {
+        metaParts.push(
+          `辅助脚本: ${skill.scripts.map(s => `${s.path} (${s.size}B)`).join(', ')}（传 include: ["scripts"] 或 file: "..." 查看）`
+        );
+      }
+      if (metaParts.length > 0) {
+        output += `\n\n---\n> 💡 附属资源:\n> - ${metaParts.join('\n> - ')}`;
+      }
+
+      return output;
     }
 
     case 'get_codegen_rules': {

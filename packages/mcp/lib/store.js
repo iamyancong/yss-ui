@@ -277,7 +277,13 @@ class DocStore {
     }
 
     for (const skill of this.index.skills) {
-      const score = scoreText(`${skill.name} ${skill.description}`) + scoreText(skill.content) * 0.6;
+      let refText = '';
+      if (skill.references && Array.isArray(skill.references)) {
+        for (const ref of skill.references) {
+          refText += `\n${ref.path}\n${ref.content}`;
+        }
+      }
+      const score = scoreText(`${skill.name} ${skill.description}`) + scoreText(`${skill.content}${refText}`) * 0.6;
       if (score > 0.3) {
         hits.push({
           source: `skill: ${skill.name}`,

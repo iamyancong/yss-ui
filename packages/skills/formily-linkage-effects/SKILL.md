@@ -1,6 +1,6 @@
 ---
 name: formily-linkage-effects
-description: 指导 YFormily 字段联动与表单级副作用；当实现动态显隐、禁用、级联选项、scope 事件、x-reactions、effects、异步联动或客户端校验失败兜底时使用。
+description: 指导 YFormily 动态字段联动与表单级副作用处理，覆盖条件显隐、动态禁用、异步级联选项、scope 事件响应、x-reactions、effects 机制与校验兜底；当字段依赖其他字段状态、异步加载联动数据或多字段联动时使用。单页基础表单请使用 formily-foundation，分步向导请使用 formily-step-flow。
 ---
 
 # Formily Linkage Effects Skill

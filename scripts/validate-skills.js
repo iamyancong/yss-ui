@@ -150,6 +150,10 @@ function checkSkillStructure(skills, errors) {
     }
     if (!frontmatter.data.description || !/[\u4e00-\u9fff]/.test(frontmatter.data.description)) {
       errors.push(`${relativePath} 的 description 必须是包含触发场景的中文描述`);
+    } else if (frontmatter.data.description.length < 100) {
+      errors.push(
+        `${relativePath} 的 description 必须不少于 100 字（当前 ${frontmatter.data.description.length} 字），需明确包含触发场景与不适用场景`
+      );
     }
     if (content.split(/\r?\n/).length > MAX_SKILL_LINES) {
       errors.push(`${relativePath} 超过 ${MAX_SKILL_LINES} 行，请将详细示例拆到 references`);
@@ -222,8 +226,15 @@ function checkSkillsConfig(skills, errors) {
     }
   }
 
+  const deprecatedSkills = new Set(config.deprecatedSkills || []);
+  for (const skill of deprecatedSkills) {
+    if (configuredSkills.has(skill)) {
+      errors.push(`skills.config.json 已废弃 skill 不得出现在 categories 中: ${skill}`);
+    }
+  }
+
   for (const skill of skills) {
-    if (!configuredSkills.has(skill)) {
+    if (!configuredSkills.has(skill) && !deprecatedSkills.has(skill)) {
       errors.push(`skills.config.json 未分类 skill: ${skill}`);
     }
   }

@@ -1,0 +1,534 @@
+{
+  "name": "table",
+  "propsCount": 56,
+  "props": {
+    "size": {
+      "name": "size",
+      "type": "any",
+      "tsType": "VxeComponentSizeType",
+      "required": false,
+      "default": "'medium'",
+      "isCore": true
+    },
+    "loading": {
+      "name": "loading",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "data": {
+      "name": "data",
+      "type": "array",
+      "tsType": "any[]",
+      "required": false,
+      "default": "[]",
+      "isCore": true
+    },
+    "columns": {
+      "name": "columns",
+      "type": "array",
+      "tsType": "YTableColumn[]",
+      "required": false,
+      "default": "[]",
+      "isCore": true
+    },
+    "optionsMap": {
+      "name": "optionsMap",
+      "type": "object",
+      "tsType": "Record<string, any[]>",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "actionConfig": {
+      "name": "actionConfig",
+      "type": "object",
+      "tsType": "YTableActionConfig",
+      "required": false,
+      "default": "{ buttons: [] as ActionButtonConfig[] }",
+      "isCore": true
+    },
+    "rowDragable": {
+      "name": "rowDragable",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "showDragHandle": {
+      "name": "showDragHandle",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "dragHandleWidth": {
+      "name": "dragHandleWidth",
+      "type": "any",
+      "tsType": "string | number",
+      "required": false,
+      "default": "46",
+      "isCore": true
+    },
+    "toolbarConfig": {
+      "name": "toolbarConfig",
+      "type": "object",
+      "tsType": "{ custom?: boolean; }",
+      "required": false,
+      "default": "{ custom: false }",
+      "isCore": true
+    },
+    "expandConfig": {
+      "name": "expandConfig",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.ExpandConfig<any>",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "pageable": {
+      "name": "pageable",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "pagination": {
+      "name": "pagination",
+      "type": "any",
+      "tsType": "YTablePagination",
+      "required": false,
+      "default": "{\n    current: 1,\n    pageSize: 20,\n    total: 0,\n    showSizeChanger: true,\n    showQuickJumper: true,\n    pageSizeOptions: ['20', '50', '100', '200'],\n    remote: false,\n}",
+      "isCore": true
+    },
+    "showHeader": {
+      "name": "showHeader",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "checkboxConfig": {
+      "name": "checkboxConfig",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.CheckboxConfig<VxeTablePropTypes.Row>",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "radioConfig": {
+      "name": "radioConfig",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.RadioConfig<VxeTablePropTypes.Row>",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "border": {
+      "name": "border",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.Border",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "stripe": {
+      "name": "stripe",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "rowConfig": {
+      "name": "rowConfig",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.RowConfig<any>",
+      "required": false,
+      "default": "{\n    keyField: '_X_ROW_KEY',\n    useKey: true,\n}",
+      "isCore": true
+    },
+    "cellConfig": {
+      "name": "cellConfig",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.CellConfig<any>",
+      "required": false,
+      "default": "{\n    height: 36,\n}",
+      "isCore": true
+    },
+    "tooltipConfig": {
+      "name": "tooltipConfig",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.TooltipConfig<VxeTablePropTypes.Row>",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "headerTooltipConfig": {
+      "name": "headerTooltipConfig",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.HeaderTooltipConfig<VxeTablePropTypes.Row>",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "footerTooltipConfig": {
+      "name": "footerTooltipConfig",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.FooterTooltipConfig<VxeTablePropTypes.Row>",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "showOverflow": {
+      "name": "showOverflow",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.ShowOverflow",
+      "required": false,
+      "default": "'tooltip'",
+      "isCore": true
+    },
+    "showHeaderOverflow": {
+      "name": "showHeaderOverflow",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.ShowOverflow",
+      "required": false,
+      "default": "'tooltip'",
+      "isCore": true
+    },
+    "columnConfig": {
+      "name": "columnConfig",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.ColumnConfig<any>",
+      "required": false,
+      "default": "{\n    resizable: true,\n    useKey: true,\n}",
+      "isCore": true
+    },
+    "customConfig": {
+      "name": "customConfig",
+      "type": "object",
+      "tsType": "Record<string, any>",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "editConfig": {
+      "name": "editConfig",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.EditConfig<any>",
+      "required": false,
+      "default": "{\n    trigger: 'click',\n    mode: 'row',\n}",
+      "isCore": true
+    },
+    "showActionColumn": {
+      "name": "showActionColumn",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "autoFlexColumn": {
+      "name": "autoFlexColumn",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "toolbarTools": {
+      "name": "toolbarTools",
+      "type": "array",
+      "tsType": "any[]",
+      "required": false,
+      "default": "[]",
+      "isCore": true
+    },
+    "height": {
+      "name": "height",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.Height",
+      "required": false,
+      "isCore": true
+    },
+    "maxHeight": {
+      "name": "maxHeight",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.MaxHeight",
+      "required": false,
+      "isCore": true
+    },
+    "rowDragConfig": {
+      "name": "rowDragConfig",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.RowDragConfig<any>",
+      "required": false,
+      "isCore": true
+    },
+    "virtualXConfig": {
+      "name": "virtualXConfig",
+      "type": "object",
+      "tsType": "VxeTablePropTypes.VirtualXConfig",
+      "required": false,
+      "isCore": true
+    },
+    "virtualYConfig": {
+      "name": "virtualYConfig",
+      "type": "object",
+      "tsType": "VxeTablePropTypes.VirtualYConfig",
+      "required": false,
+      "isCore": true
+    },
+    "scrollX": {
+      "name": "scrollX",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.ScrollX",
+      "required": false,
+      "isCore": true
+    },
+    "scrollY": {
+      "name": "scrollY",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.ScrollY",
+      "required": false,
+      "isCore": true
+    },
+    "key": {
+      "name": "key",
+      "type": "any",
+      "tsType": "PropertyKey",
+      "required": false,
+      "isCore": true
+    },
+    "ref": {
+      "name": "ref",
+      "type": "any",
+      "tsType": "VNodeRef",
+      "required": false,
+      "isCore": false
+    },
+    "ref_for": {
+      "name": "ref_for",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ref_key": {
+      "name": "ref_key",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeMount": {
+      "name": "onVue:beforeMount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:mounted": {
+      "name": "onVue:mounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUpdate": {
+      "name": "onVue:beforeUpdate",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:updated": {
+      "name": "onVue:updated",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUnmount": {
+      "name": "onVue:beforeUnmount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:unmounted": {
+      "name": "onVue:unmounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "class": {
+      "name": "class",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "style": {
+      "name": "style",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "id": {
+      "name": "id",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": true
+    },
+    "selectedRows": {
+      "name": "selectedRows",
+      "type": "array",
+      "tsType": "any[]",
+      "required": false,
+      "isCore": true
+    },
+    "selectedRowKeys": {
+      "name": "selectedRowKeys",
+      "type": "array",
+      "tsType": "(string | number)[]",
+      "required": false,
+      "isCore": true
+    },
+    "spanMethod": {
+      "name": "spanMethod",
+      "type": "any",
+      "tsType": "VxeTablePropTypes.SpanMethod<VxeTablePropTypes.Row>",
+      "required": false,
+      "isCore": true
+    },
+    "headerHeight": {
+      "name": "headerHeight",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "isCore": true
+    },
+    "toolbarSize": {
+      "name": "toolbarSize",
+      "type": "any",
+      "tsType": "VxeComponentSizeType",
+      "required": false,
+      "isCore": true
+    }
+  },
+  "emits": [
+    {
+      "name": "update:data",
+      "type": "[data: any[]]"
+    },
+    {
+      "name": "page-change",
+      "type": "[payload: { current: number; pageSize: number; }]"
+    },
+    {
+      "name": "size-change",
+      "type": "[pageSize: number]"
+    },
+    {
+      "name": "filter-change",
+      "type": "[params: any]"
+    },
+    {
+      "name": "cell-click",
+      "type": "[params: any]"
+    },
+    {
+      "name": "checkbox-change",
+      "type": "[params: any]"
+    },
+    {
+      "name": "checkbox-all",
+      "type": "[params: any]"
+    },
+    {
+      "name": "current-row-change",
+      "type": "[params: any]"
+    },
+    {
+      "name": "current-change",
+      "type": "[params: any]"
+    },
+    {
+      "name": "edit-closed",
+      "type": "[params: any]"
+    },
+    {
+      "name": "edit-activated",
+      "type": "[params: any]"
+    },
+    {
+      "name": "update:pagination",
+      "type": "[pagination: YTablePagination]"
+    },
+    {
+      "name": "update:selectedRows",
+      "type": "[selectedRows: any[]]"
+    },
+    {
+      "name": "update:selectedRowKeys",
+      "type": "[selectedRowKeys: (string | number)[]]"
+    },
+    {
+      "name": "selection-change",
+      "type": "[payload: YTableSelectionChangePayload<any>]"
+    },
+    {
+      "name": "row-dragend",
+      "type": "[params: any]"
+    }
+  ],
+  "slots": [],
+  "exposed": [
+    {
+      "name": "getTableInstance",
+      "type": "() => any"
+    },
+    {
+      "name": "refresh",
+      "type": "() => Promise<void> | undefined"
+    },
+    {
+      "name": "recalculate",
+      "type": "() => Promise<void> | undefined"
+    },
+    {
+      "name": "clearSelection",
+      "type": "() => void"
+    },
+    {
+      "name": "getSelectedRows",
+      "type": "() => any[]"
+    },
+    {
+      "name": "getSelectedRowKeys",
+      "type": "() => (string | number)[]"
+    },
+    {
+      "name": "setSelection",
+      "type": "(rowsOrKeys: any[]) => void"
+    },
+    {
+      "name": "syncSelection",
+      "type": "(rawParams?: any, eventType?: \"checkbox-change\" | \"checkbox-all\" | undefined) => void"
+    },
+    {
+      "name": "getPaginationInstance",
+      "type": "() => CreateComponentPublicInstanceWithMixins<Readonly<ExtractPropTypes<{ total: NumberConstructor; defaultCurrent: NumberConstructor; disabled: { type: BooleanConstructor; default: boolean; }; current: NumberConstructor; defaultPageSize: NumberConstructor; pageSize: NumberConstructor; hideOnSinglePage: { type: BooleanConstructor; default: boolean; }; showSizeChanger: { type: BooleanConstructor; default: boolean; }; pageSizeOptions: { type: PropType<(string | number)[]>; default: (string | number)[]; }; buildOptionText: { type: PropType<(opt: { value: any; }) => any>; default: (opt: { value: any; }) => any; }; showQuickJumper: { type: PropType<boolean | { goButton?: any; }>; default: boolean | { goButton?: any; }; }; showTotal: { type: PropType<(total: number, range: [number, number]) => any>; default: (total: number, range: [number, number]) => any; }; size: { type: PropType<\"default\" | \"small\">; default: \"default\" | \"small\"; }; simple: { type: BooleanConstructor; default: boolean; }; locale: ObjectConstructor; prefixCls: StringConstructor; selectPrefixCls: StringConstructor; totalBoundaryShowSizeChanger: NumberConstructor; selectComponentClass: StringConstructor; itemRender: { type: PropType<(opt: { page: number; type: \"next\" | \"page\" | \"prev\" | \"jump-prev\" | \"jump-next\"; originalElement: any; }) => any>; default: (opt: { page: number; type: \"next\" | \"page\" | \"prev\" | \"jump-prev\" | \"jump-next\"; originalElement: any; }) => any; }; role: StringConstructor; responsive: BooleanConstructor; showLessItems: { type: BooleanConstructor; default: boolean; }; onChange: { type: PropType<(page: number, pageSize: number) => void>; default: (page: number, pageSize: number) => void; }; onShowSizeChange: { type: PropType<(current: number, size: number) => void>; default: (current: number, size: number) => void; }; 'onUpdate:current': { type: PropType<(current: number) => void>; default: (current: number) => void; }; 'onUpdate:pageSize': { type: PropType<(size: number) => void>; default: (size: number) => void; }; }>> & Readonly<{}>, () => VueNode, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, PublicProps, { size: \"default\" | \"small\"; onChange: (page: number, pageSize: number) => void; responsive: boolean; disabled: boolean; itemRender: (opt: { page: number; type: \"next\" | \"page\" | \"prev\" | \"jump-prev\" | \"jump-next\"; originalElement: any; }) => any; buildOptionText: (opt: { value: any; }) => any; pageSizeOptions: (string | number)[]; showTotal: (total: number, range: [number, number]) => any; hideOnSinglePage: boolean; showSizeChanger: boolean; showLessItems: boolean; showQuickJumper: boolean | { goButton?: any; }; simple: boolean; onShowSizeChange: (current: number, size: number) => void; 'onUpdate:current': (current: number) => void; 'onUpdate:pageSize': (size: number) => void; }, true, {}, {}, GlobalComponents, GlobalDirectives, string, {}, any, ComponentProvideOptions, { P: {}; B: {}; D: {}; C: {}; M: {}; Defaults: {}; }, Readonly<ExtractPropTypes<{ total: NumberConstructor; defaultCurrent: NumberConstructor; disabled: { type: BooleanConstructor; default: boolean; }; current: NumberConstructor; defaultPageSize: NumberConstructor; pageSize: NumberConstructor; hideOnSinglePage: { type: BooleanConstructor; default: boolean; }; showSizeChanger: { type: BooleanConstructor; default: boolean; }; pageSizeOptions: { type: PropType<(string | number)[]>; default: (string | number)[]; }; buildOptionText: { type: PropType<(opt: { value: any; }) => any>; default: (opt: { value: any; }) => any; }; showQuickJumper: { type: PropType<boolean | { goButton?: any; }>; default: boolean | { goButton?: any; }; }; showTotal: { type: PropType<(total: number, range: [number, number]) => any>; default: (total: number, range: [number, number]) => any; }; size: { type: PropType<\"default\" | \"small\">; default: \"default\" | \"small\"; }; simple: { type: BooleanConstructor; default: boolean; }; locale: ObjectConstructor; prefixCls: StringConstructor; selectPrefixCls: StringConstructor; totalBoundaryShowSizeChanger: NumberConstructor; selectComponentClass: StringConstructor; itemRender: { type: PropType<(opt: { page: number; type: \"next\" | \"page\" | \"prev\" | \"jump-prev\" | \"jump-next\"; originalElement: any; }) => any>; default: (opt: { page: number; type: \"next\" | \"page\" | \"prev\" | \"jump-prev\" | \"jump-next\"; originalElement: any; }) => any; }; role: StringConstructor; responsive: BooleanConstructor; showLessItems: { type: BooleanConstructor; default: boolean; }; onChange: { type: PropType<(page: number, pageSize: number) => void>; default: (page: number, pageSize: number) => void; }; onShowSizeChange: { type: PropType<(current: number, size: number) => void>; default: (current: number, size: number) => void; }; 'onUpdate:current': { type: PropType<(current: number) => void>; default: (current: number) => void; }; 'onUpdate:pageSize': { type: PropType<(size: number) => void>; default: (size: number) => void; }; }>> & Readonly<{}>, () => VueNode, {}, {}, {}, { size: \"default\" | \"small\"; onChange: (page: number, pageSize: number) => void; responsive: boolean; disabled: boolean; itemRender: (opt: { page: number; type: \"next\" | \"page\" | \"prev\" | \"jump-prev\" | \"jump-next\"; originalElement: any; }) => any; buildOptionText: (opt: { value: any; }) => any; pageSizeOptions: (string | number)[]; showTotal: (total: number, range: [number, number]) => any; hideOnSinglePage: boolean; showSizeChanger: boolean; showLessItems: boolean; showQuickJumper: boolean | { goButton?: any; }; simple: boolean; onShowSizeChange: (current: number, size: number) => void; 'onUpdate:current': (current: number) => void; 'onUpdate:pageSize': (size: number) => void; }> | undefined"
+    }
+  ]
+}

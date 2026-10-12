@@ -1,0 +1,308 @@
+{
+  "name": "file-import",
+  "propsCount": 32,
+  "props": {
+    "modelValue": {
+      "name": "modelValue",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "title": {
+      "name": "title",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "\"导入\"",
+      "isCore": true
+    },
+    "width": {
+      "name": "width",
+      "type": "any",
+      "tsType": "string | number",
+      "required": false,
+      "default": "\"50%\"",
+      "isCore": true
+    },
+    "fileTypeList": {
+      "name": "fileTypeList",
+      "type": "array",
+      "tsType": "string[]",
+      "required": false,
+      "default": "[\"xls\", \"xlsx\", \"csv\"]",
+      "isCore": true
+    },
+    "accept": {
+      "name": "accept",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "\"\"",
+      "isCore": true
+    },
+    "multiple": {
+      "name": "multiple",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "drag": {
+      "name": "drag",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "action": {
+      "name": "action",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "\"\"",
+      "isCore": true
+    },
+    "autoUpload": {
+      "name": "autoUpload",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "loadings": {
+      "name": "loadings",
+      "type": "array",
+      "tsType": "string[]",
+      "required": false,
+      "default": "[]",
+      "isCore": true
+    },
+    "importResult": {
+      "name": "importResult",
+      "type": "any",
+      "tsType": "ImportResult",
+      "required": false,
+      "default": "{ successkey: \"1\", failkey: \"\", success: 2, fail: 0, total: 2 }",
+      "isCore": true
+    },
+    "modalProps": {
+      "name": "modalProps",
+      "type": "object",
+      "tsType": "Record<string, any>",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "uploadProps": {
+      "name": "uploadProps",
+      "type": "object",
+      "tsType": "Record<string, any>",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "showDownloadTemplate": {
+      "name": "showDownloadTemplate",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "showCancel": {
+      "name": "showCancel",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "showUploadTip": {
+      "name": "showUploadTip",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "showNextStep": {
+      "name": "showNextStep",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "showLastStep": {
+      "name": "showLastStep",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "draggerText": {
+      "name": "draggerText",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "\"\"",
+      "isCore": true
+    },
+    "texts": {
+      "name": "texts",
+      "type": "any",
+      "tsType": "FileImportTexts",
+      "required": false,
+      "default": "{}",
+      "isCore": true
+    },
+    "key": {
+      "name": "key",
+      "type": "any",
+      "tsType": "PropertyKey",
+      "required": false,
+      "isCore": false
+    },
+    "ref": {
+      "name": "ref",
+      "type": "any",
+      "tsType": "VNodeRef",
+      "required": false,
+      "isCore": false
+    },
+    "ref_for": {
+      "name": "ref_for",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ref_key": {
+      "name": "ref_key",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeMount": {
+      "name": "onVue:beforeMount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:mounted": {
+      "name": "onVue:mounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUpdate": {
+      "name": "onVue:beforeUpdate",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:updated": {
+      "name": "onVue:updated",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUnmount": {
+      "name": "onVue:beforeUnmount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:unmounted": {
+      "name": "onVue:unmounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "class": {
+      "name": "class",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "style": {
+      "name": "style",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    }
+  },
+  "emits": [
+    {
+      "name": "update:modelValue",
+      "type": "[value: boolean]"
+    },
+    {
+      "name": "downloadTemplate",
+      "type": "[payload: FileImportActionPayload]"
+    },
+    {
+      "name": "nextStep",
+      "type": "[payload: FileImportNextStepPayload]"
+    },
+    {
+      "name": "lastStep",
+      "type": "[payload: FileImportClosePayload]"
+    },
+    {
+      "name": "exportErrorData",
+      "type": "[payload: FileImportActionPayload]"
+    },
+    {
+      "name": "finalImport",
+      "type": "[payload: FileImportActionPayload]"
+    }
+  ],
+  "slots": [
+    {
+      "name": "uploader",
+      "type": "{ fileList: { uid: string; size?: number | undefined; name: string; fileName?: string | undefined; lastModified?: number | undefined; lastModifiedDate?: Date | undefined; url?: string | undefined; status?: UploadFileStatus | undefined; percent?: number | undefined; thumbUrl?: string | undefined; crossOrigin?: \"\" | \"anonymous\" | \"use-credentials\" | undefined; originFileObj?: { readonly lastModifiedDate: Date; uid: string; readonly lastModified: number; readonly name: string; readonly webkitRelativePath: string; readonly size: number; readonly type: string; arrayBuffer: () => Promise<ArrayBuffer>; bytes: () => Promise<Uint8Array<ArrayBuffer>>; slice: (start?: number | undefined, end?: number | undefined, contentType?: string | undefined) => Blob; stream: () => ReadableStream<Uint8Array<ArrayBuffer>>; text: () => Promise<string>; } | undefined; response?: any; error?: any; linkProps?: any; type?: string | undefined; xhr?: any; preview?: string | undefined; }[]; accept: string; multiple: boolean; }"
+    },
+    {
+      "name": "result",
+      "type": "{ result: ImportResult; }"
+    },
+    {
+      "name": "footerLeft",
+      "type": "{}"
+    },
+    {
+      "name": "footerRight",
+      "type": "{}"
+    }
+  ],
+  "exposed": [
+    {
+      "name": "open",
+      "type": "() => void"
+    },
+    {
+      "name": "close",
+      "type": "() => void"
+    },
+    {
+      "name": "reset",
+      "type": "() => void"
+    }
+  ]
+}

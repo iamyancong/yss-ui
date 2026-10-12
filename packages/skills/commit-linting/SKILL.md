@@ -1,6 +1,6 @@
 ---
 name: commit-linting
-description: 在 yss-ui 组件库仓库生成、检查或执行 Conventional Commits 提交，并按真实变更范围选择 type、scope 与 changelog。
+description: 在 yss-ui 组件库仓库自身生成、检查这次提交是否符合 Conventional Commits 规范，按真实变更范围选择规范的 type 和 scope，校验提交信息格式并与 changelog 对齐；当组件库工程自身提交、排查 commitlint 拦截或校验提交规范时使用。业务仓与后端工程日常提交流程不适用本技能。
 ---
 
 # 代码提交规范

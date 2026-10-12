@@ -3,6 +3,8 @@ export const ACTION_RETRY_SIGNAL = Object.freeze(
   Object.assign(new Error('yss-action-retry'), { name: 'YssActionRetry' })
 );
 
+export const GLOBAL_FILTER_KEY = '__YSS_ACTION_RETRY_FILTER_REGISTERED__';
+
 let isFilterRegistered = false;
 
 /**
@@ -13,11 +15,27 @@ let isFilterRegistered = false;
 export const ensureRetrySignalFilter = () => {
   if (isFilterRegistered) return;
   if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-    window.addEventListener('unhandledrejection', event => {
-      if (event.reason === ACTION_RETRY_SIGNAL) {
+    if ((window as any)[GLOBAL_FILTER_KEY]) {
+      isFilterRegistered = true;
+      return;
+    }
+    window.addEventListener('unhandledrejection', (event: any) => {
+      if (
+        event.reason === ACTION_RETRY_SIGNAL ||
+        (event.reason instanceof Error && event.reason.name === 'YssActionRetry')
+      ) {
         event.preventDefault();
       }
     });
+    (window as any)[GLOBAL_FILTER_KEY] = true;
     isFilterRegistered = true;
+  }
+};
+
+/** 仅供单元测试重置单例状态。 */
+export const _resetFilterStateForTest = () => {
+  isFilterRegistered = false;
+  if (typeof window !== 'undefined') {
+    delete (window as any)[GLOBAL_FILTER_KEY];
   }
 };

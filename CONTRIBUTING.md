@@ -56,6 +56,16 @@
   ```bash
   node scripts/release-changed.js patch --dry
   ```
+- **API 契约快照门禁 (API Snapshot Gate)**：
+  - 仓库使用 `api-snapshot/` 维护所有导出组件的 Props/Emits/Slots/Exposed 及 Hooks 类型签名基准快照。CI 和本地 quality 门禁均会运行 `pnpm check:api-snapshot` 严格校验。
+  - **有意改动 API 时**：运行 `pnpm check:api-snapshot -- --update` 重新生成快照，和代码一起提交，并在 PR 里详细说明变更原因与兼容性影响。
+- **敏感行为文件与行为变更升级说明**：
+  - 核心逻辑文件（如 `actionRetry.ts`、`useSafeData.ts`、`ActionColumn.vue` 等）已纳入 `scripts/release-behavior-allowlist.json` 监控。
+  - 修改敏感行为文件时必须补充对应行为契约测试。
+  - 若修改引入行为调整或非向前兼容改动，发版检测会强制要求升级至 `minor`（或通过 `--override-reason` 显式确认），且必须在 `docs/changelog/*.md` 中补齐 `### ⚠️ 行为变化与升级说明` 小节。
+- **后续项跟踪规范 (Follow-up Tracking)**：
+  - 当一个 Issue 的解决方案因复杂度、改动边界或外部依赖被拆分或延期到后续 Issue 时，严禁隐式遗漏。
+  - 必须立即创建独立 GitHub Issue 跟踪，并在测试用例或源码中标记 `TODO (#IssueId)` / `it.todo('...')` 建立双向链路（如 `#38`、`#39`）。
 - **镜像自动同步**：CI 发版成功后会自动按本批次实际发布的包列表向 npmmirror 触发主动同步（`scripts/sync-npmmirror.mjs`），缩短国内消费空窗；本地发版后可运行 `pnpm sync:npmmirror` 手动触发。
 - **提交规范**：
   - 遵循 Conventional Commits，格式：`<type>(<scope>): <subject>`。

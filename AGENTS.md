@@ -47,6 +47,8 @@
 ## 发版前门禁
 
 - 准备提交或发版时，必须运行 `node scripts/release-changed.js patch --dry`，并为每个待发包补齐目标版本 changelog。
+- 触碰敏感行为文件（如 `actionRetry.ts`）必须补齐行为契约测试；非向前兼容或行为调整必须补录「⚠️ 行为变化与升级说明」。
+- 拆分或延期的任务必须建立后续 Issue 追踪并在代码/测试标记 TODO (#IssueId)。
 - `packages/skills/**` 的变更必须检查 `docs/changelog/skills.md`，不得只补 components 或 mcp 日志。
 
 ## 质量底线

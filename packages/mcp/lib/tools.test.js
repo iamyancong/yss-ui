@@ -60,6 +60,10 @@ const MOCK_INDEX = {
 };
 
 const store = fs.existsSync(INDEX_PATH) ? new DocStore(INDEX_PATH) : new DocStore(MOCK_INDEX);
+// 干净环境或 CI 未生成 coverage-summary.json 时回退 mock 覆盖率数据，确保单测独立自洽
+if (!store.index.coverage) {
+  store.index.coverage = MOCK_INDEX.coverage;
+}
 
 test('MCP 工具定义包含新增工具', () => {
   const toolNames = TOOL_DEFINITIONS.map(t => t.name);
@@ -138,3 +142,47 @@ test('已核验当前版本可以提供插件契约，后续未知版本不能�
   assert.equal(current.peerDependencies.vite, current.plugin.vitePeer);
   assert.match(handleToolCall(store, 'get_consumption_contract', { componentsVersion: '1.7.2' }), /未经当前索引验证/);
 });
+
+test('list_skills 包含技能分类与 references/scripts 附属标记', () => {
+  const result = handleToolCall(store, 'list_skills');
+  assert.ok(result.includes('## app') || result.includes('## library'), '应包含分类');
+  assert.match(result, /references:/, '有 references 的 skill 应打上标记');
+});
+
+test('get_skill 支持 include 与精确 file 查询', () => {
+  // 1. 基础查询：带附属资源提示
+  const baseResult = handleToolCall(store, 'get_skill', { name: 'yss-ui-business-page-generation' });
+  assert.ok(baseResult.includes('# Skill: yss-ui-business-page-generation'), '应返回 skill 标题');
+  assert.ok(baseResult.includes('💡 附属资源'), '应包含附属资源提示');
+
+  // 2. include: ['references'] 模式
+  const refResult = handleToolCall(store, 'get_skill', {
+    name: 'yss-ui-business-page-generation',
+    include: ['references'],
+  });
+  assert.ok(refResult.includes('📚 参考文档（References）'), '应展示 references 章节');
+  assert.ok(refResult.includes('hooks-map.md'), '应展示 references/hooks-map.md 内容');
+
+  // 3. file 参数精准查询单个 reference 文件
+  const singleFileResult = handleToolCall(store, 'get_skill', {
+    name: 'yss-ui-business-page-generation',
+    file: 'references/hooks-map.md',
+  });
+  assert.ok(singleFileResult.includes('hooks-map.md'), '应展示指定文件');
+
+  // 4. file 参数必须完全匹配，传 x/hooks-map.md 不得被模糊匹配命中
+  const prefixWrongFile = handleToolCall(store, 'get_skill', {
+    name: 'yss-ui-business-page-generation',
+    file: 'x/hooks-map.md',
+  });
+  assert.ok(prefixWrongFile.includes('未找到'), '前缀不匹配的路径不得被 endsWith 模糊命中');
+
+  // 5. file 参数查询不存在的文件应友好提示并列出可用文件
+  const notFoundFile = handleToolCall(store, 'get_skill', {
+    name: 'yss-ui-business-page-generation',
+    file: 'non-existent-doc.md',
+  });
+  assert.ok(notFoundFile.includes('未找到'), '未找到文件应提示');
+  assert.ok(notFoundFile.includes('可用附属文件'), '应列出可用附属文件');
+});
+

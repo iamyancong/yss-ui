@@ -148,14 +148,13 @@ YSS UI 是基于 Vue 3、Ant Design Vue 与 VXE-Table 的企业级中后台组�
 
 ### library
 
-- release-management: https://iamyancong.github.io/yss-ui/skills/release-management — 规划、预检和验证 yss-ui 多包发版，覆盖 release-changed 待发包检测、版本类型、changelog 门禁、CI 发布与发布后核验。
-- changelog-generation: https://iamyancong.github.io/yss-ui/skills/changelog-generation — 根据真实变更、Git 历史和待发包版本生成 YSS UI 更新日志；当修改 packages 下的组件、Hooks、Utils 或 Skills，或准备提交、发版时使用。
-- commit-linting: https://iamyancong.github.io/yss-ui/skills/commit-linting — 在 yss-ui 组件库仓库生成、检查或执行 Conventional Commits 提交，并按真实变更范围选择 type、scope 与 changelog。
-- component-development: https://iamyancong.github.io/yss-ui/skills/component-development — 在 yss-ui 组件库源码中新建、修改或重构 Vue3 组件，覆盖真实 API 设计、TypeScript 类型、hooks 拆分、主题 Token、导出、文档 Demo 与验证。
+- release-management: https://iamyancong.github.io/yss-ui/skills/release-management — 检测哪些包需要发版、评估包依赖与版本类型，发版前预检 changelog 门禁与 release-changed 检测待发包输出，核验敏感行为文件与发版条件；当需要了解哪些包待发布、检测包变更或执行发版前合规预检时使用。一键自动执行提交与发布流水线请使用 release-workflow。
+- changelog-generation: https://iamyancong.github.io/yss-ui/skills/changelog-generation — 根据真实代码变更、Git 提交历史和待发包版本目标，为 yss-ui 自动生成规范的更新日志与破坏性变更说明；当修改 packages 下的组件、Hooks、Utils 或 Skills，或准备提交和发版前补齐日志时使用。端到端自动化发版流水线请使用 release-workflow。
+- commit-linting: https://iamyancong.github.io/yss-ui/skills/commit-linting — 在 yss-ui 组件库仓库自身生成、检查这次提交是否符合 Conventional Commits 规范，按真实变更范围选择规范的 type 和 scope，校验提交信息格式并与 changelog 对齐；当组件库工程自身提交、排查 commitlint 拦截或校验提交规范时使用。业务仓与后端工程日常提交流程不适用本技能。
+- component-development: https://iamyancong.github.io/yss-ui/skills/component-development — 在 yss-ui 组件库源码中新建、修改或重构 Vue3 组件，严格遵守真实 API 设计、TypeScript 类型定义、Composable 逻辑拆分、主题 Token 适配与文档 Demo 验证；当开发或演进底层 UI 组件时使用。业务微应用内的具体业务页面与模块开发请使用 yss-ui-business-page-generation。
 - component-testing: https://iamyancong.github.io/yss-ui/skills/component-testing — 为 yss-ui 组件库的 Vue3 组件与 Hooks 新增、修复或评审 Vitest/Vue Test Utils 测试；当需要复现组件缺陷、补回归测试、验证公开实例、v-model、事件、浏览器 API、定时器或卸载清理时使用。
-- documentation: https://iamyancong.github.io/yss-ui/skills/documentation — 为 YSS UI 组件、Hooks 和工具函数新建或更新 Dumi 文档、Demo、API 表与导航；修改公共 API 或文档构建失败时使用。
-- release-workflow: https://iamyancong.github.io/yss-ui/skills/release-workflow — 编排 yss-ui 从变更审查、changelog、校验、提交到 CI 发布的完整流程；用户说“准备发版”、“提交并发布”或要求全流程执行时使用。
-- yss-create-microapp: https://iamyancong.github.io/yss-ui/skills/yss-create-microapp — 在本地生成 Vue3 + TypeScript + qiankun 微前端子应用；用户说“创建微应用”、“新建微前端”、“生成 Vue3 子应用”或要求使用 YSS 模板脚手架时使用。
+- documentation: https://iamyancong.github.io/yss-ui/skills/documentation — 为 YSS UI 组件、Hooks 和工具函数新建或同步更新 Dumi 文档、交互示例 Demo、Markdown API 契约表与站点路由导航；当公开 API 发生变化、文档构建失败或补充使用指南时使用。编写 AI Skills 自身文档与同步请使用 skill-development。
+- release-workflow: https://iamyancong.github.io/yss-ui/skills/release-workflow — 编排 yss-ui 从代码审查、更新日志生成、门禁校验、自动提交到 CI 远程发布的全流程自动化流水线；当用户发出“准备发版”、“提交并发布”或要求执行端到端闭环发布时使用。仅发版条件诊断、版本依赖分析与预检请使用 release-management。
 - sync-internal-dev: https://iamyancong.github.io/yss-ui/skills/sync-internal-dev — 一键自动拉取内网 dev 分支最新代码并同步至 GitHub 仓库 main 分支。AI 自动在独立临时分支/worktree 中恢复 GitHub-only 配置、清洗内网私有配置，并仅 push 到 github/main。当用户说“同步内网 dev”、“同步最新内网代码”、“把内网 dev 搬到 github”时触发。
 - skill-development: https://iamyancong.github.io/yss-ui/skills/skill-development — 在 yss-ui 仓库新建、修改或评审 packages/skills 官方 Skill，并修复 Skill description 触发冲突，覆盖分类配置、trigger eval、文档同步、安全扫描和 Skills changelog。
 
@@ -171,9 +170,8 @@ YSS UI 是基于 Vue 3、Ant Design Vue 与 VXE-Table 的企业级中后台组�
 - yss-ui-business-page-generation: https://iamyancong.github.io/yss-ui/skills/yss-ui-business-page-generation — 指导生成或改造 Vue3 YSS UI CRUD、列表、表单、详情、左树右表和弹窗抽屉页面，覆盖组件选型、模块拆分、Orval API、响应式高度、主题和原型验收；当用户要求生成 YSS UI 业务页或 CRUD 模块时使用。
 - theme-token-usage: https://iamyancong.github.io/yss-ui/skills/theme-token-usage — 指导 Vue3 YSS UI 微应用业务页面、公共组件、原型还原和主题修复使用可动态换肤的 CSS/Ant Design Token，覆盖主色、hover/active/selected/focus、状态色、中性色、透明色派生和暗色模式；当新增或修改 .vue、style.less、内联样式、TS 渲染配置、SVG 色值，或审查硬编码 #hex/rgb/渐变时使用。
 - component-selection-imports: https://iamyancong.github.io/yss-ui/skills/component-selection-imports — 指导 YSS UI 业务页面、CRUD、列表页、表单页和组件评审在编码前判定组件、Hook 与工具函数的真实导出来源；当需要在 @yss-ui/components、@yss-ui/hooks、@yss-ui/utils 与 ant-design-vue 之间选择，或需要排查虚构 Y 前缀组件、错误导入、Formily UI 边界时使用。
-- page-module-development: https://iamyancong.github.io/yss-ui/skills/page-module-development — （已废弃/Deprecated）兼容旧项目的 Vue3 YSS UI 页面模块开发指令别名；新页面统一使用 yss-ui-business-page-generation。
 - page-skeleton: https://iamyancong.github.io/yss-ui/skills/page-skeleton — 指导搭建 Vue3 YSS UI 列表、表单、详情和弹窗页面模块骨架，统一 index.vue、constant.ts、style.less、hooks 与私有组件职责；当新建页面或需要拆分超过 150 行的业务组件时使用。
-- page-list-module: https://iamyancong.github.io/yss-ui/skills/page-list-module — 指导实现 YSS UI 标准列表、远程分页、查询重置、YTable 工具栏、行操作、批量操作和左树右表模块；当页面需要查询、表格、分页或 CRUD 列表闭环时使用。
+- page-list-module: https://iamyancong.github.io/yss-ui/skills/page-list-module — 指导实现 YSS UI 标准列表模块、远程服务端分页、查询条件重置、YTable 顶部工具栏、行操作按钮权限、批量选择与左树右表联动；当实现具体的数据查询列表、表格交互与 CRUD 列表闭环时使用。整页全套架构编排请使用 yss-ui-business-page-generation，独立表单请使用 page-form-module。
 - page-form-module: https://iamyancong.github.io/yss-ui/skills/page-form-module — 指导实现 YSS UI 新增、编辑和查看表单模块，覆盖 YFormily Schema、mode 0/1/2、详情渲染、数据回显与回填、表单值被意外清空排查、校验、提交 loading、弹窗销毁和列表刷新；当页面包含表单页、Modal 或 Drawer 表单，或编辑时回显丢失、提交后表单未重置时使用。
 - ytable-usage: https://iamyancong.github.io/yss-ui/skills/ytable-usage — 指导 YSS UI 业务列表页、CRUD 表格、远程分页、操作列、气泡确认、列筛选、字典翻译、行拖拽、工具栏和自定义插槽正确使用 @yss-ui/components 的 YTable；当需要配置 YTableColumn、YTableActionConfig、pagination、filter-change 或表格实例方法时使用。
 - yedit-table-usage: https://iamyancong.github.io/yss-ui/skills/yedit-table-usage — 指导 YSS UI 业务页面使用 @yss-ui/components 的 YEditTable 实现可编辑表格、行内编辑、添加/删除行、下拉多选与可创建 tags、行级候选联动、表头筛选、校验和查看态；当需求出现编辑表格、明细行、扩展属性、可编辑列或 YEditTableColumn 时使用。
@@ -181,18 +179,23 @@ YSS UI 是基于 Vue 3、Ant Design Vue 与 VXE-Table 的企业级中后台组�
 - ysheet-usage: https://iamyancong.github.io/yss-ui/skills/ysheet-usage — 指导 YSS UI 协同表格、类 Excel 工作簿、Univer 电子表格使用 @yss-ui/components 的 YSheet；覆盖 optionalDependencies、@yss-ui/components/sheet 子路径、extraPresets/extraPlugins/extraLocales、IWorkbookData、只读与 Facade save/reload，避免把 Univer 运行时从主入口同步导入。
 - ycondition-builder-usage: https://iamyancong.github.io/yss-ui/skills/ycondition-builder-usage — 指导规则配置、数据质量条件、嵌套 AND/OR 条件树使用 @yss-ui/components 的 YConditionBuilder；覆盖 ConditionGroup/ConditionLeaf、loadFields/loadValues、getOperators、BETWEEN/IN、strictMode 校验和 disabled，禁止把 readonly 或未消费的 segments 当成可用 API。
 - yfile-import-usage: https://iamyancong.github.io/yss-ui/skills/yfile-import-usage — 指导 YSS UI 文件导入弹窗、两步导入流程使用 @yss-ui/components 的 YFileImport；覆盖选择文件、nextStep.onSuccess、importResult、loadings、downloadTemplate 事件和结果插槽，避免与导出下载或普通 Upload 混淆。
-- prototype-page-acceptance: https://iamyancong.github.io/yss-ui/skills/prototype-page-acceptance — 当用户提供原型截图、老项目路径、旧页面截图或要求按既有页面复刻业务页面时，指导先提取视觉和交互验收清单，开发后用截图/运行结果逐项对照，避免只实现字段而忽略布局、按钮、表格高度和控件类型。
+- prototype-page-acceptance: https://iamyancong.github.io/yss-ui/skills/prototype-page-acceptance — 当用户提供原型截图、老项目源代码或旧页面设计图要求复刻业务页面时，指导预先提取视觉和交互验收清单，并在实现后逐项对照布局、按钮位置、表格自适应高度与控件类型完成交付验收；纯后台接口对接或无原型界面的通用需求无需使用本技能。
 - api-integration: https://iamyancong.github.io/yss-ui/skills/api-integration — 指导在 Vue3 业务列表、表单、详情和操作 Hook 中集成 Orval API，覆盖真实生成产物选择、mutator 响应契约、错误提示、加载状态、请求选项和长整型精度；当页面对接查询、新增、编辑、删除、详情或文件流接口时使用。
 - file-export-download: https://iamyancong.github.io/yss-ui/skills/file-export-download — 指导 Vue3 YSS UI 微应用实现文件导出、报表下载、模板下载和附件下载，覆盖 OpenAPI binary 响应、Orval 生成方法检查、responseType blob 兜底、Blob 响应类型、Content-Disposition 文件名、handleBlobResponse、loading 与错误处理；当需求出现导出、下载、Excel、CSV、PDF、ZIP、Blob 或文件流时使用。
-- vue3-best-practices: https://iamyancong.github.io/yss-ui/skills/vue3-best-practices — 在 Vue3 业务页面、组件和 composable 中规范响应式状态、组件通信、异步竞态与大数精度；实现或重构 Vue3 逻辑时使用。
+- vue3-best-practices: https://iamyancong.github.io/yss-ui/skills/vue3-best-practices — 在 Vue3 + TypeScript 业务页面、公共组件和 Composables 中规范响应式状态解构、组件跨级通信、异步竞态取消机制与长整型大数精度处理；当实现或重构复杂的 Vue3 业务逻辑与 Hooks 时使用。表单特定规范请结合 yss-formily，组件库维护参考 component-development。
 - frontend-commit: https://iamyancong.github.io/yss-ui/skills/frontend-commit — 分析并提交 Vue、React、TypeScript、JavaScript、Vite、微前端和前端 monorepo 项目的 Git 改动；当用户要求生成 commit message、检查提交规范、拆分原子提交、暂存并执行 git commit，或修复 commitlint 与 commit-msg hook 拒绝时使用。读取仓库实际规则和 diff，选择业务 scope，生成英文 type/scope 与中文标题和正文，并安全验证提交。
 - java-backend-commit: https://iamyancong.github.io/yss-ui/skills/java-backend-commit — 分析并提交 Java、Spring Boot、Maven、Gradle、单体服务和多模块后端项目的 Git 改动；当用户要求生成 commit message、检查提交规范、拆分原子提交、暂存并执行 git commit，或修复 commitlint 与 commit-msg hook 拒绝时使用。读取仓库实际规则、模块结构和 diff，选择服务或业务域 scope，生成英文 type/scope 与中文标题和正文，并安全验证提交。
 - yss-formily: https://iamyancong.github.io/yss-ui/skills/yss-formily — 指导在 YSS UI 业务页面中正确使用 @yss-ui/components 的 YFormily；当新增、编辑、查看、查询、联动、详情插槽、分步表单或动态 schema 需求出现时使用，并校验组件导入、提交与错误处理边界。
-- formily-foundation: https://iamyancong.github.io/yss-ui/skills/formily-foundation — 指导 YFormily 基础表单开发；当创建或修复普通单页表单、字段校验、提交链路、查询表单布局、scope 表达式或导入边界时使用。
-- formily-linkage-effects: https://iamyancong.github.io/yss-ui/skills/formily-linkage-effects — 指导 YFormily 字段联动与表单级副作用；当实现动态显隐、禁用、级联选项、scope 事件、x-reactions、effects、异步联动或客户端校验失败兜底时使用。
+- formily-foundation: https://iamyancong.github.io/yss-ui/skills/formily-foundation — 指导基于 @yss-ui/components 的 YFormily 基础表单开发，覆盖字段校验规则、提交链路、查询表单栅格布局、scope 表达式与规范导入边界；当创建单页基础表单、配置普通校验或排查基础表单提交时使用。复杂动态联动请转至 formily-linkage-effects，分步向导请使用 formily-step-flow。
+- formily-linkage-effects: https://iamyancong.github.io/yss-ui/skills/formily-linkage-effects — 指导 YFormily 动态字段联动与表单级副作用处理，覆盖条件显隐、动态禁用、异步级联选项、scope 事件响应、x-reactions、effects 机制与校验兜底；当字段依赖其他字段状态、异步加载联动数据或多字段联动时使用。单页基础表单请使用 formily-foundation，分步向导请使用 formily-step-flow。
 - formily-mode-slot-detail: https://iamyancong.github.io/yss-ui/skills/formily-mode-slot-detail — 指导 YFormily 新增、编辑、查看三态与插槽渲染；当配置 mode 0/1/2、查看态只读、详情页 Descriptions 展示、detail-options、Schema Slot 或详情字段插槽时使用。
-- formily-step-flow: https://iamyancong.github.io/yss-ui/skills/formily-step-flow — 指导 YSS UI 分步表单与流程录入；当需要 Ant Design Vue Steps、多 YFormily 独立校验、跨步数据保留、确认预览或最终聚合提交时使用。
+- formily-step-flow: https://iamyancong.github.io/yss-ui/skills/formily-step-flow — 指导基于 Ant Design Vue Steps 与多 YFormily 实例的分步表单与向导流程录入，覆盖各步骤独立校验、跨步数据持久保留、最终确认预览与聚合提交闭环；当业务需要分步录入、分阶段流程或多步骤向导时使用。单页普通表单请使用 formily-foundation，单纯字段联动请使用 formily-linkage-effects。
 - i18n-locale-management: https://iamyancong.github.io/yss-ui/skills/i18n-locale-management — 指导 Vue3 微前端（主应用与微应用）中国际化（i18n）字典的模块化设计、简繁英三语镜像对齐、命名分层、Vite 自动化加载、微前端通信与业务消费规范；当新增业务模块、维护多语言字典、支持繁体中文/英文、重构页面文案或调用 $t/useI18n 时使用。
+- yss-create-microapp: https://iamyancong.github.io/yss-ui/skills/yss-create-microapp — 在本地创建一个新的微应用、生成 qiankun 子应用或用 YSS 模板脚手架新建微前端项目，自动生成工程骨架并配置路由、状态管理与 Ant Design Vue 依赖；当需要从零搭建新子应用、运行微应用脚手架时使用。已初始化完毕的项目内模块迭代与单个视图编写不适用本工具。
+
+### other
+
+- page-module-development: https://iamyancong.github.io/yss-ui/skills/page-module-development — （已废弃/Deprecated）兼容历史项目与旧指令的 Vue3 YSS UI 页面模块开发指令别名；本技能已软废弃，仅作为历史指令引导壳。新业务页面、CRUD 与完整模块开发请统一使用主规则 yss-ui-business-page-generation，细分模块参考 page-list-module 和 page-form-module。
 
 ## 指南
 
@@ -2445,6 +2448,7 @@ click?: (scope, btn, helpers) => void | Promise<void>
 > - **受控手动关闭（manualClose: true）**：开启后保留 1.7.5 严格受控语义，必须显式调用 `helpers.close()` 才关闭弹层；调用 `helpers.hideLoading()` 停止 loading 并保留弹层供重试。
 > - 若在此期间行身份变化（如翻页/换行）或外部关闭浮层，组件将自动级联清理 loading 与弹层，晚到的异步结果会被安全忽略。
 > - **滚动期间的取舍**：请求执行过程中，表格纵向滚动故意不关闭浮层，避免丢掉进行中的结果。这段时间浮层停在打开时的位置，不会跟着当前行移动；操作结束（成功自动关闭或 `manualClose`）后仍按原语义处理。
+> - **全局异常过滤与监控对接（注意）**：为驱动 Ant Design Vue Popconfirm 正确重置加载状态并解锁重试，组件在首次进入 `needLoading` 时会懒注册一个全局 `unhandledrejection` 事件监听。该监听器是全局单例（兼容微前端多实例隔离），**仅静默拦截内部特定的 `ACTION_RETRY_SIGNAL` 重试信号**（通过 `event.preventDefault()` 避免控制台红色报错），绝不拦截应用内其他任何未捕获异常。业务层对接 Sentry、Fundebug 等全局监控系统时，正常的业务报错与网络异常均会正常穿透并完整上报，无需担心监控遗漏。
 
 > **禁用与确认**：更多菜单内普通项、确认项及禁用项统一居中。禁用确认项直接渲染禁用按钮；确认资格失效或当前行、操作标识变化时清理旧确认状态，重新启用不会自动弹出确认框。
 
@@ -4913,68 +4917,6 @@ const handleClick = () => {
 
 ---
 
-#### yss-create-microapp
-
-# 创建本地微应用
-
-## 触发条件
-
-- 用户要求创建、新建或生成 Vue3 微应用/微前端子应用。
-- 用户要求从 YSS 微应用模板初始化本地项目。
-- 需要配置 qiankun 激活路由、Vite 端口、API Base 和本地代理。
-
-## 不适用场景
-
-- 在已有微应用中新建业务页面：使用 `../yss-ui-business-page-generation/SKILL.md`。
-- 只创建单个 Vue 组件或只修改配置。
-- 用户要求创建 GitLab 远程仓库、推送代码或触发 CI/CD；本 skill 只生成本地骨架。
-
-## 硬约束（禁止/必须）
-
-- 必须收集并验证：应用英文名 `appName`、中文名 `appNameZh`、单段激活路由 `activeRule` 和最终目标父目录。
-- `appName` 只能包含小写字母、数字和中划线；`activeRule` 必须是以 `/` 开头的单段路径。
-- 必须向用户展示最终绝对路径 `<targetDir>/<appName>`；目标已存在时必须停止，禁止覆盖。
-- 必须使用 skill 内置的 `scripts/create.mjs`，禁止复制一份临时生成脚本。
-- 真正拉取模板前必须先使用相同参数追加 `--dry-run`，确认参数、缓存边界和最终路径。
-- 模板缓存必须位于系统临时目录且名称以 `yss-frontend-template` 开头；脚本不得对任意用户目录执行 `reset --hard` 或 `clean -fd`。
-- 可选参数默认为：`port=8081`、`apiBase=/api${activeRule}`、`proxyTarget=http://localhost:3000`。
-- 没有用户明确授权时，不得安装依赖、启动服务、创建远程仓库或推送代码。
-
-## 标准代码骨架
-
-```bash
-node .agent/skills/yss-create-microapp/scripts/create.mjs \
-  --name "<appName>" \
-  --name-zh "<appNameZh>" \
-  --active-rule "<activeRule>" \
-  --port "<port>" \
-  --target-dir "<targetDir>" \
-  --description "<description>" \
-  --api-base "<apiBase>" \
-  --proxy-target "<proxyTarget>"
-```
-
-- 直接从源 skill 目录执行时，将 `.agent/skills/yss-create-microapp` 替换为当前 skill 的真实绝对路径。
-- 用户提供 OpenAPI 地址时追加 `--openapi-url "<url>"`。
-- 只有在已确认的内部模板调试场景下才传入 `--template-url`、`--template-branch` 或 `--cache-dir`。
-
-## 交付检查清单
-
-- [ ] 必填参数、默认值与最终绝对路径已确认。
-- [ ] 目标项目原先不存在，未覆盖用户文件。
-- [ ] 模板缓存路径通过安全校验，已有缓存的 remote 与请求模板一致。
-- [ ] 脚手架进程退出码为 0，生成目录与 `package.json` / `micro-config.json` 存在。
-- [ ] 中文名、描述、激活路由、端口、API Base 和代理配置正确。
-- [ ] 未擅自执行安装、启动、推送或 CI 操作。
-
-## 失败兜底策略
-
-- 参数不完整或不合法时，只询问会改变生成结果的必要信息，不带错误默认值继续。
-- 模板缓存不是期望的 Git 仓库或 remote 不一致时，报告冲突并换用新的安全缓存路径，不清理原目录。
-- 模板拉取或脚手架失败时，保留完整错误和已生成路径，不在不明状态下反复覆盖重试。
-
----
-
 #### sync-internal-dev
 
 # 内网 Dev 最新代码一键同步至 GitHub main 分支规范
@@ -5897,64 +5839,6 @@ import { Drawer, Input, Modal, Popconfirm } from 'ant-design-vue';
 
 ---
 
-#### page-module-development
-
-# 页面模块开发 Skill
-
-> ⚠️ **[DEPRECATED / 已废弃]**
-> 本 Skill 已进入软废弃（Soft Deprecated）阶段，仅作为历史指令与旧项目的兼容别名壳。
-> 新页面与业务模块开发请统一使用主规则：**[yss-ui-business-page-generation](../yss-ui-business-page-generation/SKILL.md)** 及其细分模块技能。
-
-此 skill 保留旧项目触发名。新页面开发以 `../yss-ui-business-page-generation/SKILL.md` 为主规则。
-
-## 触发条件
-
-- 用户使用旧说法要求“页面模块开发”“生成页面模块”“业务模块开发”。
-- 需要生成 CRUD、列表、表单、详情、左树右表等 YSS UI 业务页面。
-- 旧项目中仍引用 `page-module-development` skill 名称。
-
-## 不适用场景
-
-- 组件库内部组件开发：使用 `../component-development/SKILL.md`。
-- 只处理提交、发版、文档，不生成业务页面代码。
-- 仅修复某个局部表格或表单问题，可直接使用对应细分 skill。
-
-## 硬约束（禁止/必须）
-
-- 先读取 `../yss-ui-business-page-generation/SKILL.md`。
-- 列表页继续读取 `../page-list-module/SKILL.md` 和 `../ytable-usage/SKILL.md`。
-- 表单页继续读取 `../yss-formily/SKILL.md`。
-- 接入后端时继续读取 `../api-integration/SKILL.md`，禁止重复错误 Toast 和 `if (res?.success)`。
-- 左树右表继续读取 `../ytree-usage/SKILL.md`、`../use-tree-height/SKILL.md`、`../use-table-height/SKILL.md`。
-
-## 标准代码骨架
-
-```text
-src/views/{module-name}/
-├── index.vue
-├── constant.ts
-├── style.less
-├── hooks/
-├── type.ts       # 独立类型较多时增加
-└── components/  # 存在多个私有视图时增加
-```
-
-## 交付检查清单
-
-- [ ] 优先使用 `@yss-ui/components`、`@yss-ui/hooks`、`@yss-ui/utils`。
-- [ ] 默认目录包含 `index.vue`、`constant.ts`、`hooks/`、`style.less`；仅在职责需要时增加 `type.ts` 和 `components/`。
-- [ ] 主组件只做编排，业务逻辑进入 hooks。
-- [ ] 主组件不超过 150 行，导出函数和 hooks 均有中文 JSDoc。
-- [ ] 表格分页、表单查看态、高度 hook 都符合真实 API。
-
-## 失败兜底策略
-
-- 需求范围不清时，先按 `yss-ui-business-page-generation` 落地最小页面骨架。
-- 表格、树、表单细节冲突时，以对应细分 skill 为准。
-- 发现旧示例和源码 API 不一致时，以 `llms-full.txt` 和源码导出为准。
-
----
-
 #### page-skeleton
 
 # Page Skeleton Skill
@@ -6810,8 +6694,7 @@ const validateRows = async (): Promise<boolean> => {
     :columns="columns"
     :action-config="actionConfig"
     :options-map="EDIT_OPTIONS_MAP"
-    :row-config="{ keyField: '_rowKey', useKey: true }"
-    :table-config="{ editConfig: { trigger: 'click', mode: 'row', autoClear: false } }"
+    :table-config="{ rowConfig: { keyField: '_rowKey', useKey: true }, editConfig: { trigger: 'click', mode: 'row', autoClear: false } }"
     :disabled="readonly"
     :addable="!readonly"
     add-btn-text="添加一行"
@@ -9162,6 +9045,140 @@ axiosInstance.interceptors.request.use(config => {
 
 ---
 
+#### yss-create-microapp
+
+# 创建本地微应用
+
+## 触发条件
+
+- 用户要求创建、新建或生成 Vue3 微应用/微前端子应用。
+- 用户要求从 YSS 微应用模板初始化本地项目。
+- 需要配置 qiankun 激活路由、Vite 端口、API Base 和本地代理。
+
+## 不适用场景
+
+- 在已有微应用中新建业务页面：使用 `../yss-ui-business-page-generation/SKILL.md`。
+- 只创建单个 Vue 组件或只修改配置。
+- 用户要求创建 GitLab 远程仓库、推送代码或触发 CI/CD；本 skill 与 CLI 只生成本地骨架，部署与远端请配合雨燕平台。
+
+## 硬约束（禁止/必须）
+
+- 必须收集并验证：应用英文名 `appName`、中文名 `appNameZh`、激活路由 `activeRule` 和最终目标父目录。
+- `appName` 必须以小写字母开头，仅包含小写字母、数字和中划线，且不能以中划线结尾（例如 `order-center`、`crm`）。
+- `activeRule` 统一对齐雨燕规范：必须是以 `/` 开头的单段路径，推荐小驼峰命名（如 `/orderCenter`），短横线兼容（如 `/order-center`）；默认由 `appName` 自动推导为小驼峰。
+- 必须向用户展示最终绝对路径 `<targetDir>/<appName>`；目标已存在时必须停止，退出码 3，禁止覆盖。
+- 优先推荐调用 CLI 方式：`npx @yss-ui/create --yes --json`；在完全离线或无 npm 环境下回退使用内置脚本 `node .agents/skills/yss-create-microapp/scripts/create.mjs`。
+- 真正拉取模板前必须先使用相同参数追加 `--dry-run`，确认参数、缓存边界和最终路径。
+- 模板缓存必须位于系统临时目录且名称以 `yss-frontend-template` 开头；脚本不得对任意用户目录执行 `reset --hard` 或 `clean -fd`。
+- 可选参数默认值：`port` 默认从 8081 起向上探测首个空闲端口；`activeRule` 默认由 `appName` 推导小驼峰（驼峰不合法时退回短横线，如 `app-1 → /app-1`、`crm2 → /crm-2`）；`apiBase` 默认为 `/api${activeRule}`；`proxyTarget` 优先级为 `--proxy-target` > `YSS_PROXY_TARGET` 环境变量 > 常量预设。
+- CLI 的 `--json` 输出中 stdout 只有一行 JSON，日志在 stderr；解析结果时只读 stdout。拼错的参数（如 `--dryrun`）会直接退出码 2，不要靠猜测重试。
+- 没有用户明确授权时，不得擅自执行安装依赖、初始化 git、启动服务、创建远程仓库或推送代码。
+
+## 标准代码骨架
+
+### 推荐调用方式（CLI 优先）
+
+```bash
+npx @yss-ui/create "<appName>" \
+  --name-zh "<appNameZh>" \
+  --target-dir "<targetDir>" \
+  --yes \
+  --json
+```
+
+- 需指定非默认路由或端口时：追加 `--active-rule "</customRoute>"` 或 `--port <port>`。
+- 需传递接口前缀或代理目标时：追加 `--api-base "</api/path>"` 或 `--proxy-target "<http://url>"`。
+- 预检模式：追加 `--dry-run`。
+
+### 离线后备脚本调用方式
+
+当无法访问 npm 或需直接执行源码时，使用内置包装脚本：
+
+```bash
+node .agents/skills/yss-create-microapp/scripts/create.mjs \
+  --name "<appName>" \
+  --name-zh "<appNameZh>" \
+  --target-dir "<targetDir>"
+```
+
+## 交付检查清单
+
+- [ ] 必填参数、默认值推导与最终绝对路径已向用户确认。
+- [ ] 目标项目原先不存在，未覆盖用户文件。
+- [ ] 模板缓存路径通过安全校验，已有缓存的 remote 与请求模板一致。
+- [ ] 脚手架进程退出码为 0，生成目录与 `package.json` / `micro-config.json` 存在。
+- [ ] 中文名、描述、激活路由（符合驼峰规范）、端口、API Base 和代理配置正确。
+- [ ] 未擅自执行安装、启动、推送或 CI 操作。
+
+## 失败兜底策略
+
+- 参数不完整或不合法时，输出明确中文原因及示例（退出码 2），不带错误默认值继续。
+- 目标目录已存在时立即中止（退出码 3），提示更换目录或应用名。
+- 模板缓存不是期望的 Git 仓库或 remote 不一致时，报告冲突并换用新的安全缓存路径，不清理原目录。
+- 模板拉取或脚手架失败时，保留完整错误和已生成路径，不在不明状态下反复覆盖重试。
+
+---
+
+### other
+
+#### page-module-development
+
+# 页面模块开发 Skill
+
+> ⚠️ **[DEPRECATED / 已废弃]**
+> 本 Skill 已进入软废弃（Soft Deprecated）阶段，仅作为历史指令与旧项目的兼容别名壳。
+> 新页面与业务模块开发请统一使用主规则：**[yss-ui-business-page-generation](../yss-ui-business-page-generation/SKILL.md)** 及其细分模块技能。
+
+此 skill 保留旧项目触发名。新页面开发以 `../yss-ui-business-page-generation/SKILL.md` 为主规则。
+
+## 触发条件
+
+- 用户使用旧说法要求“页面模块开发”“生成页面模块”“业务模块开发”。
+- 需要生成 CRUD、列表、表单、详情、左树右表等 YSS UI 业务页面。
+- 旧项目中仍引用 `page-module-development` skill 名称。
+
+## 不适用场景
+
+- 组件库内部组件开发：使用 `../component-development/SKILL.md`。
+- 只处理提交、发版、文档，不生成业务页面代码。
+- 仅修复某个局部表格或表单问题，可直接使用对应细分 skill。
+
+## 硬约束（禁止/必须）
+
+- 先读取 `../yss-ui-business-page-generation/SKILL.md`。
+- 列表页继续读取 `../page-list-module/SKILL.md` 和 `../ytable-usage/SKILL.md`。
+- 表单页继续读取 `../yss-formily/SKILL.md`。
+- 接入后端时继续读取 `../api-integration/SKILL.md`，禁止重复错误 Toast 和 `if (res?.success)`。
+- 左树右表继续读取 `../ytree-usage/SKILL.md`、`../use-tree-height/SKILL.md`、`../use-table-height/SKILL.md`。
+
+## 标准代码骨架
+
+```text
+src/views/{module-name}/
+├── index.vue
+├── constant.ts
+├── style.less
+├── hooks/
+├── type.ts       # 独立类型较多时增加
+└── components/  # 存在多个私有视图时增加
+```
+
+## 交付检查清单
+
+- [ ] 优先使用 `@yss-ui/components`、`@yss-ui/hooks`、`@yss-ui/utils`。
+- [ ] 默认目录包含 `index.vue`、`constant.ts`、`hooks/`、`style.less`；仅在职责需要时增加 `type.ts` 和 `components/`。
+- [ ] 主组件只做编排，业务逻辑进入 hooks。
+- [ ] 主组件不超过 150 行，导出函数和 hooks 均有中文 JSDoc。
+- [ ] 表格分页、表单查看态、高度 hook 都符合真实 API。
+
+## 失败兜底策略
+
+- 需求范围不清时，先按 `yss-ui-business-page-generation` 落地最小页面骨架。
+- 表格、树、表单细节冲突时，以对应细分 skill 为准。
+- 发现旧示例和源码 API 不一致时，以 `llms-full.txt` 和源码导出为准。
+
+---
+
 ## 指南文档
 
 # 快速开始
@@ -9170,6 +9187,7 @@ YSS UI 是一个基于 Vue 3、Ant Design Vue 与 VXE-Table 的企业级中后�
 
 ## 频道导航
 
+- 新建微应用： [微应用创建 CLI](/guide/create-app)
 - 安装与接入：本页 + [安装](/guide/installation)
 - 生产发布： [发版工作流](/guide/release-workflow) / [GitLab CI 集成](/guide/gitlab-ci-integration)
 - 性能与调优： [大表性能最佳实践手册](/guide/table-perf-handbook)

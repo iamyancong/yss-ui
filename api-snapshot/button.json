@@ -1,0 +1,245 @@
+{
+  "name": "button",
+  "propsCount": 31,
+  "props": {
+    "theme": {
+      "name": "theme",
+      "type": "string",
+      "tsType": "\"danger\" | \"primary\" | \"success\" | \"warning\"",
+      "required": false,
+      "default": "\"primary\"",
+      "isCore": true
+    },
+    "permissionCode": {
+      "name": "permissionCode",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": true
+    },
+    "fallback": {
+      "name": "fallback",
+      "type": "string",
+      "tsType": "\"hide\" | \"disable\"",
+      "required": false,
+      "default": "\"hide\"",
+      "isCore": true
+    },
+    "modifiers": {
+      "name": "modifiers",
+      "type": "array",
+      "tsType": "(\"stop\" | \"prevent\")[]",
+      "required": false,
+      "default": "[]",
+      "isCore": true
+    },
+    "type": {
+      "name": "type",
+      "type": "any",
+      "tsType": "ButtonType",
+      "required": false,
+      "default": "\"default\"",
+      "isCore": false
+    },
+    "prefixCls": {
+      "name": "prefixCls",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "htmlType": {
+      "name": "htmlType",
+      "type": "any",
+      "tsType": "ButtonHTMLType",
+      "required": false,
+      "isCore": false
+    },
+    "shape": {
+      "name": "shape",
+      "type": "any",
+      "tsType": "ButtonShape",
+      "required": false,
+      "isCore": false
+    },
+    "size": {
+      "name": "size",
+      "type": "any",
+      "tsType": "SizeType",
+      "required": true,
+      "default": "\"middle\"",
+      "isCore": true
+    },
+    "loading": {
+      "name": "loading",
+      "type": "any",
+      "tsType": "boolean | { delay?: number; }",
+      "required": false,
+      "isCore": true
+    },
+    "disabled": {
+      "name": "disabled",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ghost": {
+      "name": "ghost",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "block": {
+      "name": "block",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "danger": {
+      "name": "danger",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "icon": {
+      "name": "icon",
+      "type": "any",
+      "tsType": "any",
+      "required": true,
+      "isCore": false
+    },
+    "href": {
+      "name": "href",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "target": {
+      "name": "target",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "title": {
+      "name": "title",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onMousedown": {
+      "name": "onMousedown",
+      "type": "array",
+      "tsType": "MouseEventHandler | MouseEventHandler[]",
+      "required": false,
+      "isCore": false
+    },
+    "key": {
+      "name": "key",
+      "type": "any",
+      "tsType": "PropertyKey",
+      "required": false,
+      "isCore": false
+    },
+    "ref": {
+      "name": "ref",
+      "type": "any",
+      "tsType": "VNodeRef",
+      "required": false,
+      "isCore": false
+    },
+    "ref_for": {
+      "name": "ref_for",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ref_key": {
+      "name": "ref_key",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeMount": {
+      "name": "onVue:beforeMount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:mounted": {
+      "name": "onVue:mounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUpdate": {
+      "name": "onVue:beforeUpdate",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:updated": {
+      "name": "onVue:updated",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUnmount": {
+      "name": "onVue:beforeUnmount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:unmounted": {
+      "name": "onVue:unmounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "class": {
+      "name": "class",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "style": {
+      "name": "style",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    }
+  },
+  "emits": [
+    {
+      "name": "click",
+      "type": "[event: MouseEvent]"
+    }
+  ],
+  "slots": [
+    {
+      "name": "icon",
+      "type": "{}"
+    },
+    {
+      "name": "default",
+      "type": "{}"
+    }
+  ],
+  "exposed": []
+}

@@ -1,12 +1,12 @@
 ---
 name: yss-create-microapp
-description: 在本地生成 Vue3 + TypeScript + qiankun 微前端子应用；用户说“创建微应用”、“新建微前端”、“生成 Vue3 子应用”或要求使用 YSS 模板脚手架时使用。
+description: 在本地创建一个新的微应用、生成 qiankun 子应用或用 YSS 模板脚手架新建微前端项目，自动生成工程骨架并配置路由、状态管理与 Ant Design Vue 依赖；当需要从零搭建新子应用、运行微应用脚手架时使用。已初始化完毕的项目内模块迭代与单个视图编写不适用本工具。
 toc: content
 ---
 
 # 创建本地微应用
 
-> 在本地生成 Vue3 + TypeScript + qiankun 微前端子应用；用户说“创建微应用”、“新建微前端”、“生成 Vue3 子应用”或要求使用 YSS 模板脚手架时使用。
+> 在本地创建一个新的微应用、生成 qiankun 子应用或用 YSS 模板脚手架新建微前端项目，自动生成工程骨架并配置路由、状态管理与 Ant Design Vue 依赖；当需要从零搭建新子应用、运行微应用脚手架时使用。已初始化完毕的项目内模块迭代与单个视图编写不适用本工具。
 
 
 ## 触发条件
@@ -19,48 +19,60 @@ toc: content
 
 - 在已有微应用中新建业务页面：使用 `../yss-ui-business-page-generation/SKILL.md`。
 - 只创建单个 Vue 组件或只修改配置。
-- 用户要求创建 GitLab 远程仓库、推送代码或触发 CI/CD；本 skill 只生成本地骨架。
+- 用户要求创建 GitLab 远程仓库、推送代码或触发 CI/CD；本 skill 与 CLI 只生成本地骨架，部署与远端请配合雨燕平台。
 
 ## 硬约束（禁止/必须）
 
-- 必须收集并验证：应用英文名 `appName`、中文名 `appNameZh`、单段激活路由 `activeRule` 和最终目标父目录。
-- `appName` 只能包含小写字母、数字和中划线；`activeRule` 必须是以 `/` 开头的单段路径。
-- 必须向用户展示最终绝对路径 `<targetDir>/<appName>`；目标已存在时必须停止，禁止覆盖。
-- 必须使用 skill 内置的 `scripts/create.mjs`，禁止复制一份临时生成脚本。
+- 必须收集并验证：应用英文名 `appName`、中文名 `appNameZh`、激活路由 `activeRule` 和最终目标父目录。
+- `appName` 必须以小写字母开头，仅包含小写字母、数字和中划线，且不能以中划线结尾（例如 `order-center`、`crm`）。
+- `activeRule` 统一对齐雨燕规范：必须是以 `/` 开头的单段路径，推荐小驼峰命名（如 `/orderCenter`），短横线兼容（如 `/order-center`）；默认由 `appName` 自动推导为小驼峰。
+- 必须向用户展示最终绝对路径 `<targetDir>/<appName>`；目标已存在时必须停止，退出码 3，禁止覆盖。
+- 优先推荐调用 CLI 方式：`npx @yss-ui/create --yes --json`；在完全离线或无 npm 环境下回退使用内置脚本 `node .agents/skills/yss-create-microapp/scripts/create.mjs`。
 - 真正拉取模板前必须先使用相同参数追加 `--dry-run`，确认参数、缓存边界和最终路径。
 - 模板缓存必须位于系统临时目录且名称以 `yss-frontend-template` 开头；脚本不得对任意用户目录执行 `reset --hard` 或 `clean -fd`。
-- 可选参数默认为：`port=8081`、`apiBase=/api${activeRule}`、`proxyTarget=http://localhost:3000`。
-- 没有用户明确授权时，不得安装依赖、启动服务、创建远程仓库或推送代码。
+- 可选参数默认值：`port` 默认从 8081 起向上探测首个空闲端口；`activeRule` 默认由 `appName` 推导小驼峰（驼峰不合法时退回短横线，如 `app-1 → /app-1`、`crm2 → /crm-2`）；`apiBase` 默认为 `/api${activeRule}`；`proxyTarget` 优先级为 `--proxy-target` > `YSS_PROXY_TARGET` 环境变量 > 常量预设。
+- CLI 的 `--json` 输出中 stdout 只有一行 JSON，日志在 stderr；解析结果时只读 stdout。拼错的参数（如 `--dryrun`）会直接退出码 2，不要靠猜测重试。
+- 没有用户明确授权时，不得擅自执行安装依赖、初始化 git、启动服务、创建远程仓库或推送代码。
 
 ## 标准代码骨架
 
+### 推荐调用方式（CLI 优先）
+
 ```bash
-node .agent/skills/yss-create-microapp/scripts/create.mjs \
-  --name "<appName>" \
+npx @yss-ui/create "<appName>" \
   --name-zh "<appNameZh>" \
-  --active-rule "<activeRule>" \
-  --port "<port>" \
   --target-dir "<targetDir>" \
-  --description "<description>" \
-  --api-base "<apiBase>" \
-  --proxy-target "<proxyTarget>"
+  --yes \
+  --json
 ```
 
-- 直接从源 skill 目录执行时，将 `.agent/skills/yss-create-microapp` 替换为当前 skill 的真实绝对路径。
-- 用户提供 OpenAPI 地址时追加 `--openapi-url "<url>"`。
-- 只有在已确认的内部模板调试场景下才传入 `--template-url`、`--template-branch` 或 `--cache-dir`。
+- 需指定非默认路由或端口时：追加 `--active-rule "</customRoute>"` 或 `--port <port>`。
+- 需传递接口前缀或代理目标时：追加 `--api-base "</api/path>"` 或 `--proxy-target "<http://url>"`。
+- 预检模式：追加 `--dry-run`。
+
+### 离线后备脚本调用方式
+
+当无法访问 npm 或需直接执行源码时，使用内置包装脚本：
+
+```bash
+node .agents/skills/yss-create-microapp/scripts/create.mjs \
+  --name "<appName>" \
+  --name-zh "<appNameZh>" \
+  --target-dir "<targetDir>"
+```
 
 ## 交付检查清单
 
-- [ ] 必填参数、默认值与最终绝对路径已确认。
+- [ ] 必填参数、默认值推导与最终绝对路径已向用户确认。
 - [ ] 目标项目原先不存在，未覆盖用户文件。
 - [ ] 模板缓存路径通过安全校验，已有缓存的 remote 与请求模板一致。
 - [ ] 脚手架进程退出码为 0，生成目录与 `package.json` / `micro-config.json` 存在。
-- [ ] 中文名、描述、激活路由、端口、API Base 和代理配置正确。
+- [ ] 中文名、描述、激活路由（符合驼峰规范）、端口、API Base 和代理配置正确。
 - [ ] 未擅自执行安装、启动、推送或 CI 操作。
 
 ## 失败兜底策略
 
-- 参数不完整或不合法时，只询问会改变生成结果的必要信息，不带错误默认值继续。
+- 参数不完整或不合法时，输出明确中文原因及示例（退出码 2），不带错误默认值继续。
+- 目标目录已存在时立即中止（退出码 3），提示更换目录或应用名。
 - 模板缓存不是期望的 Git 仓库或 remote 不一致时，报告冲突并换用新的安全缓存路径，不清理原目录。
 - 模板拉取或脚手架失败时，保留完整错误和已生成路径，不在不明状态下反复覆盖重试。

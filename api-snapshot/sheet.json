@@ -1,0 +1,197 @@
+{
+  "name": "sheet",
+  "propsCount": 21,
+  "props": {
+    "modelValue": {
+      "name": "modelValue",
+      "type": "any",
+      "tsType": "IWorkbookData | null",
+      "required": false,
+      "isCore": false
+    },
+    "height": {
+      "name": "height",
+      "type": "any",
+      "tsType": "string | number",
+      "required": false,
+      "default": "\"100%\"",
+      "isCore": false
+    },
+    "locale": {
+      "name": "locale",
+      "type": "any",
+      "tsType": "LocaleTypeString",
+      "required": false,
+      "default": "undefined",
+      "isCore": false
+    },
+    "darkMode": {
+      "name": "darkMode",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "undefined",
+      "isCore": false
+    },
+    "readonly": {
+      "name": "readonly",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": false
+    },
+    "extraPresets": {
+      "name": "extraPresets",
+      "type": "array",
+      "tsType": "any[]",
+      "required": false,
+      "default": "[]",
+      "isCore": false
+    },
+    "extraPlugins": {
+      "name": "extraPlugins",
+      "type": "array",
+      "tsType": "any[]",
+      "required": false,
+      "default": "[]",
+      "isCore": false
+    },
+    "extraLocales": {
+      "name": "extraLocales",
+      "type": "any",
+      "tsType": "YSheetExtraLocales",
+      "required": false,
+      "default": "{}",
+      "isCore": false
+    },
+    "config": {
+      "name": "config",
+      "type": "any",
+      "tsType": "Partial<IUniverSheetsCorePresetConfig>",
+      "required": false,
+      "isCore": false
+    },
+    "key": {
+      "name": "key",
+      "type": "any",
+      "tsType": "PropertyKey",
+      "required": false,
+      "isCore": false
+    },
+    "ref": {
+      "name": "ref",
+      "type": "any",
+      "tsType": "VNodeRef",
+      "required": false,
+      "isCore": false
+    },
+    "ref_for": {
+      "name": "ref_for",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ref_key": {
+      "name": "ref_key",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeMount": {
+      "name": "onVue:beforeMount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:mounted": {
+      "name": "onVue:mounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUpdate": {
+      "name": "onVue:beforeUpdate",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:updated": {
+      "name": "onVue:updated",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUnmount": {
+      "name": "onVue:beforeUnmount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:unmounted": {
+      "name": "onVue:unmounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "class": {
+      "name": "class",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "style": {
+      "name": "style",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    }
+  },
+  "emits": [
+    {
+      "name": "update:modelValue",
+      "type": "[value: IWorkbookData]"
+    },
+    {
+      "name": "error",
+      "type": "[error: Error]"
+    },
+    {
+      "name": "workbook-created",
+      "type": "[workbook: any]"
+    }
+  ],
+  "slots": [],
+  "exposed": [
+    {
+      "name": "getUniverAPI",
+      "type": "() => any"
+    },
+    {
+      "name": "getWorkbook",
+      "type": "() => any"
+    },
+    {
+      "name": "save",
+      "type": "() => IWorkbookData | null"
+    },
+    {
+      "name": "reload",
+      "type": "(data?: IWorkbookData | null | undefined) => void"
+    },
+    {
+      "name": "dispose",
+      "type": "() => void"
+    }
+  ]
+}

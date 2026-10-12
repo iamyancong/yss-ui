@@ -58,6 +58,7 @@ export function useLoading(initialValue = false): UseLoadingReturn {
     activeCount++;
     loading.value = true;
 
+    let hasError = false;
     try {
       const result = await fn();
 
@@ -68,18 +69,10 @@ export function useLoading(initialValue = false): UseLoadingReturn {
 
       return result;
     } catch (error) {
+      hasError = true;
       // 调用错误回调
       if (onError && error instanceof Error) {
         onError(error);
-      }
-
-      // 根据配置决定是否保持 loading 状态
-      if (!keepLoadingOnError) {
-        activeCount--;
-        if (activeCount <= 0) {
-          activeCount = 0;
-          loading.value = false;
-        }
       }
 
       // 只有在明确配置 rethrowError=true 时才重新抛出错误
@@ -91,8 +84,7 @@ export function useLoading(initialValue = false): UseLoadingReturn {
       // 如果不重新抛出错误，返回 undefined
       return undefined;
     } finally {
-      // 如果不保持错误状态，则在 try 成功时减少计数
-      if (!keepLoadingOnError || activeCount > 0) {
+      if (!hasError || !keepLoadingOnError) {
         activeCount--;
         if (activeCount <= 0) {
           activeCount = 0;

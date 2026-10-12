@@ -1,12 +1,12 @@
 ---
 name: documentation
-description: 为 YSS UI 组件、Hooks 和工具函数新建或更新 Dumi 文档、Demo、API 表与导航；修改公共 API 或文档构建失败时使用。
+description: 为 YSS UI 组件、Hooks 和工具函数新建或同步更新 Dumi 文档、交互示例 Demo、Markdown API 契约表与站点路由导航；当公开 API 发生变化、文档构建失败或补充使用指南时使用。编写 AI Skills 自身文档与同步请使用 skill-development。
 toc: content
 ---
 
 # YSS UI 文档编写
 
-> 为 YSS UI 组件、Hooks 和工具函数新建或更新 Dumi 文档、Demo、API 表与导航；修改公共 API 或文档构建失败时使用。
+> 为 YSS UI 组件、Hooks 和工具函数新建或同步更新 Dumi 文档、交互示例 Demo、Markdown API 契约表与站点路由导航；当公开 API 发生变化、文档构建失败或补充使用指南时使用。编写 AI Skills 自身文档与同步请使用 skill-development。
 
 
 ## 触发条件

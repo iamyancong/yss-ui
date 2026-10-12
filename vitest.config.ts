@@ -45,6 +45,7 @@ export default defineConfig({
       'scripts/sync-npmmirror.test.mjs',
       'scripts/generate-home-releases.test.js',
       'scripts/lib/release-packages.test.js',
+      'scripts/lib/release-bump-gate.test.js',
       'packages/skills-cli/lib/sync.test.js',
       'packages/mcp/lib/tools.test.js',
     ],

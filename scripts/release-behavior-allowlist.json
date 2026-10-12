@@ -1,0 +1,7 @@
+[
+  "packages/components/src/table/ActionButton.vue",
+  "packages/components/src/table/ActionColumn.vue",
+  "packages/components/src/table/hooks/useSafeData.ts",
+  "packages/components/src/table/utils/actionRetry.ts",
+  "packages/hooks/src/*/index.ts"
+]

@@ -1,12 +1,12 @@
 ---
 name: vue3-best-practices
-description: 在 Vue3 业务页面、组件和 composable 中规范响应式状态、组件通信、异步竞态与大数精度；实现或重构 Vue3 逻辑时使用。
+description: 在 Vue3 + TypeScript 业务页面、公共组件和 Composables 中规范响应式状态解构、组件跨级通信、异步竞态取消机制与长整型大数精度处理；当实现或重构复杂的 Vue3 业务逻辑与 Hooks 时使用。表单特定规范请结合 yss-formily，组件库维护参考 component-development。
 toc: content
 ---
 
 # Vue3 Best Practices Skill
 
-> 在 Vue3 业务页面、组件和 composable 中规范响应式状态、组件通信、异步竞态与大数精度；实现或重构 Vue3 逻辑时使用。
+> 在 Vue3 + TypeScript 业务页面、公共组件和 Composables 中规范响应式状态解构、组件跨级通信、异步竞态取消机制与长整型大数精度处理；当实现或重构复杂的 Vue3 业务逻辑与 Hooks 时使用。表单特定规范请结合 yss-formily，组件库维护参考 component-development。
 
 
 ## 触发条件

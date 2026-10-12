@@ -117,6 +117,12 @@ function extractComponentSchema(checker, compName) {
       description: sl.description || '',
     }));
 
+    const exposedList = (meta.exposed || []).map(ex => ({
+      name: ex.name,
+      type: ex.type,
+      description: ex.description || '',
+    }));
+
     return {
       name: compName,
       file: path.relative(ROOT_DIR, vueFile),
@@ -124,6 +130,7 @@ function extractComponentSchema(checker, compName) {
       props: propsMap,
       emits: emitsList,
       slots: slotsList,
+      exposed: exposedList,
     };
   } catch (err) {
     console.warn(`⚠️ 解析组件 ${compName} 失败:`, err.message);
