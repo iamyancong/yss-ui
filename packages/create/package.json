@@ -1,6 +1,6 @@
 {
   "name": "@yss-ui/create",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "企业级微应用一键脚手架 CLI",
   "license": "MIT",
   "scripts": {
@@ -14,7 +14,10 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "files": ["bin", "src"],
+  "files": [
+    "bin",
+    "src"
+  ],
   "publishConfig": {
     "access": "public"
   },
@@ -23,7 +26,15 @@
     "url": "https://github.com/iamyancong/yss-ui.git",
     "directory": "packages/create"
   },
-  "keywords": ["yss", "yss-ui", "create", "scaffold", "microapp", "qiankun", "cli"],
+  "keywords": [
+    "yss",
+    "yss-ui",
+    "create",
+    "scaffold",
+    "microapp",
+    "qiankun",
+    "cli"
+  ],
   "dependencies": {
     "@clack/prompts": "^0.9.1",
     "picocolors": "^1.1.1"
