@@ -26,6 +26,8 @@ const {
   matchesPackageDir,
   matchesExtraInput,
   ensureDerivedMcpPublish,
+  ensureDerivedCreatePublish,
+  syncCreateAliasPackage,
   rebuildMcpIndex,
   validateMcpIndex,
   persistMcpIndexHash,
@@ -186,6 +188,7 @@ async function main() {
   const files = detectChangedFiles(lastTag);
   let changed = detectChangedPackages(files);
   changed = refineMcpPublish(changed, files, { log });
+  changed = ensureDerivedCreatePublish(changed, { log });
   changed = ensureDerivedMcpPublish(changed, { log });
   changed = orderReleaseKeys(changed);
 
@@ -283,12 +286,15 @@ async function main() {
       console.error(`  📦 [${f.key}@${f.version}] 要求升级至 ≥ ${f.requiredBump}：`);
       f.reasons.forEach(r => console.error(`     - ${r}`));
     });
-    console.error('\n如确需以当前版本类型强制发布，请提供 --override-reason="说明原因" 或设置 RELEASE_OVERRIDE_REASON 环境变量。\n');
+    console.error(
+      '\n如确需以当前版本类型强制发布，请提供 --override-reason="说明原因" 或设置 RELEASE_OVERRIDE_REASON 环境变量。\n'
+    );
     process.exit(1);
   }
 
   // 只更新有变更的包的版本号
   const summary = [];
+  const nextVersionByKey = new Map();
   for (const key of changed) {
     const meta = PACKAGES[key];
     const pkgJsonPath = path.join(meta.dir, 'package.json');
@@ -298,7 +304,10 @@ async function main() {
     }
     const pkg = readJSON(pkgJsonPath);
     const oldVersion = pkg.version;
-    const newVersion = bumpSemver(oldVersion, bump);
+    const alignKey = meta.alignVersionWith;
+    const newVersion =
+      alignKey && nextVersionByKey.has(alignKey) ? nextVersionByKey.get(alignKey) : bumpSemver(oldVersion, bump);
+    nextVersionByKey.set(key, newVersion);
 
     if (key === 'mcp' && meta.changelog && !isMcpRuntimeChange(files)) {
       const inserted = ensureMcpIndexChangelog(meta.changelog, newVersion, { dryRun });
@@ -318,6 +327,9 @@ async function main() {
     }
 
     pkg.version = newVersion;
+    if (key === 'create-yss-app') {
+      syncCreateAliasPackage(pkg, newVersion);
+    }
     writeJSON(pkgJsonPath, pkg);
     log(`${meta.name} 版本: ${oldVersion} -> ${newVersion}`);
     summary.push({ name: meta.name, oldVersion, newVersion });

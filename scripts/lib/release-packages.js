@@ -11,7 +11,7 @@ const crypto = require('crypto');
 const { execSync } = require('child_process');
 const fs = require('fs');
 
-/** @typedef {{ dir: string, name: string, changelog?: string, extraInputs?: string[], indexHashFile?: string }} PackageMeta */
+/** @typedef {{ dir: string, name: string, changelog?: string, extraInputs?: string[], indexHashFile?: string, alignVersionWith?: string }} PackageMeta */
 
 /**
  * 可发布包注册表。
@@ -26,8 +26,13 @@ const PACKAGES = {
   theme: { dir: 'packages/theme', name: '@yss-ui/theme' },
   utils: { dir: 'packages/utils', name: '@yss-ui/utils', changelog: 'docs/changelog/utils.md' },
   create: { dir: 'packages/create', name: '@yss-ui/create', changelog: 'docs/changelog/create.md' },
-  // TODO (#52): create 发版时 create-yss-app 必须一起 bump 并发布，目前两者各自按目录变更检测。
-  'create-yss-app': { dir: 'packages/create-yss-app', name: 'create-yss-app', changelog: 'docs/changelog/create.md' },
+  'create-yss-app': {
+    dir: 'packages/create-yss-app',
+    name: 'create-yss-app',
+    changelog: 'docs/changelog/create.md',
+    extraInputs: ['packages/create/'],
+    alignVersionWith: 'create',
+  },
   'skills-cli': { dir: 'packages/skills-cli', name: '@yss-ui/skills-cli' },
   skills: { dir: 'packages/skills', name: '@yss-ui/skills', changelog: 'docs/changelog/skills.md' },
   mcp: {
@@ -324,6 +329,70 @@ function ensureDerivedMcpPublish(changed, options = {}) {
 }
 
 /**
+ * create 发版时强制带上别名包 create-yss-app，保持两个包版本同步。
+ *
+ * @param {string[]} changed 待发布包 key 列表
+ * @param {{ log?: (msg: string) => void }} [options] 日志选项
+ * @returns {string[]} 补齐别名包后的 key 列表
+ */
+function ensureDerivedCreatePublish(changed, options = {}) {
+  const log = options.log || (() => {});
+  if (!changed.includes('create') || changed.includes('create-yss-app')) return changed;
+  log('检测到 @yss-ui/create 待发布，强制跟发别名包 create-yss-app 以同步版本');
+  return [...changed, 'create-yss-app'];
+}
+
+/**
+ * 同步 create-yss-app 别名包的 package.json 版本及 @yss-ui/create 依赖版本范围。
+ *
+ * - 将 `pkg.version` 对齐为 `targetVersion`
+ * - 若 `pkg.dependencies['@yss-ui/create']` 为显式版本范围（非 `workspace:` 协议，如 `^1.2.0`、`~1.2.0`、`1.2.0`），
+ *   保留原范围前缀（`^` / `~`，无前缀则默认 `^`）并更新为 `targetVersion`；
+ * - 若为 `workspace:` 协议（如 `workspace:^`），保持 `workspace:` 声明不变，由 `pnpm publish` 在打包时
+ *   按已更新版本的 `packages/create/package.json` 自动展开为 `^${targetVersion}`，同时避免破坏 `pnpm-lock.yaml`。
+ *
+ * @param {Record<string, any>} pkg create-yss-app 的 package.json 对象
+ * @param {string} targetVersion 目标版本号（与 @yss-ui/create 一致）
+ * @returns {Record<string, any>} 更新后的 package.json 对象
+ */
+function syncCreateAliasPackage(pkg, targetVersion) {
+  if (!pkg || typeof pkg !== 'object' || !targetVersion) return pkg;
+  pkg.version = targetVersion;
+  if (pkg.dependencies && typeof pkg.dependencies['@yss-ui/create'] === 'string') {
+    const currentSpec = pkg.dependencies['@yss-ui/create'].trim();
+    if (!currentSpec.startsWith('workspace:')) {
+      const prefixMatch = currentSpec.match(/^([\^~])/);
+      const prefix = prefixMatch ? prefixMatch[1] : '^';
+      pkg.dependencies['@yss-ui/create'] = `${prefix}${targetVersion}`;
+    }
+  }
+  return pkg;
+}
+
+/**
+ * 对齐发布计划中绑定包的目标版本号与依赖版本范围（如 create-yss-app 始终使用与 @yss-ui/create 相同的目标版本）。
+ *
+ * @param {Array<{key: string, meta?: PackageMeta, oldVersion: string, newVersion: string, pkg?: Record<string, any>}>} plan 发布计划
+ * @returns {Array<{key: string, meta?: PackageMeta, oldVersion: string, newVersion: string, pkg?: Record<string, any>}>} 对齐后的发布计划
+ */
+function syncCreateAliasReleasePlan(plan) {
+  if (!Array.isArray(plan)) return plan;
+  const byKey = new Map(plan.map(item => [item.key, item]));
+  for (const item of plan) {
+    const targetKey = item.meta?.alignVersionWith || (item.key === 'create-yss-app' ? 'create' : null);
+    if (!targetKey) continue;
+    const sourceItem = byKey.get(targetKey);
+    if (sourceItem && sourceItem.newVersion) {
+      item.newVersion = sourceItem.newVersion;
+    }
+    if (item.pkg && item.newVersion) {
+      syncCreateAliasPackage(item.pkg, item.newVersion);
+    }
+  }
+  return plan;
+}
+
+/**
  * 判断 changelog 是否已有目标版本标题。
  *
  * @param {string} filePath changelog 路径
@@ -437,6 +506,9 @@ module.exports = {
   persistMcpIndexHash,
   refineMcpPublish,
   ensureDerivedMcpPublish,
+  ensureDerivedCreatePublish,
+  syncCreateAliasPackage,
+  syncCreateAliasReleasePlan,
   hasChangelogVersion,
   getLatestChangelogVersion,
   resolveFirstReleaseAction,

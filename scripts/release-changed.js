@@ -11,6 +11,9 @@ const {
   orderReleaseKeys,
   refineMcpPublish,
   ensureDerivedMcpPublish,
+  ensureDerivedCreatePublish,
+  syncCreateAliasPackage,
+  syncCreateAliasReleasePlan,
   rebuildMcpIndex,
   matchesPackageDir,
   matchesExtraInput,
@@ -317,7 +320,7 @@ function createReleasePlan(changed, bump, firstReleaseKeys = new Set()) {
     const newVersion = firstReleaseKeys.has(key) ? oldVersion : bumpSemver(oldVersion, bump);
     plan.push({ key, meta, pkgJsonPath, oldVersion, newVersion, pkg });
   }
-  return plan;
+  return syncCreateAliasReleasePlan(plan);
 }
 
 /**
@@ -400,6 +403,7 @@ async function main() {
   const files = detectChangedFiles(resolvedBase);
   let changed = detectChangedPackages(files);
   changed = refineMcpPublish(changed, files, { log });
+  changed = ensureDerivedCreatePublish(changed, { log });
   changed = ensureDerivedMcpPublish(changed, { log });
   changed = orderReleaseKeys(changed);
   const publishRegistry = process.env.NPM_PUBLISH_REGISTRY || 'https://registry.npmjs.org/';
@@ -551,6 +555,9 @@ async function main() {
     // 先一次性写入本批次所有目标版本，再构建派生包，避免 MCP 读取旧的 components 版本。
     for (const item of releasePlan) {
       item.pkg.version = item.newVersion;
+      if (item.key === 'create-yss-app') {
+        syncCreateAliasPackage(item.pkg, item.newVersion);
+      }
       writeJSON(item.pkgJsonPath, item.pkg);
       log(`${item.meta.name} 版本: ${item.oldVersion} -> ${item.newVersion}`);
       releaseSummaryEntries.push({ name: item.meta.name, oldVersion: item.oldVersion, newVersion: item.newVersion });

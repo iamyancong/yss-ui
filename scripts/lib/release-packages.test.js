@@ -12,6 +12,9 @@ const {
   orderReleaseKeys,
   refineMcpPublish,
   ensureDerivedMcpPublish,
+  ensureDerivedCreatePublish,
+  syncCreateAliasPackage,
+  syncCreateAliasReleasePlan,
   validateMcpIndex,
   hasChangelogVersion,
   getLatestChangelogVersion,
@@ -31,7 +34,7 @@ assert.deepEqual(orderReleaseKeys(['mcp', 'components', 'skills', 'components'])
 assert.deepEqual(orderReleaseKeys(['mcp', 'create', 'components']), ['components', 'create', 'mcp']);
 assert.deepEqual(orderReleaseKeys(['mcp', 'unknown']), ['mcp', 'unknown']);
 
-assert.deepEqual(keys(['packages/create/src/cli.mjs']), ['create']);
+assert.deepEqual(keys(['packages/create/src/cli.mjs']), ['create', 'create-yss-app']);
 assert.deepEqual(keys(['packages/create-yss-app/index.mjs']), ['create-yss-app']);
 
 assert.deepEqual(keys(['docs/components/table.md']), ['mcp']);
@@ -207,6 +210,51 @@ assert.equal(
   'bump'
 );
 assert.equal(PACKAGES['create-yss-app'].changelog, PACKAGES.create.changelog);
+assert.equal(PACKAGES['create-yss-app'].alignVersionWith, 'create');
+
+// #52 第 4 项：仅修改 packages/create/** 时，create-yss-app 必须一起跟发并对齐版本号与依赖范围
+assert.deepEqual(ensureDerivedCreatePublish(['create']), ['create', 'create-yss-app']);
+assert.deepEqual(ensureDerivedCreatePublish(['create', 'create-yss-app']), ['create', 'create-yss-app']);
+assert.deepEqual(ensureDerivedCreatePublish(['skills']), ['skills']);
+
+const createOnlyFiles = ['packages/create/src/update.mjs', 'docs/changelog/create.md'];
+const createChanged = orderReleaseKeys(ensureDerivedCreatePublish(detectChangedPackages(createOnlyFiles)));
+assert.deepEqual(createChanged, ['create', 'create-yss-app']);
+
+const alignedPlan = syncCreateAliasReleasePlan([
+  {
+    key: 'create',
+    meta: PACKAGES.create,
+    oldVersion: '1.3.0',
+    newVersion: '1.3.1',
+    pkg: { name: '@yss-ui/create', version: '1.3.0' },
+  },
+  {
+    key: 'create-yss-app',
+    meta: PACKAGES['create-yss-app'],
+    oldVersion: '1.2.0',
+    newVersion: '1.2.1',
+    pkg: {
+      name: 'create-yss-app',
+      version: '1.2.0',
+      dependencies: { '@yss-ui/create': '^1.2.0' },
+    },
+  },
+]);
+assert.equal(alignedPlan[1].newVersion, '1.3.1');
+assert.equal(alignedPlan[1].pkg.version, '1.3.1');
+assert.equal(alignedPlan[1].pkg.dependencies['@yss-ui/create'], '^1.3.1');
+
+const workspaceAliasPkg = syncCreateAliasPackage(
+  {
+    name: 'create-yss-app',
+    version: '1.2.0',
+    dependencies: { '@yss-ui/create': 'workspace:^' },
+  },
+  '1.3.1'
+);
+assert.equal(workspaceAliasPkg.version, '1.3.1');
+assert.equal(workspaceAliasPkg.dependencies['@yss-ui/create'], 'workspace:^');
 
 fs.rmSync(tmpDir, { recursive: true, force: true });
 
