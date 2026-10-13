@@ -18,7 +18,7 @@ export const SINGLE_PKG_TIMEOUT_MS = 5000;
 export const TOTAL_QUERY_TIMEOUT_MS = 15000;
 
 /** lockfile-only 执行超时时间（毫秒）。 */
-export const LOCKFILE_REFRESH_TIMEOUT_MS = 15000;
+export const LOCKFILE_REFRESH_TIMEOUT_MS = 45000;
 
 /**
  * 标准语义化版本声明匹配正则：仅支持 ^、~ 与精确版本（如 ^1.7.3、~1.0.6、1.8.0、v1.8.0）。
@@ -234,8 +234,16 @@ export const resolveLatestPackageVersion = async (pkgName, projectRegistry, opti
     return { resolvedVersion: null };
   }
 
-  // 若项目源查不到，绝不盲目写入官方源版本（因为用户通过该源无法下载）
+  // 若项目源查不到：对公共镜像源（如 npmmirror）允许从 npm 官方源兜底；私有源保持谨慎避免无法下载
   if (!projectLatest) {
+    const isPublicMirror = /npmmirror\.com|taobao\.org|cnpmjs\.org/i.test(normProjectReg);
+    if (isPublicMirror && officialLatest) {
+      return {
+        resolvedVersion: officialLatest,
+        warning: `当前源 (${normProjectReg}) 无法获取 ${pkgName} 最新元数据，已从 npm 官方源兜底至最新版本 ${officialLatest}`,
+        peerDependencies: officialResult?.peerDependencies,
+      };
+    }
     return {
       resolvedVersion: null,
       warning: `当前源 (${normProjectReg}) 无法获取 ${pkgName} 最新元数据，已保留模板版本`,
@@ -291,6 +299,7 @@ export const checkPeerDependencyConflicts = (pkgName, newVersion, peerDeps = {},
 
 /**
  * 尝试运行 pnpm install --lockfile-only --ignore-scripts 重新生成根目录 pnpm-lock.yaml。
+ * 超时后主动杀死子进程并等待其彻底退出后再返回，杜绝后台进程异步写回锁文件的竞争态。
  *
  * @param {string} projectRoot 项目根目录
  * @param {{ spawnImpl?: typeof spawn, timeoutMs?: number }} [options]
@@ -314,21 +323,48 @@ export const tryRegenerateLockfile = (projectRoot, options = {}) => {
       return;
     }
 
-    const timer = setTimeout(() => {
+    let timedOut = false;
+    let settled = false;
+    let timer = null;
+    let forceKillTimer = null;
+    let fallbackTimer = null;
+
+    const cleanup = () => {
+      if (timer) clearTimeout(timer);
+      if (forceKillTimer) clearTimeout(forceKillTimer);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+    };
+
+    const finish = success => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(success);
+    };
+
+    timer = setTimeout(() => {
+      timedOut = true;
       try {
         child.kill();
       } catch {}
-      resolve(false);
+
+      // 若 SIGTERM 后 2 秒仍未退出，发送 SIGKILL 强杀
+      forceKillTimer = setTimeout(() => {
+        try {
+          child.kill('SIGKILL');
+        } catch {}
+
+        // 强杀后兜底定时器，防止某些特殊环境未派发 exit 导致 Promise 永久挂起
+        fallbackTimer = setTimeout(() => finish(false), 1000);
+      }, 2000);
     }, timeoutMs);
 
     child.once('error', () => {
-      clearTimeout(timer);
-      resolve(false);
+      finish(false);
     });
 
     child.once('exit', code => {
-      clearTimeout(timer);
-      resolve(code === 0);
+      finish(!timedOut && code === 0);
     });
   });
 };

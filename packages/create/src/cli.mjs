@@ -12,6 +12,7 @@ import {
   EXIT_CODES,
   finalizeLockfile,
   generate,
+  normalizeSubAppActiveRule,
   parsePlanContent,
   pathExists,
   PlanMismatchError,
@@ -434,9 +435,6 @@ export const runCli = async (rawArgv = process.argv) => {
           log(pc.dim(`  ${dep.name} ${dep.from} → ${dep.to}`));
         }
       }
-      if (result.lockfile === 'removed') {
-        log(pc.yellow('  ⚠️ 旧 pnpm-lock.yaml 已删除，请在启动前执行 pnpm install 重新生成'));
-      }
       if (result.warnings && result.warnings.length > 0) {
         logWarnings(result.warnings);
       }
@@ -446,7 +444,10 @@ export const runCli = async (rawArgv = process.argv) => {
       const nextSteps = getNextSteps({
         targetPath: result.targetPath,
         port: resolved.port,
-        activeRule: resolved.activeRule,
+        activeRule:
+          result.fullActiveRule ||
+          resolved.fullActiveRule ||
+          normalizeSubAppActiveRule(resolved.activeRule, resolved.name),
         pm: detectedPm,
       });
       printSuccess(result, nextSteps, result.warnings || [], isJsonMode, '🎉 微应用已按计划成功创建！');
@@ -635,9 +636,6 @@ export const runCli = async (rawArgv = process.argv) => {
         }
       }
     }
-    if (genResult.lockfile === 'removed') {
-      log(pc.yellow('⚠️  旧 pnpm-lock.yaml 已删除，请在启动前执行 pnpm install 重新生成'));
-    }
     if (genResult.warnings && genResult.warnings.length > 0) {
       warningsList = [...(warningsList || []), ...genResult.warnings];
       if (isNonInteractive) {
@@ -660,11 +658,9 @@ export const runCli = async (rawArgv = process.argv) => {
         onProgress: msg => p.log.step(msg),
       });
       genResult.lockfile = lockRes.lockfile;
-      if (lockRes.lockfile === 'removed') {
-        p.log.warn('已删除旧 pnpm-lock.yaml，请在启动前执行 pnpm install 重新生成');
-      }
       if (lockRes.warnings && lockRes.warnings.length > 0) {
         warningsList = [...(warningsList || []), ...lockRes.warnings];
+        for (const warning of lockRes.warnings) p.log.warn(warning);
       }
     }
 
@@ -673,7 +669,10 @@ export const runCli = async (rawArgv = process.argv) => {
     const nextSteps = getNextSteps({
       targetPath: genResult.targetPath,
       port: resolvedOptions.port,
-      activeRule: resolvedOptions.activeRule,
+      activeRule:
+        genResult.fullActiveRule ||
+        resolvedOptions.fullActiveRule ||
+        normalizeSubAppActiveRule(resolvedOptions.activeRule, resolvedOptions.name),
       pm: detectedPm,
     });
     printSuccess(genResult, nextSteps, warningsList, isJsonMode, '🎉 微应用项目创建成功！');

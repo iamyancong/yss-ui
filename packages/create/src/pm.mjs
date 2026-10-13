@@ -41,13 +41,7 @@ export const detectPackageManager = specifiedPm => {
     return explicit;
   }
 
-  const userAgent = process.env.npm_config_user_agent || '';
-  if (userAgent.startsWith('yarn')) {
-    return 'yarn';
-  }
-  if (userAgent.startsWith('npm')) {
-    return 'npm';
-  }
+  // 模板项目为固定 pnpm workspace，未显式指定时统一使用 pnpm
   return 'pnpm';
 };
 

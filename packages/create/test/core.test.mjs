@@ -1,8 +1,14 @@
+import fs from 'node:fs/promises';
+import net from 'node:net';
+import os from 'node:os';
+import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  customizeEnvFiles,
   DEFAULT_PORT,
   DEFAULT_PROXY_TARGET,
   DEFAULT_TEMPLATE_URL,
+  normalizeSubAppActiveRule,
   resolveOptions,
   TEMPLATE_URL_PROTOCOLS,
   toActiveRule,
@@ -180,6 +186,156 @@ describe('@yss-ui/create core 单元测试', () => {
       expect(result.sources.apiBase).toBe('derived');
       expect(result.resolved.port).toBe(DEFAULT_PORT);
       expect(result.sources.port).toBe('default');
+      expect(result.resolved.fullActiveRule).toBe('/subApp/orderCenter');
+    });
+
+    it('显式传入 port 时来源标记为 user 且跳过 probeFreePort 探测', async () => {
+      const server = net.createServer();
+      let portOccupied = false;
+      try {
+        await new Promise((resolve, reject) => {
+          server.once('error', reject);
+          server.listen(DEFAULT_PORT, '127.0.0.1', () => {
+            portOccupied = true;
+            resolve();
+          });
+        });
+      } catch {
+        portOccupied = true;
+      }
+
+      try {
+        if (portOccupied) {
+          // 未传 port 且开启探测时：探测到 8081 被占用，推导下一个可用端口并记录警告
+          const withoutPort = await resolveOptions({ name: 'crm', nameZh: '客户' });
+          expect(withoutPort.sources.port).toBe('derived');
+          expect(withoutPort.resolved.port).toBeGreaterThan(DEFAULT_PORT);
+          expect(withoutPort.warnings.some(w => w.includes('已被占用'))).toBe(true);
+
+          // 显式传 port 时：直接使用用户端口，来源标记为 user，跳过探测且不产生占用警告
+          const withPort = await resolveOptions({ name: 'crm', nameZh: '客户', port: 18081 });
+          expect(withPort.sources.port).toBe('user');
+          expect(withPort.resolved.port).toBe(18081);
+          expect(withPort.warnings.some(w => w.includes('已被占用'))).toBe(false);
+        } else {
+          const withPort = await resolveOptions({ name: 'crm', nameZh: '客户', port: 18081 });
+          expect(withPort.sources.port).toBe('user');
+          expect(withPort.resolved.port).toBe(18081);
+        }
+      } finally {
+        if (server.listening) {
+          await new Promise(resolve => server.close(resolve));
+        }
+      }
+    });
+
+    it('未传 port 时可通过 probePort: false 显式关闭探测并回退默认端口', async () => {
+      const result = await resolveOptions(
+        { name: 'order-center', nameZh: '订单中心' },
+        { probePort: false }
+      );
+      expect(result.resolved.port).toBe(DEFAULT_PORT);
+      expect(result.sources.port).toBe('default');
+      expect(result.warnings.some(w => w.includes('已被占用'))).toBe(false);
+    });
+  });
+
+  describe('normalizeSubAppActiveRule 规范化测试', () => {
+    it('正确为单段路由补齐 /subApp 前缀', () => {
+      expect(normalizeSubAppActiveRule('/entrusted', 'entrusted')).toBe('/subApp/entrusted');
+      expect(normalizeSubAppActiveRule('entrusted', 'entrusted')).toBe('/subApp/entrusted');
+      expect(normalizeSubAppActiveRule('/subApp/entrusted', 'entrusted')).toBe('/subApp/entrusted');
+      expect(normalizeSubAppActiveRule('', 'my-app')).toBe('/subApp/my-app');
+    });
+  });
+
+  describe('customizeEnvFiles 覆盖所有 .env.* 文件的改写', () => {
+    it('验证模板已有的 .env* 文件全部改写，消除残留并保留特殊变量与注释', async () => {
+      const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'yss-env-test-'));
+      const pkgDir = path.join(tempRoot, 'packages');
+      await fs.mkdir(pkgDir, { recursive: true });
+
+      // 准备模板原始的 6 个文件
+      const rawTemplates = {
+        '.env.development': `VITE_SUB_APP_NAME=dataSource\nVITE_API_BASE_URL=/api/dataSource\nVITE_ACTIVE_RULE=/subApp/dataSource\nVITE_PROXY_TARGET=http://localhost:3000\n`,
+        '.env.development.jsp-theme': `VITE_SUB_APP_NAME=dataSource\nVITE_API_BASE_URL=/api/dataSource\nVITE_ACTIVE_RULE=/subApp/dataSource\nVITE_PROXY_TARGET=http://localhost:3000\nVITE_JSP_THEME=classic-blue\n`,
+        '.env.production': `VITE_SUB_APP_NAME=dataSource\nVITE_API_BASE_URL=/api/dataSource\nVITE_ACTIVE_RULE=/subApp/dataSource\nVITE_PROXY_TARGET=http://localhost:3000\nVITE_STANDALONE_DEPLOY=false\nVITE_STANDALONE_LAYOUT=true\n`,
+        '.env.production.jsp': `VITE_SUB_APP_NAME=dataSource\nVITE_API_BASE_URL=mdm\nVITE_ACTIVE_RULE=/subApp/dataSource\nVITE_PROXY_TARGET=http://localhost:3000\nVITE_IS_JSP=true\nVITE_STANDALONE_DEPLOY=false\n`,
+        '.env.production.jsp-theme': `VITE_SUB_APP_NAME=dataSource\nVITE_API_BASE_URL=mdm\nVITE_ACTIVE_RULE=/subApp/dataSource\nVITE_PROXY_TARGET=http://localhost:3000\nVITE_IS_JSP=true\nVITE_JSP_THEME=classic-blue\n`,
+        '.env.production.standalone': `# 独立部署专用环境变量\n# 通过 pnpm build:standalone 触发\n\nVITE_SUB_APP_NAME=dataSource\nVITE_API_BASE_URL=/api/dataSource\nVITE_ACTIVE_RULE=/subApp/dataSource\nVITE_PROXY_TARGET=http://localhost:3000\n\n# 独立部署标志\nVITE_STANDALONE_DEPLOY=true\n# 独立部署时是否强制显示布局菜单\nVITE_STANDALONE_LAYOUT=true\n`,
+      };
+
+      for (const [name, content] of Object.entries(rawTemplates)) {
+        await fs.writeFile(path.join(pkgDir, name), content, 'utf8');
+      }
+
+      await customizeEnvFiles(tempRoot, {
+        appName: 'entrusted',
+        apiBase: '/api/entrusted',
+        fullActiveRule: '/subApp/entrusted',
+        proxyTarget: 'http://127.0.0.1:8000',
+      });
+
+      for (const name of Object.keys(rawTemplates)) {
+        const updated = await fs.readFile(path.join(pkgDir, name), 'utf8');
+        expect(updated).toContain('VITE_SUB_APP_NAME=entrusted');
+        expect(updated).toContain('VITE_API_BASE_URL=/api/entrusted');
+        expect(updated).toContain('VITE_ACTIVE_RULE=/subApp/entrusted');
+        expect(updated).toContain('VITE_PROXY_TARGET=http://127.0.0.1:8000');
+        expect(updated).not.toContain('dataSource');
+        expect(updated).not.toContain('VITE_API_BASE_URL=mdm');
+      }
+
+      // 验证独立部署与 JSP 专有变量完整保留
+      const standaloneContent = await fs.readFile(path.join(pkgDir, '.env.production.standalone'), 'utf8');
+      expect(standaloneContent).toContain('# 独立部署专用环境变量');
+      expect(standaloneContent).toContain('VITE_STANDALONE_DEPLOY=true');
+
+      const jspContent = await fs.readFile(path.join(pkgDir, '.env.production.jsp'), 'utf8');
+      expect(jspContent).toContain('VITE_IS_JSP=true');
+
+      await fs.rm(tempRoot, { recursive: true, force: true });
+    });
+
+    it('验证不会生成模板里没有的文件（如模板未包含 .env.production.standalone 时绝不凭空创建）', async () => {
+      const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'yss-env-test-sparse-'));
+      const pkgDir = path.join(tempRoot, 'packages');
+      await fs.mkdir(pkgDir, { recursive: true });
+
+      // 仅提供基础的 .env.development 与 .env.production，故意省略 .env.production.standalone 等文件
+      await fs.writeFile(
+        path.join(pkgDir, '.env.development'),
+        'VITE_SUB_APP_NAME=old\nVITE_API_BASE_URL=/api/old\nVITE_ACTIVE_RULE=/subApp/old\n',
+        'utf8'
+      );
+      await fs.writeFile(
+        path.join(pkgDir, '.env.production'),
+        'VITE_SUB_APP_NAME=old\nVITE_API_BASE_URL=/api/old\nVITE_ACTIVE_RULE=/subApp/old\n',
+        'utf8'
+      );
+
+      await customizeEnvFiles(tempRoot, {
+        appName: 'my-microapp',
+        apiBase: '/api/my-microapp',
+        fullActiveRule: '/subApp/my-microapp',
+        proxyTarget: 'http://127.0.0.1:3000',
+      });
+
+      const files = await fs.readdir(pkgDir);
+      expect(files.sort()).toEqual(['.env.development', '.env.production']);
+
+      // 明确验证缺失的 standalone 与 jsp 配置文件绝不会被凭空创建
+      await expect(fs.access(path.join(pkgDir, '.env.production.standalone'))).rejects.toThrow();
+      await expect(fs.access(path.join(pkgDir, '.env.production.jsp'))).rejects.toThrow();
+
+      // 已存在的文件被正确改写
+      const devContent = await fs.readFile(path.join(pkgDir, '.env.development'), 'utf8');
+      expect(devContent).toContain('VITE_SUB_APP_NAME=my-microapp');
+      expect(devContent).toContain('VITE_API_BASE_URL=/api/my-microapp');
+      expect(devContent).toContain('VITE_ACTIVE_RULE=/subApp/my-microapp');
+      expect(devContent).not.toContain('old');
+
+      await fs.rm(tempRoot, { recursive: true, force: true });
     });
   });
 });

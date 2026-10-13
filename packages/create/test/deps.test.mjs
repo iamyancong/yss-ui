@@ -12,6 +12,7 @@ import {
   resolveLatestPackageVersion,
   resolveProjectRegistry,
   syncDependencies,
+  tryRegenerateLockfile,
 } from '../src/core/deps.mjs';
 
 describe('core/deps.mjs 依赖对齐与 lockfile 维护模块', () => {
@@ -122,7 +123,7 @@ registry = https://custom.registry.com
       expect(res.warning).toContain('当前源 (https://registry.npmmirror.com) 尚未同步 @yss-ui/components@1.8.0');
     });
 
-    it('镜像不可用/404 时不盲目写入官方源版本', async () => {
+    it('私有源不可用/404 时不盲目写入官方源版本', async () => {
       const mockFetch = async url => {
         if (url.includes('registry.npmjs.org')) {
           return {
@@ -141,6 +142,27 @@ registry = https://custom.registry.com
 
       expect(res.resolvedVersion).toBeNull();
       expect(res.warning).toContain('无法获取 @yss-ui/components 最新元数据');
+    });
+
+    it('npmmirror 获取元数据失败时支持从 npm 官方源兜底最新版本', async () => {
+      const mockFetch = async url => {
+        if (url.includes('registry.npmjs.org')) {
+          return {
+            ok: true,
+            json: async () => ({
+              'dist-tags': { latest: '1.0.6' },
+            }),
+          };
+        }
+        return { ok: false, status: 404 };
+      };
+
+      const res = await resolveLatestPackageVersion('@yss-ui/utils', 'https://registry.npmmirror.com', {
+        fetchImpl: mockFetch,
+      });
+
+      expect(res.resolvedVersion).toBe('1.0.6');
+      expect(res.warning).toContain('已从 npm 官方源兜底至最新版本 1.0.6');
     });
 
     it('超时与网络异常优雅返回 null', async () => {
@@ -430,4 +452,41 @@ registry = https://custom.registry.com
       }
     });
   });
+
+  describe('tryRegenerateLockfile 子进程超时与清理', () => {
+    it('执行成功时返回 true', async () => {
+      const mockSpawn = () => ({
+        once: (evt, cb) => {
+          if (evt === 'exit') setTimeout(() => cb(0), 10);
+        },
+        kill: () => undefined,
+      });
+      const res = await tryRegenerateLockfile('/mock/path', { spawnImpl: mockSpawn, timeoutMs: 100 });
+      expect(res).toBe(true);
+    });
+
+    it('执行超时会发送 kill 并在等待 exit 触发后安全返回 false', async () => {
+      let killed = false;
+      let exitHandler = null;
+      const mockSpawn = () => ({
+        once: (evt, cb) => {
+          if (evt === 'exit') {
+            exitHandler = cb;
+          }
+        },
+        kill: () => {
+          killed = true;
+          // 模拟进程收到 kill 后稍后触发 exit
+          setTimeout(() => {
+            if (exitHandler) exitHandler(143);
+          }, 20);
+        },
+      });
+
+      const res = await tryRegenerateLockfile('/mock/path', { spawnImpl: mockSpawn, timeoutMs: 50 });
+      expect(killed).toBe(true);
+      expect(res).toBe(false);
+    });
+  });
 });
+

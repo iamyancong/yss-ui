@@ -16,6 +16,7 @@ import {
 import { YssCreateError } from './errors.mjs';
 import { probeFreePort } from './port.mjs';
 import {
+  normalizeSubAppActiveRule,
   resolveSafeCacheDir,
   TEMPLATE_URL_PROTOCOLS,
   toActiveRule,
@@ -252,6 +253,7 @@ export const resolveOptions = async (input = {}, options = {}) => {
     appNameZh: nameZh,
     description,
     activeRule,
+    fullActiveRule: normalizeSubAppActiveRule(activeRule, name),
     port,
     apiBase,
     proxyTarget,

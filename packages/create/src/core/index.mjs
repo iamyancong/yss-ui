@@ -22,6 +22,7 @@ export { PlanMismatchError, YssCreateError } from './errors.mjs';
 
 export {
   HTTP_PROTOCOLS,
+  normalizeSubAppActiveRule,
   pathExists,
   resolveSafeCacheDir,
   TEMPLATE_URL_PROTOCOLS,
@@ -38,6 +39,7 @@ export { resolveOptions } from './options.mjs';
 export { diagnoseGitFailure, getGitErrorDetail, runGit, syncTemplate } from './template.mjs';
 
 export {
+  customizeEnvFiles,
   customizeGeneratedProject,
   generate,
   runScaffoldScript,

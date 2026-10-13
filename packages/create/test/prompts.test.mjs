@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import * as p from '@clack/prompts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { formatCdPath, getNextSteps } from '../src/pm.mjs';
+import { formatCdPath, getNextSteps, detectPackageManager } from '../src/pm.mjs';
 import { formatPreviewTable } from '../src/preview.mjs';
 import {
   confirmCreation,
@@ -266,6 +266,33 @@ describe('prompts 交互提问流程测试', () => {
     const steps = getNextSteps({ targetPath: '/elsewhere/my-app', port: 8082, activeRule: '/myApp', pm: 'npm' });
     expect(steps[0]).toBe('cd /elsewhere/my-app');
     expect(steps).toContain('npm run dev');
+  });
+
+  it('未指定 --pm 时默认使用 pnpm 引导（对齐 pnpm workspace 模板），不受宿主 npm user-agent 影响', () => {
+    const originalAgent = process.env.npm_config_user_agent;
+    try {
+      process.env.npm_config_user_agent = 'npm/10.8.2 node/v20.15.0 darwin arm64';
+      expect(detectPackageManager(undefined)).toBe('pnpm');
+      expect(detectPackageManager('')).toBe('pnpm');
+
+      const steps = getNextSteps({
+        targetPath: '/path/to/entrusted',
+        port: 8081,
+        activeRule: '/subApp/entrusted',
+      });
+      expect(steps).toContain('pnpm install');
+      expect(steps).toContain('pnpm dev');
+      expect(steps).toContain('微前端主应用注册: activeRule 为 "/subApp/entrusted"');
+    } finally {
+      if (originalAgent === undefined) delete process.env.npm_config_user_agent;
+      else process.env.npm_config_user_agent = originalAgent;
+    }
+  });
+
+  it('显式指定 --pm 时严格按显式指定的包管理器提示', () => {
+    expect(detectPackageManager('npm')).toBe('npm');
+    expect(detectPackageManager('yarn')).toBe('yarn');
+    expect(detectPackageManager('pnpm')).toBe('pnpm');
   });
 
   it('用户在任一步骤取消操作时退出进程并返回 130', async () => {

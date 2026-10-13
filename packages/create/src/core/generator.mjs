@@ -6,12 +6,12 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { EXIT_CODES } from './constants.mjs';
+import { DEFAULT_PROXY_TARGET, EXIT_CODES } from './constants.mjs';
 import { syncDependencies } from './deps.mjs';
 import { YssCreateError } from './errors.mjs';
 import { syncSkills } from './skills.mjs';
 import { syncTemplate } from './template.mjs';
-import { pathExists } from './validate.mjs';
+import { normalizeSubAppActiveRule, pathExists } from './validate.mjs';
 
 /**
  * 交给模板脚本的「后处理由 create 负责」开关：跳过模板自带的 Skills 同步与结尾 Next steps。
@@ -90,14 +90,79 @@ export const runScaffoldScript = (scriptPath, resolved, options = {}) => {
 };
 
 /**
- * 同步并定制生成项目内的中文名与应用描述。
+ * 定制与校准生成项目中的所有 .env* 环境变量文件。
+ * 防御性改写 packages/ 下的所有环境变量文件，确保应用名、API 前缀与激活路由严格对齐。
  *
  * @param {string} targetProjectRoot 生成项目根目录绝对路径
- * @param {string} appNameZh 应用中文名
- * @param {string} [description=''] 应用描述
+ * @param {object} options 环境变量配置
+ * @param {string} options.appName 应用英文名
+ * @param {string} options.apiBase 接口 Base 前缀
+ * @param {string} options.fullActiveRule 带 /subApp 前缀的完整激活路由
+ * @param {string} [options.proxyTarget] 代理目标地址
  * @returns {Promise<void>}
  */
-export const customizeGeneratedProject = async (targetProjectRoot, appNameZh, description = '') => {
+export const customizeEnvFiles = async (targetProjectRoot, { appName, apiBase, fullActiveRule, proxyTarget }) => {
+  const pkgDir = path.join(targetProjectRoot, 'packages');
+  if (!(await pathExists(pkgDir))) {
+    return;
+  }
+
+  const subAppName = fullActiveRule.replace(/^\/subApp\//, '') || appName;
+  const entries = await fs.readdir(pkgDir, { withFileTypes: true });
+  const envFiles = entries.filter(e => e.isFile() && e.name.startsWith('.env')).map(e => e.name);
+
+  // 仅改写 packages/ 下实际存在的 .env* 文件，绝不凭空创建模板中不存在的文件
+  for (const filename of envFiles) {
+    const filePath = path.join(pkgDir, filename);
+    const content = await fs.readFile(filePath, 'utf8');
+
+    const lines = content.split('\n');
+    const keysToSet = {
+      VITE_SUB_APP_NAME: subAppName,
+      VITE_API_BASE_URL: apiBase,
+      VITE_ACTIVE_RULE: fullActiveRule,
+    };
+    if (proxyTarget) {
+      keysToSet.VITE_PROXY_TARGET = proxyTarget;
+    }
+
+    const updatedKeys = new Set();
+    const newLines = lines.map(line => {
+      const match = /^([A-Z0-9_]+)=(.*)$/.exec(line);
+      if (match && keysToSet[match[1]] !== undefined) {
+        updatedKeys.add(match[1]);
+        return `${match[1]}=${keysToSet[match[1]]}`;
+      }
+      return line;
+    });
+
+    for (const [key, val] of Object.entries(keysToSet)) {
+      if (!updatedKeys.has(key)) {
+        newLines.push(`${key}=${val}`);
+      }
+    }
+
+    const resultText = newLines.join('\n').replace(/\n+$/, '') + '\n';
+    await fs.writeFile(filePath, resultText, 'utf8');
+  }
+};
+
+/**
+ * 同步并定制生成项目内的中文名、应用描述及各环境配置。
+ *
+ * @param {string} targetProjectRoot 生成项目根目录绝对路径
+ * @param {string | object} optionsOrNameZh 应用中文名或配置对象
+ * @param {string} [maybeDescription=''] 应用描述（仅当第二个参数为字符串时生效）
+ * @returns {Promise<void>}
+ */
+export const customizeGeneratedProject = async (targetProjectRoot, optionsOrNameZh, maybeDescription = '') => {
+  const options =
+    typeof optionsOrNameZh === 'object' && optionsOrNameZh !== null
+      ? optionsOrNameZh
+      : { appNameZh: optionsOrNameZh, description: maybeDescription };
+
+  const { appNameZh, description, appName, apiBase, fullActiveRule, proxyTarget, port } = options;
+
   const microConfigPath = path.join(targetProjectRoot, 'micro-config.json');
   if (await pathExists(microConfigPath)) {
     const content = await fs.readFile(microConfigPath, 'utf8');
@@ -114,6 +179,12 @@ export const customizeGeneratedProject = async (targetProjectRoot, appNameZh, de
         config.app.description = description;
       }
     }
+    if (config.app && fullActiveRule) {
+      config.app.activeRule = fullActiveRule;
+      if (port) {
+        config.app.entry = `http://localhost:${port}${fullActiveRule}/`;
+      }
+    }
     await fs.writeFile(microConfigPath, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
   }
 
@@ -123,6 +194,15 @@ export const customizeGeneratedProject = async (targetProjectRoot, appNameZh, de
     const packageJson = JSON.parse(content);
     packageJson.description = description;
     await fs.writeFile(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf8');
+  }
+
+  if (fullActiveRule && apiBase) {
+    await customizeEnvFiles(targetProjectRoot, {
+      appName: appName || fullActiveRule.replace(/^\/subApp\//, '') || '',
+      apiBase,
+      fullActiveRule,
+      proxyTarget: proxyTarget || DEFAULT_PROXY_TARGET,
+    });
   }
 };
 
@@ -171,11 +251,21 @@ export const generate = async (resolved, options = {}) => {
     });
   }
 
+  const fullActiveRule = resolved.fullActiveRule || normalizeSubAppActiveRule(resolved.activeRule, appName);
+
   onProgress('正在执行模板骨架生成...');
   await runScaffoldScript(scaffoldScriptPath, resolved, { scaffoldStdout: options.scaffoldStdout });
 
   onProgress('正在写入应用中文名与项目描述...');
-  await customizeGeneratedProject(targetProjectRoot, resolved.nameZh || resolved.appNameZh, resolved.description);
+  await customizeGeneratedProject(targetProjectRoot, {
+    appName,
+    appNameZh: resolved.nameZh || resolved.appNameZh,
+    description: resolved.description,
+    apiBase: resolved.apiBase,
+    fullActiveRule,
+    proxyTarget: resolved.proxyTarget,
+    port: resolved.port,
+  });
 
   let dependencyUpdates = [];
   let lockfile = 'unchanged';
@@ -216,6 +306,7 @@ export const generate = async (resolved, options = {}) => {
   return {
     targetPath: targetProjectRoot,
     templateCommit: commit,
+    fullActiveRule,
     dependencyUpdates,
     lockfile,
     hasVersionChange,

@@ -49,6 +49,19 @@ export const validateActiveRule = value => {
 };
 
 /**
+ * 规范化微应用激活路由：确保带 /subApp 前缀，与模板各 .env.* 与 micro-config.json 约定一致。
+ *
+ * @param {string} rule 原始激活路由
+ * @param {string} [appName=''] 兜底应用名
+ * @returns {string} 带 /subApp 前缀的规范化激活路由
+ */
+export const normalizeSubAppActiveRule = (rule, appName = '') => {
+  const targetRule = rule ? String(rule).trim() : `/subApp/${appName}`;
+  const withLeading = targetRule.startsWith('/') ? targetRule : `/${targetRule}`;
+  return withLeading.startsWith('/subApp/') ? withLeading : `/subApp${withLeading}`;
+};
+
+/**
  * 将应用英文名转换为单段激活路由，优先小驼峰，推导结果不合法时退回短横线形式。
  *
  * 雨燕规则要求驼峰形式的每一段都以字母开头、短横线形式的首段只能是字母，
