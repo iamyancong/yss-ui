@@ -7,6 +7,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { EXIT_CODES } from './constants.mjs';
+import { syncDependencies } from './deps.mjs';
 import { YssCreateError } from './errors.mjs';
 import { syncTemplate } from './template.mjs';
 import { pathExists } from './validate.mjs';
@@ -163,8 +164,36 @@ export const generate = async (resolved, options = {}) => {
   onProgress('正在写入应用中文名与项目描述...');
   await customizeGeneratedProject(targetProjectRoot, resolved.nameZh || resolved.appNameZh, resolved.description);
 
+  let dependencyUpdates = [];
+  let lockfile = 'unchanged';
+  let hasVersionChange = false;
+  const warnings = [];
+
+  if (resolved.syncDeps !== false) {
+    const depResult = await syncDependencies(targetProjectRoot, {
+      offline: resolved.offline,
+      preferOffline: resolved.preferOffline,
+      syncDeps: resolved.syncDeps,
+      install: options.install === true,
+      deferLockfile: options.deferLockfile === true,
+      fetchImpl: options.fetchImpl,
+      spawnImpl: options.spawnImpl,
+      onProgress,
+    });
+    dependencyUpdates = depResult.updates;
+    lockfile = depResult.lockfile;
+    hasVersionChange = Boolean(depResult.hasVersionChange);
+    if (depResult.warnings && depResult.warnings.length > 0) {
+      warnings.push(...depResult.warnings);
+    }
+  }
+
   return {
     targetPath: targetProjectRoot,
     templateCommit: commit,
+    dependencyUpdates,
+    lockfile,
+    hasVersionChange,
+    warnings,
   };
 };

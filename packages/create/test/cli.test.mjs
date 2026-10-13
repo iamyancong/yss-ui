@@ -326,4 +326,10 @@ describe('@yss-ui/create CLI E2E 测试', () => {
       await fs.rm(tempDir, { recursive: true, force: true });
     }
   });
+
+  it('--no-sync-deps 在预览表和 dry-run 中正确体现', async () => {
+    const res = await runCliProcess(['test-app', '--name-zh', '测试应用', '--dry-run', '--no-sync-deps']);
+    expect(res.code).toBe(0);
+    expect(res.stdout).toContain('跳过对齐 (保持模板原样)');
+  });
 });

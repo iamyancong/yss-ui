@@ -229,6 +229,20 @@ export const resolveOptions = async (input = {}, options = {}) => {
   const offline = Boolean(input.offline);
   const preferOffline = Boolean(input.preferOffline ?? input['prefer-offline']);
 
+  // 14. 依赖同步开关 (syncDeps / no-sync-deps)
+  let syncDeps = true;
+  const rawSyncDeps = input.syncDeps ?? input['sync-deps'];
+  if (rawSyncDeps !== undefined && rawSyncDeps !== null) {
+    syncDeps = Boolean(rawSyncDeps);
+    sources.syncDeps = 'user';
+  } else if (input['no-sync-deps'] === true || input.noSyncDeps === true) {
+    syncDeps = false;
+    sources.syncDeps = 'user';
+  } else {
+    syncDeps = true;
+    sources.syncDeps = 'default';
+  }
+
   const targetPath = name ? path.join(targetDir, name) : '';
 
   const resolved = {
@@ -249,6 +263,7 @@ export const resolveOptions = async (input = {}, options = {}) => {
     dryRun,
     offline,
     preferOffline,
+    syncDeps,
   };
 
   return {

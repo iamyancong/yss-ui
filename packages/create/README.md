@@ -40,6 +40,14 @@ npx @yss-ui/create --apply ./plan.json
 
 完整参数、推导规则与退出码见文档：[微应用创建 CLI](https://iamyancong.github.io/yss-ui/guide/create-app)，或运行 `npx @yss-ui/create --help`。
 
+## 依赖版本对齐与 Lockfile
+
+生成项目后，CLI 会自动扫描根目录 `package.json` 与 `packages/package.json` 中的所有 `@yss-ui/*` 依赖（如 `components`、`hooks`、`utils`、`skills-cli` 等），并将其对齐至当前 registry 上的最新版本（保留原有的 `^`、`~` 或精确版本前缀）。
+
+- **镜像延迟保护**：若配置了 npmmirror 等镜像源，CLI 会检测镜像源与官方源的同步状态；若镜像尚未同步官方最新版，将自动退回镜像实际可用的最高版本，绝不写入镜像源装不到的版本。
+- **Lockfile 维护**：检测到依赖升级后，若未选择生成后立即安装依赖，CLI 会自动执行 `pnpm install --lockfile-only` 刷新根目录 `pnpm-lock.yaml`；若执行失败或无 pnpm 环境，将主动删除旧 lockfile，避免留下不一致的锁定导致后续安装失败。
+- **关闭对齐**：传入 `--no-sync-deps`（或在 plan/config 中设置 `syncDeps: false`）即可显式跳过依赖对齐，完全保留模板原写死版本。
+
 ## 退出码
 
 | 码 | 含义 |

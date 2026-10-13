@@ -38,11 +38,17 @@ describe('createPlan 与 verifyPlan', () => {
     expect(plan.hash).toBeDefined();
     expect(plan.templateCommit).toBe('abc1234');
     expect(plan.options.dryRun).toBeUndefined();
+    expect(plan.options.syncDeps).toBe(true);
 
     const { resolved, targetPath } = await verifyPlan(plan);
     expect(resolved.name).toBe('order-center');
     expect(resolved.activeRule).toBe('/orderCenter');
+    expect(resolved.syncDeps).toBe(true);
     expect(targetPath).toBe(path.join(os.tmpdir(), 'order-center'));
+
+    // 同一 plan 再次校验仍然通过（签名不受时间流逝影响）
+    const secondVerify = await verifyPlan(plan);
+    expect(secondVerify.resolved.syncDeps).toBe(true);
   });
 
   it('篡改任意字段后 verifyPlan 抛出 PlanMismatchError (退出码 4)', async () => {

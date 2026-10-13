@@ -10,6 +10,7 @@ import pc from 'picocolors';
 import {
   createPlan,
   EXIT_CODES,
+  finalizeLockfile,
   generate,
   parsePlanContent,
   pathExists,
@@ -20,7 +21,7 @@ import {
 } from './core/index.mjs';
 import { assertSupportedPackageManager, detectPackageManager, getNextSteps } from './pm.mjs';
 import { runGitInit, runInstall, runSkillsSync } from './post.mjs';
-import { formatPreviewTable } from './preview.mjs';
+import { formatPreviewTable, resolvePreviewRegistry } from './preview.mjs';
 import {
   confirmCreation,
   confirmUseLatest,
@@ -71,6 +72,8 @@ const CLI_OPTIONS = {
   'no-git': { type: 'boolean' },
   offline: { type: 'boolean' },
   'prefer-offline': { type: 'boolean' },
+  'sync-deps': { type: 'boolean' },
+  'no-sync-deps': { type: 'boolean' },
   'no-update-check': { type: 'boolean' },
   pm: { type: 'string' },
   help: { type: 'boolean', short: 'h' },
@@ -194,6 +197,7 @@ ${pc.bold('进阶与调试:')}
   --cache-dir <dir>           自定义模板本地安全缓存目录
   --offline                   纯离线模式，仅使用已有缓存
   --prefer-offline            优先离线模式
+  --no-sync-deps              不自动对齐 @yss-ui/* 依赖最新版本 (默认对齐)
   --no-update-check           不检查新版本 (也可设置环境变量 YSS_CREATE_NO_UPDATE_CHECK=1)
   -h, --help                  查看帮助信息
   -v, --version               查看版本号
@@ -324,6 +328,8 @@ const printSuccess = (result, nextSteps, warnings, isJsonMode, title) => {
       ok: true,
       targetPath: result.targetPath,
       templateCommit: result.templateCommit,
+      dependencyUpdates: result.dependencyUpdates || [],
+      lockfile: result.lockfile || 'unchanged',
       warnings,
       nextSteps,
     });
@@ -403,12 +409,28 @@ export const runCli = async (rawArgv = process.argv) => {
       const { resolved } = await verifyPlan(plan);
 
       log(pc.cyan('🔄 计划校验通过，正在同步模板并生成微应用工程...'));
+      const explicitActions = resolveExplicitPostActions(values);
       const result = await generate(resolved, {
         onProgress: msg => log(pc.dim(msg)),
         scaffoldStdout,
+        install: explicitActions.install,
       });
 
-      await runPostActions(result.targetPath, resolveExplicitPostActions(values), detectedPm, log);
+      const updatedDeps = (result.dependencyUpdates || []).filter(u => u.status === 'updated');
+      if (updatedDeps.length > 0) {
+        log(pc.cyan('📦 依赖版本已对齐最新:'));
+        for (const dep of updatedDeps) {
+          log(pc.dim(`  ${dep.name} ${dep.from} → ${dep.to}`));
+        }
+      }
+      if (result.lockfile === 'removed') {
+        log(pc.yellow('  ⚠️ 旧 pnpm-lock.yaml 已删除，请在启动前执行 pnpm install 重新生成'));
+      }
+      if (result.warnings && result.warnings.length > 0) {
+        logWarnings(result.warnings);
+      }
+
+      await runPostActions(result.targetPath, explicitActions, detectedPm, log);
 
       const nextSteps = getNextSteps({
         targetPath: result.targetPath,
@@ -416,7 +438,7 @@ export const runCli = async (rawArgv = process.argv) => {
         activeRule: resolved.activeRule,
         pm: detectedPm,
       });
-      printSuccess(result, nextSteps, [], isJsonMode, '🎉 微应用已按计划成功创建！');
+      printSuccess(result, nextSteps, result.warnings || [], isJsonMode, '🎉 微应用已按计划成功创建！');
       return;
     }
 
@@ -444,6 +466,8 @@ export const runCli = async (rawArgv = process.argv) => {
       dryRun: Boolean(values['dry-run'] || fileConfig.dryRun),
       offline: Boolean(values.offline || fileConfig.offline),
       preferOffline: Boolean(values['prefer-offline'] || fileConfig.preferOffline),
+      syncDeps:
+        values['sync-deps'] !== undefined ? values['sync-deps'] : values['no-sync-deps'] ? false : fileConfig.syncDeps,
     };
 
     beginUpdateCheck({
@@ -539,8 +563,9 @@ export const runCli = async (rawArgv = process.argv) => {
         });
         return;
       }
+      const registry = await resolvePreviewRegistry(resolvedOptions);
       // eslint-disable-next-line no-console
-      console.log(formatPreviewTable(resolvedOptions, sourcesMap, finalTargetPath));
+      console.log(formatPreviewTable(resolvedOptions, sourcesMap, finalTargetPath, { registry }));
       // eslint-disable-next-line no-console
       console.log(pc.green(`\n📄 执行计划已写入: ${planPath}`));
       // eslint-disable-next-line no-console
@@ -559,8 +584,9 @@ export const runCli = async (rawArgv = process.argv) => {
           targetPath: finalTargetPath,
         });
       } else {
+        const registry = await resolvePreviewRegistry(resolvedOptions);
         // eslint-disable-next-line no-console
-        console.log(formatPreviewTable(resolvedOptions, sourcesMap, finalTargetPath));
+        console.log(formatPreviewTable(resolvedOptions, sourcesMap, finalTargetPath, { registry }));
         // eslint-disable-next-line no-console
         console.log(pc.green('\n✅ 参数与路径校验通过，dry-run 模式未执行写盘或网络操作。'));
       }
@@ -577,14 +603,59 @@ export const runCli = async (rawArgv = process.argv) => {
       },
       scaffoldStdout,
       allowGitPrompt: !isNonInteractive,
+      install: isNonInteractive ? Boolean(values.install && !values['no-install']) : false,
+      deferLockfile: !isNonInteractive,
     });
 
     if (!isNonInteractive) p.log.success('微应用骨架代码生成完毕！');
+
+    const updatedDeps = (genResult.dependencyUpdates || []).filter(u => u.status === 'updated');
+    if (updatedDeps.length > 0) {
+      if (!isNonInteractive) {
+        p.log.step('已将 @yss-ui/* 依赖对齐至最新版本:');
+        for (const dep of updatedDeps) {
+          log(pc.dim(`  ${dep.name} ${dep.from} → ${dep.to}`));
+        }
+      } else {
+        log(pc.cyan('📦 依赖版本已对齐最新:'));
+        for (const dep of updatedDeps) {
+          log(pc.dim(`  ${dep.name} ${dep.from} → ${dep.to}`));
+        }
+      }
+    }
+    if (genResult.lockfile === 'removed') {
+      log(pc.yellow('⚠️  旧 pnpm-lock.yaml 已删除，请在启动前执行 pnpm install 重新生成'));
+    }
+    if (genResult.warnings && genResult.warnings.length > 0) {
+      warningsList = [...(warningsList || []), ...genResult.warnings];
+      if (isNonInteractive) {
+        logWarnings(genResult.warnings);
+      } else {
+        for (const warning of genResult.warnings) p.log.warn(warning);
+      }
+    }
 
     // 6. 后置动作：非交互只认显式开关；交互模式对未显式指定的项逐个询问
     const postActions = isNonInteractive
       ? resolveExplicitPostActions(values)
       : await promptPostActions(resolvePostActionPresets(values));
+
+    // 交互模式下根据用户最终选择的 install 操作结算 lockfile
+    if (!isNonInteractive && genResult.lockfile === 'pending') {
+      const lockRes = await finalizeLockfile(genResult.targetPath, {
+        hasVersionChange: genResult.hasVersionChange,
+        install: postActions.install === true,
+        onProgress: msg => p.log.step(msg),
+      });
+      genResult.lockfile = lockRes.lockfile;
+      if (lockRes.lockfile === 'removed') {
+        p.log.warn('已删除旧 pnpm-lock.yaml，请在启动前执行 pnpm install 重新生成');
+      }
+      if (lockRes.warnings && lockRes.warnings.length > 0) {
+        warningsList = [...(warningsList || []), ...lockRes.warnings];
+      }
+    }
+
     await runPostActions(genResult.targetPath, postActions, detectedPm, log);
 
     const nextSteps = getNextSteps({

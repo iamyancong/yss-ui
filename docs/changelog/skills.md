@@ -10,6 +10,16 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.7.0
+
+`2026-10-12`
+
+### 🚀 Features
+
+- **yss-create-microapp**：生成后自动将 `@yss-ui/*` 依赖版本对齐至 registry 最新版，并自动维护 `pnpm-lock.yaml` 锁文件，解决沿用旧模板依赖与锁文件冲突问题；支持 `--no-sync-deps` 显式跳过 (#53)。
+
+---
+
 ## v1.6.0
 
 `2026-10-10`

@@ -40,3 +40,16 @@ export { diagnoseGitFailure, getGitErrorDetail, runGit, syncTemplate } from './t
 export { customizeGeneratedProject, generate, runScaffoldScript } from './generator.mjs';
 
 export { canonicalizePlan, computePlanHash, createPlan, parsePlanContent, PLAN_VERSION, verifyPlan } from './plan.mjs';
+
+export {
+  compareSemver,
+  fetchPackageMetadata,
+  finalizeLockfile,
+  OFFICIAL_REGISTRY,
+  parseSemverTuple,
+  parseVersionSpec,
+  resolveLatestPackageVersion,
+  resolveProjectRegistry,
+  syncDependencies,
+  tryRegenerateLockfile,
+} from './deps.mjs';

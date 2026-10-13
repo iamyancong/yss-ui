@@ -90,6 +90,7 @@ YSS_FRONTEND_TEMPLATE_URL=https://git.example.com/fe/my-template.git pnpm create
 | `--skills / --no-skills` | 布尔 | 创建完成后是否自动同步 `@yss-ui/skills` 规范 | 交互模式询问；非交互默认否 |
 | `--git / --no-git` | 布尔 | 创建完成后是否自动初始化 Git 并生成首个 commit | 交互模式询问；非交互默认否 |
 | `--pm <pnpm\|npm\|yarn>` | 字符串 | 指定包管理器，其他值退出码 2 | 默认根据 `npm_config_user_agent` 检测，兜底 pnpm |
+| `--no-sync-deps` | 布尔 | 不自动对齐 `@yss-ui/*` 依赖最新版本（保留模板写死版本） | 默认自动对齐最新版本 |
 | `--no-update-check` | 布尔 | 不检查新版本；也可设置环境变量 `YSS_CREATE_NO_UPDATE_CHECK=1` | 没有交互终端、`--json`、`--dry-run`、`--offline`、`CI=true` 时自动不检查 |
 | `-v, --version` | 布尔 | 打印当前 CLI 版本号 | - |
 
@@ -235,3 +236,12 @@ npx create-yss-app@latest --version
 - 以下情况不检查也不提示：没有交互终端、`--json`、`--dry-run`、`--offline`、`CI=true`、`--no-update-check`，或设置了环境变量 `YSS_CREATE_NO_UPDATE_CHECK=1`。
 
 > 1.1.0 及更早版本没有新版本提示。如果本机缓存的是这些版本，需要先按上面的方法清理一次。
+
+### 6. 生成后依赖版本对齐与 Lockfile 维护
+
+在模板项目骨架生成完成后，CLI 会自动扫描根目录 `package.json` 与 `packages/package.json` 中的全部 `@yss-ui/*` 依赖项（例如 `@yss-ui/components`、`@yss-ui/hooks`、`@yss-ui/utils`、`@yss-ui/skills-cli` 等），向当前配置的 npm registry 查询并升级至最新稳定版本。
+
+- **保留原有前缀**：原来是 `^` 的保留 `^`，原来是 `~` 的保留 `~`，原来是精确版本的保留精确版本。
+- **镜像延迟保护**：使用私有源或 npmmirror 镜像时，CLI 会同时比对官方 npmjs 源与项目镜像源。若官方已发布新版但镜像尚未同步，CLI 坚决不写入镜像不存在的版本，而是安全回退到当前镜像可用的最高版本并输出提醒，保证后续依赖安装必定成功。
+- **Lockfile 自动同步**：依赖版本变更后，若未选择自动安装依赖，CLI 会在本地尝试执行 `pnpm install --lockfile-only --ignore-scripts` 刷新 `pnpm-lock.yaml`；若执行失败或本地缺失 pnpm，将自动清理旧的 `pnpm-lock.yaml`，防止遗留版本冲突的脏锁文件导致后续安装报错。
+- **显式关闭**：传递 `--no-sync-deps` 开关（或在 Plan 配置中设置 `syncDeps: false`）可完全跳过对齐。

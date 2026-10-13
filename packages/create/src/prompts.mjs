@@ -16,7 +16,7 @@ import {
   validateActiveRule,
   validateAppName,
 } from './core/index.mjs';
-import { formatPreviewTable } from './preview.mjs';
+import { formatPreviewTable, resolvePreviewRegistry } from './preview.mjs';
 
 /**
  * 校验并检查是否用户按下了 Ctrl+C 中断。
@@ -267,7 +267,8 @@ export const resolveInteractiveAnswers = async (initialInput, promptResult) => {
  * @returns {Promise<boolean>} 是否确认
  */
 export const confirmCreation = async (resolved, sources, targetPath) => {
-  const table = formatPreviewTable(resolved, sources, targetPath);
+  const registry = await resolvePreviewRegistry(resolved);
+  const table = formatPreviewTable(resolved, sources, targetPath, { registry });
   p.note(table, '创建参数与来源预览');
 
   const confirmed = handleCancel(

@@ -9073,6 +9073,7 @@ axiosInstance.interceptors.request.use(config => {
 - 默认模板为 GitHub 公开仓库 `https://github.com/iamyancong/microapp-template-vue3.git`（分支 `main`），无需凭据；非交互模式不会询问 git 凭据。用户需要其他模板时用 `--template-url` 或环境变量 `YSS_FRONTEND_TEMPLATE_URL` 覆盖，不得自行猜测替代地址。
 - 可选参数默认值：`port` 默认从 8081 起向上探测首个空闲端口；`activeRule` 默认由 `appName` 推导小驼峰（驼峰不合法时退回短横线，如 `app-1 → /app-1`、`crm2 → /crm-2`）；`apiBase` 默认为 `/api${activeRule}`；`proxyTarget` 优先级为 `--proxy-target` > `YSS_PROXY_TARGET` 环境变量 > 常量预设。
 - CLI 的 `--json` 输出中 stdout 只有一行 JSON，日志在 stderr；解析结果时只读 stdout。拼错的参数（如 `--dryrun`）会直接退出码 2，不要靠猜测重试。
+- 生成后默认会自动将 `@yss-ui/*` 依赖对齐至 registry 最新版本并处理 `pnpm-lock.yaml` 锁定；如需严格保留模板原写死版本可传入 `--no-sync-deps`。
 - 没有用户明确授权时，不得擅自执行安装依赖、初始化 git、启动服务、创建远程仓库或推送代码。
 
 ## 标准代码骨架

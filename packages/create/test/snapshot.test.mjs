@@ -161,6 +161,7 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
               outSkill,
               '--cache-dir',
               cacheSkill,
+              '--no-sync-deps',
             ],
             { env: { ...process.env, CI: 'true' } }
           );
@@ -190,6 +191,7 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
               '--cache-dir',
               cacheCli,
               '--yes',
+              '--no-sync-deps',
             ],
             { env: { ...process.env, CI: 'true' } }
           );
@@ -227,6 +229,7 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
         cacheCli,
         '--yes',
         '--json',
+        '--no-sync-deps',
       ]);
       expect(jsonRun.code).toBe(0);
       expect(jsonRun.stderr).toContain('[stub] generating');
@@ -235,6 +238,8 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
       expect(jsonOutput.targetPath).toBe(path.join(outJson, 'demo-app'));
       expect(jsonOutput.templateCommit).toMatch(/^[0-9a-f]{40}$/);
       expect(Array.isArray(jsonOutput.nextSteps)).toBe(true);
+      expect(Array.isArray(jsonOutput.dependencyUpdates)).toBe(true);
+      expect(jsonOutput.lockfile).toBe('unchanged');
       expect(await collectFilesWithHash(jsonOutput.targetPath)).toEqual(cliFiles);
 
       // 6. --plan-out → --apply 链路生成结果也与直接生成一致
@@ -260,6 +265,7 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
         '--plan-out',
         planFile,
         '--json',
+        '--no-sync-deps',
       ]);
       expect(planRun.code).toBe(0);
       await expect(fs.access(path.join(outApply, 'demo-app'))).rejects.toThrow();
@@ -268,6 +274,8 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
       expect(applyRun.code).toBe(0);
       const applyOutput = JSON.parse(applyRun.stdout.trim());
       expect(applyOutput.ok).toBe(true);
+      expect(Array.isArray(applyOutput.dependencyUpdates)).toBe(true);
+      expect(applyOutput.lockfile).toBe('unchanged');
       expect(await collectFilesWithHash(path.join(outApply, 'demo-app'))).toEqual(cliFiles);
     } finally {
       await fs.rm(tempRoot, { recursive: true, force: true });
