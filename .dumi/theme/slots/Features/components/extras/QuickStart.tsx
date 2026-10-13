@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import { HOME_CREATE_APP_STEP, HOME_QUICKSTART_STEPS } from '../../constants';
 import { CopyCommandButton } from './CopyCommandButton';
 
-/** 首页快速接入区：分两条路径（新建微应用 / 已有项目接入）。 */
+/** 首页快速接入区：分两条路径（已有项目接入 / 新建微应用）。 */
 export const QuickStart = () => {
-  const [activeTab, setActiveTab] = useState<'new' | 'existing'>('new');
+  const [activeTab, setActiveTab] = useState<'new' | 'existing'>('existing');
 
   return (
     <section
@@ -17,28 +17,11 @@ export const QuickStart = () => {
       <header className="yss-extras-head" data-reveal>
         <span className="yss-extras-head__eyebrow">GET STARTED</span>
         <h2 id="yss-quickstart-title">两种路径，快速接入完整交付能力</h2>
-        <p>新建微应用一键脚手架，或为已有项目分步接入组件库、AI Skills 与 MCP 服务。</p>
+        <p>为已有项目分步接入组件库、AI Skills 与 MCP 服务，或通过一键脚手架新建微应用。</p>
         <div
           className="yss-quickstart-tabs"
           style={{ display: 'flex', gap: '10px', marginTop: '16px', justifyContent: 'center' }}
         >
-          <button
-            type="button"
-            className={`yss-qs-tab-btn ${activeTab === 'new' ? 'active' : ''}`}
-            onClick={() => setActiveTab('new')}
-            style={{
-              padding: '6px 16px',
-              borderRadius: '20px',
-              border: '1px solid var(--yss-workbench-preview-border)',
-              background: activeTab === 'new' ? 'var(--yss-brand-color, #4f7cff)' : 'transparent',
-              color: activeTab === 'new' ? '#fff' : 'inherit',
-              cursor: 'pointer',
-              fontWeight: 500,
-              fontSize: '13px',
-            }}
-          >
-            🚀 新建微应用 (一条命令)
-          </button>
           <button
             type="button"
             className={`yss-qs-tab-btn ${activeTab === 'existing' ? 'active' : ''}`}
@@ -55,6 +38,23 @@ export const QuickStart = () => {
             }}
           >
             📦 已有项目接入 (三条命令)
+          </button>
+          <button
+            type="button"
+            className={`yss-qs-tab-btn ${activeTab === 'new' ? 'active' : ''}`}
+            onClick={() => setActiveTab('new')}
+            style={{
+              padding: '6px 16px',
+              borderRadius: '20px',
+              border: '1px solid var(--yss-workbench-preview-border)',
+              background: activeTab === 'new' ? 'var(--yss-brand-color, #4f7cff)' : 'transparent',
+              color: activeTab === 'new' ? '#fff' : 'inherit',
+              cursor: 'pointer',
+              fontWeight: 500,
+              fontSize: '13px',
+            }}
+          >
+            🚀 新建微应用 (一条命令)
           </button>
         </div>
       </header>
