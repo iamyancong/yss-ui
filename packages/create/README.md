@@ -12,7 +12,7 @@ npx @yss-ui/create
 
 交互模式只需填写应用中文名与英文名，激活路由、端口、接口前缀、代理目标会自动推导，并在预览表中标注来源。
 
-标题会显示当前版本号。registry 上有更新的正式版时，交互模式会在第一个问题前询问是否切换到新版本继续创建（默认「否」，选「是」才通过 `npx` 下载新版本并带上原参数继续）；非交互模式在结尾打印提示框。最新版本号缓存 24 小时。`npm create yss-app` 不带 `@latest` 会复用本机缓存的旧版本，请始终带上 `@latest`。用 `--no-update-check` 或环境变量 `YSS_CREATE_NO_UPDATE_CHECK=1` 关闭检查；没有交互终端、`--json`、`--dry-run`、`--offline`、`CI=true` 时自动不检查。
+标题会显示当前版本号。registry 上有更新的正式版时，交互模式会在第一个问题前实时查询并询问是否切换到新版本继续创建（默认「是」，直接回车即通过 `npx` 下载新版本并带上原参数继续；选「否」则用当前版本继续）；非交互模式在结尾打印提示框。`npm create yss-app` 不带 `@latest` 会复用本机缓存的旧版本，请始终带上 `@latest`。用 `--no-update-check` 或环境变量 `YSS_CREATE_NO_UPDATE_CHECK=1` 关闭检查；没有交互终端、`--json`、`--dry-run`、`--offline`、`CI=true` 时自动不检查。
 
 ## 模板与网络
 
@@ -70,7 +70,7 @@ npx @yss-ui/create --apply ./plan.json
 
 ## 隐私
 
-不收集任何遥测数据，不上报使用信息。网络访问仅限拉取模板仓库、对齐 `@yss-ui/*` 依赖版本、同步 AI Skills（`@yss-ui/skills-cli`）、你显式选择的依赖安装，以及向当前 registry 发 GET 请求读取 `@yss-ui/create` 的最新版本号（公开元数据，不携带任何使用信息，24 小时内最多一次）。
+不收集任何遥测数据，不上报使用信息。网络访问仅限拉取模板仓库、对齐 `@yss-ui/*` 依赖版本、同步 AI Skills（`@yss-ui/skills-cli`）、你显式选择的依赖安装，以及向当前 registry 发 GET 请求读取 `@yss-ui/create` 的最新版本号（公开元数据，不携带任何使用信息）。
 
 ## 许可证
 

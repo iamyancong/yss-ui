@@ -1,23 +1,22 @@
 import { EventEmitter } from 'node:events';
-import fs from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import os from 'node:os';
-import path from 'node:path';
 import * as p from '@clack/prompts';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { offerLatestVersion } from '../src/cli.mjs';
 import { confirmUseLatest, showIntro } from '../src/prompts.mjs';
 import {
+  acknowledgeRelaunch,
   canRelaunch,
   checkForUpdate,
   formatUpdateNotice,
   getCliVersion,
   isNewerVersion,
   NO_UPDATE_CHECK_ENV,
+  RELAUNCH_HANDSHAKE_ENV,
   relaunchWithVersion,
   resolveRegistry,
   shouldCheckForUpdate,
   startUpdateCheck,
-  UPDATE_CACHE_TTL_MS,
 } from '../src/update.mjs';
 
 vi.mock('@clack/prompts', () => ({
@@ -26,6 +25,12 @@ vi.mock('@clack/prompts', () => ({
   confirm: vi.fn(),
   cancel: vi.fn(),
   isCancel: vi.fn(() => false),
+  log: {
+    info: vi.fn(),
+    step: vi.fn(),
+    warn: vi.fn(),
+    success: vi.fn(),
+  },
 }));
 
 const pkg = createRequire(import.meta.url)('../package.json');
@@ -45,25 +50,16 @@ const hangingRequest = () => new Promise(() => undefined);
 /** 去掉 ANSI 颜色码。 */
 const stripAnsi = text => text.replace(new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g'), '');
 
-let cacheDir;
-let cacheFile;
-
-beforeEach(async () => {
+beforeEach(() => {
   vi.clearAllMocks();
-  cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'yss-update-cache-'));
-  cacheFile = path.join(cacheDir, 'update-check.json');
-});
-
-afterEach(async () => {
-  await fs.rm(cacheDir, { recursive: true, force: true });
 });
 
 /**
- * 以隔离的缓存文件执行检查。
+ * 执行新版本检查。
  *
  * @param {Partial<Parameters<typeof checkForUpdate>[0]>} options 查询参数
  */
-const check = options => checkForUpdate({ currentVersion: '1.2.0', registry: REGISTRY, cacheFile, ...options });
+const check = options => checkForUpdate({ currentVersion: '1.2.0', registry: REGISTRY, ...options });
 
 describe('版本号', () => {
   it('getCliVersion 等于 package.json 的 version', () => {
@@ -91,7 +87,7 @@ describe('版本号', () => {
   });
 });
 
-describe('新版本检查', () => {
+describe('新版本检查（无缓存实时查询）', () => {
   it('有新版本：返回版本信息，并请求当前 registry 上 @yss-ui/create 的 latest', async () => {
     const fetchImpl = mockFetchJson({ version: '1.3.0' });
     const info = await check({ fetchImpl });
@@ -103,10 +99,19 @@ describe('新版本检查', () => {
 
   it('没有新版本：远端相同、更低或为预发布版时不提示', async () => {
     expect(await check({ fetchImpl: mockFetchJson({ version: '1.2.0' }) })).toBeNull();
-    await fs.rm(cacheFile, { force: true });
     expect(await check({ fetchImpl: mockFetchJson({ version: '1.1.0' }) })).toBeNull();
-    await fs.rm(cacheFile, { force: true });
     expect(await check({ fetchImpl: mockFetchJson({ version: '1.3.0-beta.1' }) })).toBeNull();
+  });
+
+  it('每次调用都实时请求 registry，不缓存旧结果（发版后立即检出新版本）', async () => {
+    const firstFetch = mockFetchJson({ version: '1.2.0' });
+    expect(await check({ fetchImpl: firstFetch })).toBeNull();
+    expect(firstFetch).toHaveBeenCalledTimes(1);
+
+    const secondFetch = mockFetchJson({ version: '1.3.0' });
+    const info = await check({ fetchImpl: secondFetch });
+    expect(secondFetch).toHaveBeenCalledTimes(1);
+    expect(info).toEqual({ currentVersion: '1.2.0', latestVersion: '1.3.0' });
   });
 
   it('非 2xx 或响应体缺少 version 时静默跳过', async () => {
@@ -114,12 +119,11 @@ describe('新版本检查', () => {
     expect(await check({ fetchImpl: mockFetchJson({}) })).toBeNull();
   });
 
-  it('网络出错时静默跳过，不抛错，也不写缓存', async () => {
+  it('网络出错时静默跳过，不抛错', async () => {
     const fetchImpl = vi.fn(async () => {
       throw new TypeError('fetch failed');
     });
     await expect(check({ fetchImpl })).resolves.toBeNull();
-    await expect(fs.access(cacheFile)).rejects.toThrow();
   });
 
   it('超时：按时返回 null 并中止请求，即使 fetch 不响应 abort 也不会卡住', async () => {
@@ -139,7 +143,6 @@ describe('新版本检查', () => {
     const pending = startUpdateCheck({
       currentVersion: '1.2.0',
       registry: REGISTRY,
-      cacheFile,
       fetchImpl: vi.fn(hangingRequest),
     });
     expect(pending.peek()).toBeNull();
@@ -149,7 +152,6 @@ describe('新版本检查', () => {
     const done = startUpdateCheck({
       currentVersion: '1.2.0',
       registry: REGISTRY,
-      cacheFile,
       fetchImpl: mockFetchJson({ version: '1.3.0' }),
     });
     await done.result;
@@ -161,52 +163,6 @@ describe('新版本检查', () => {
     expect(resolveRegistry({ npm_config_registry: 'https://registry.npmmirror.com/' })).toBe(
       'https://registry.npmmirror.com'
     );
-  });
-});
-
-describe('24 小时缓存', () => {
-  it('缓存有效期内不再联网', async () => {
-    const now = 1_000_000;
-    await check({ fetchImpl: mockFetchJson({ version: '1.3.0' }), now: () => now });
-
-    const fetchImpl = mockFetchJson({ version: '9.9.9' });
-    const info = await check({ fetchImpl, now: () => now + UPDATE_CACHE_TTL_MS - 1 });
-
-    expect(fetchImpl).not.toHaveBeenCalled();
-    expect(info).toEqual({ currentVersion: '1.2.0', latestVersion: '1.3.0' });
-  });
-
-  it('缓存过期后重新查询并刷新缓存', async () => {
-    const now = 1_000_000;
-    await check({ fetchImpl: mockFetchJson({ version: '1.3.0' }), now: () => now });
-
-    const fetchImpl = mockFetchJson({ version: '1.4.0' });
-    const info = await check({ fetchImpl, now: () => now + UPDATE_CACHE_TTL_MS });
-
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
-    expect(info.latestVersion).toBe('1.4.0');
-    expect(JSON.parse(await fs.readFile(cacheFile, 'utf8')).latestVersion).toBe('1.4.0');
-  });
-
-  it('没有新版本的结果也会缓存，同一天不重复联网', async () => {
-    await check({ fetchImpl: mockFetchJson({ version: '1.2.0' }) });
-    const fetchImpl = mockFetchJson({ version: '1.3.0' });
-    expect(await check({ fetchImpl })).toBeNull();
-    expect(fetchImpl).not.toHaveBeenCalled();
-  });
-
-  it('换了 registry 时不使用旧缓存', async () => {
-    await check({ fetchImpl: mockFetchJson({ version: '1.3.0' }) });
-    const fetchImpl = mockFetchJson({ version: '1.2.0' });
-    expect(await check({ fetchImpl, registry: 'https://registry.npmmirror.com' })).toBeNull();
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
-  });
-
-  it('缓存文件损坏时当作没有缓存', async () => {
-    await fs.writeFile(cacheFile, '{ broken', 'utf8');
-    const fetchImpl = mockFetchJson({ version: '1.3.0' });
-    expect((await check({ fetchImpl })).latestVersion).toBe('1.3.0');
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -243,24 +199,24 @@ describe('结尾提示框', () => {
 describe('切换到新版本', () => {
   /** 构造一个可控的子进程 mock。 */
   const createSpawnMock = emit =>
-    vi.fn(() => {
+    vi.fn((_cmd, _args, options) => {
       const child = new EventEmitter();
-      queueMicrotask(() => emit(child));
+      queueMicrotask(() => emit(child, options));
       return child;
     });
 
-  it('询问是否切换时默认选「否」，一路回车不会切换', async () => {
+  it('询问是否切换时默认选「是」，回车即切换到新版本', async () => {
     p.confirm.mockImplementationOnce(async opts => opts.initialValue);
     const accepted = await confirmUseLatest({ currentVersion: '1.2.0', latestVersion: '1.3.0' });
 
-    expect(accepted).toBe(false);
-    expect(p.confirm).toHaveBeenCalledWith(expect.objectContaining({ initialValue: false }));
+    expect(accepted).toBe(true);
+    expect(p.confirm).toHaveBeenCalledWith(expect.objectContaining({ initialValue: true }));
     expect(p.note).toHaveBeenCalledWith(expect.stringContaining('当前 1.2.0 → 最新 1.3.0'), '发现新版本');
   });
 
-  it('用户明确选择后才返回 true', async () => {
-    p.confirm.mockResolvedValueOnce(true);
-    expect(await confirmUseLatest({ currentVersion: '1.2.0', latestVersion: '1.3.0' })).toBe(true);
+  it('用户选择「否」时返回 false，继续使用当前版本', async () => {
+    p.confirm.mockResolvedValueOnce(false);
+    expect(await confirmUseLatest({ currentVersion: '1.2.0', latestVersion: '1.3.0' })).toBe(false);
   });
 
   it('用 npx 运行指定版本的 @yss-ui/create 并透传参数，子进程不再检查', async () => {
@@ -283,13 +239,24 @@ describe('切换到新版本', () => {
       '订单中心',
     ]);
     expect(options.stdio).toBe('inherit');
-    expect(options.env).toEqual({ PATH: '/usr/bin', [NO_UPDATE_CHECK_ENV]: '1' });
+    expect(options.env).toEqual({
+      PATH: '/usr/bin',
+      [NO_UPDATE_CHECK_ENV]: '1',
+      [RELAUNCH_HANDSHAKE_ENV]: expect.any(String),
+    });
   });
 
-  it('透传子进程退出码；被信号中断视为 130', async () => {
-    expect(await relaunchWithVersion('1.3.0', [], { spawnImpl: createSpawnMock(c => c.emit('exit', 5, null)) })).toBe(
-      5
-    );
+  it('npx 下载失败（子进程未进入 CLI 入口即非零退出）时返回 null，回退到当前版本', async () => {
+    const spawnImpl = createSpawnMock(child => child.emit('exit', 1, null));
+    expect(await relaunchWithVersion('1.3.0', [], { spawnImpl })).toBeNull();
+  });
+
+  it('新版本已启动但运行期报错时透传子进程退出码；被信号中断视为 130', async () => {
+    const spawnStartedFail = createSpawnMock(async (child, options) => {
+      await acknowledgeRelaunch(options.env);
+      child.emit('exit', 5, null);
+    });
+    expect(await relaunchWithVersion('1.3.0', [], { spawnImpl: spawnStartedFail })).toBe(5);
     expect(
       await relaunchWithVersion('1.3.0', [], { spawnImpl: createSpawnMock(c => c.emit('exit', null, 'SIGINT')) })
     ).toBe(130);
@@ -298,6 +265,28 @@ describe('切换到新版本', () => {
   it('npx 无法启动时返回 null，交给调用方回退到当前版本', async () => {
     const spawnImpl = createSpawnMock(child => child.emit('error', new Error('spawn npx ENOENT')));
     expect(await relaunchWithVersion('1.3.0', [], { spawnImpl })).toBeNull();
+  });
+
+  it('offerLatestVersion：下载失败时提示继续用当前版本并返回 exitCode: null；新版本运行失败时提示 --no-update-check', async () => {
+    p.confirm.mockResolvedValueOnce(true);
+    const fallbackRes = await offerLatestVersion(
+      Promise.resolve({ currentVersion: '1.2.0', latestVersion: '1.3.0' }),
+      [],
+      { relaunchImpl: vi.fn(async () => null) }
+    );
+    expect(fallbackRes).toEqual({ offered: true, exitCode: null });
+    expect(p.log.warn).toHaveBeenCalledWith(expect.stringContaining('切换新版本失败，继续使用当前版本 v1.2.0'));
+    expect(p.log.warn).toHaveBeenCalledWith(expect.stringContaining('--no-update-check'));
+
+    p.log.warn.mockClear();
+    p.confirm.mockResolvedValueOnce(true);
+    const runtimeErrRes = await offerLatestVersion(
+      Promise.resolve({ currentVersion: '1.2.0', latestVersion: '1.3.0' }),
+      [],
+      { relaunchImpl: vi.fn(async () => 5) }
+    );
+    expect(runtimeErrRes).toEqual({ offered: true, exitCode: 5 });
+    expect(p.log.warn).toHaveBeenCalledWith(expect.stringContaining('--no-update-check'));
   });
 
   it('需要经 shell 启动时，参数含空格或特殊字符就不切换', () => {

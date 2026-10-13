@@ -31,6 +31,7 @@ import {
   showIntro,
 } from './prompts.mjs';
 import {
+  acknowledgeRelaunch,
   canRelaunch,
   CLI_PACKAGE_NAME,
   CORE_PACKAGE_NAME,
@@ -272,14 +273,14 @@ const printJson = payload => {
 };
 
 /**
- * 交互模式在第一个问题前处理新版本：等待检查结果（缓存命中立即返回，否则最多等超时时间），
+ * 交互模式在第一个问题前处理新版本：等待实时检查结果（最多等待超时时间），
  * 有新版本时询问是否切换，用户同意后由新版本接管本次创建。
  *
  * @param {Awaited<ReturnType<typeof startUpdateCheck>>['result'] | undefined} result 后台检查结果
  * @param {string[]} args 原始命令行参数（不含 node 与脚本路径）
  * @returns {Promise<{ offered: boolean, exitCode: number | null }>} 是否已询问过；切换后新版本进程的退出码
  */
-const offerLatestVersion = async (result, args) => {
+export const offerLatestVersion = async (result, args, { relaunchImpl = relaunchWithVersion } = {}) => {
   const info = await result;
   if (!info || !canRelaunch(args)) return { offered: false, exitCode: null };
 
@@ -289,9 +290,13 @@ const offerLatestVersion = async (result, args) => {
   }
 
   p.log.step(`正在通过 npx 下载 ${CORE_PACKAGE_NAME}@${info.latestVersion}，完成后自动继续创建...`);
-  const exitCode = await relaunchWithVersion(info.latestVersion, args);
+  const exitCode = await relaunchImpl(info.latestVersion, args);
   if (exitCode === null) {
-    p.log.warn('无法启动 npx，继续使用当前版本。');
+    p.log.warn(`切换新版本失败，继续使用当前版本 v${info.currentVersion}（可加 --no-update-check 跳过新版本检查）。`);
+    return { offered: true, exitCode: null };
+  }
+  if (exitCode !== 0 && exitCode !== 130) {
+    p.log.warn('如需跳过新版本切换，可加 --no-update-check 重新运行。');
   }
   return { offered: true, exitCode };
 };
@@ -382,6 +387,7 @@ export const runCli = async (rawArgv = process.argv) => {
   };
 
   try {
+    await acknowledgeRelaunch();
     const { values, positionals } = parseCliArgs(rawArgv.slice(2));
 
     if (values.help) {

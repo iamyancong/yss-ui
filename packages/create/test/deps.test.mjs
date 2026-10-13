@@ -154,6 +154,13 @@ registry = https://custom.registry.com
   });
 
   describe('syncDependencies 完整流程', () => {
+    const mockSpawnSuccess = () => ({
+      once: (evt, cb) => {
+        if (evt === 'exit') cb(0);
+      },
+      kill: () => undefined,
+    });
+
     const setupProjectFixture = async () => {
       const projectDir = await fs.mkdtemp(path.join(os.tmpdir(), 'yss-dep-fixture-'));
       await fs.mkdir(path.join(projectDir, 'packages'), { recursive: true });
@@ -217,12 +224,7 @@ registry = https://custom.registry.com
 
         const result = await syncDependencies(projectDir, {
           fetchImpl: mockFetch,
-          spawnImpl: () => ({
-            once: (evt, cb) => {
-              if (evt === 'exit') cb(0);
-            },
-            kill: () => undefined,
-          }),
+          spawnImpl: mockSpawnSuccess,
         });
 
         expect(result.lockfile).toBe('regenerated');
@@ -282,6 +284,7 @@ registry = https://custom.registry.com
         const result = await syncDependencies(projectDir, {
           offline: true,
           fetchImpl: mockFetch,
+          spawnImpl: mockSpawnSuccess,
         });
 
         expect(fetchCalled).toBe(false);
@@ -300,6 +303,7 @@ registry = https://custom.registry.com
       try {
         const result = await syncDependencies(projectDir, {
           syncDeps: false,
+          spawnImpl: mockSpawnSuccess,
         });
 
         expect(result.updates.length).toBe(0);
@@ -355,6 +359,7 @@ registry = https://custom.registry.com
 
         const result = await syncDependencies(projectDir, {
           fetchImpl: mockFetch,
+          spawnImpl: mockSpawnSuccess,
         });
 
         const componentsUpdate = result.updates.find(u => u.name === '@yss-ui/components');
@@ -386,16 +391,9 @@ registry = https://custom.registry.com
           json: async () => ({ 'dist-tags': { latest: '1.8.0' } }),
         });
 
-        const mockSpawn = () => ({
-          once: (evt, cb) => {
-            if (evt === 'exit') cb(0);
-          },
-          kill: () => undefined,
-        });
-
         const result = await syncDependencies(projectDir, {
           fetchImpl: mockFetch,
-          spawnImpl: mockSpawn,
+          spawnImpl: mockSpawnSuccess,
         });
 
         // workspace:* 与 latest 不应作为候选被修改
@@ -420,6 +418,7 @@ registry = https://custom.registry.com
 
         const result = await syncDependencies(projectDir, {
           fetchImpl: mockFetch,
+          spawnImpl: mockSpawnSuccess,
         });
 
         expect(result.updates.every(u => u.status === 'failed')).toBe(true);

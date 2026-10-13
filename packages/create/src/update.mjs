@@ -1,7 +1,7 @@
 /**
  * @fileoverview CLI 版本信息与新版本提示。
  * 只向 registry 发 GET 读取公开元数据，不上报任何信息；任何失败都静默跳过。
- * 不会自动升级：只有用户在交互模式中明确选择后，才通过 npx 运行新版本。
+ * 交互模式下发现新版本会先询问用户（默认选「是」），确认后通过 npx 运行新版本继续创建。
  */
 
 import { spawn } from 'node:child_process';
@@ -28,14 +28,11 @@ export const DEFAULT_REGISTRY = 'https://registry.npmjs.org/';
 /** 单次查询的超时时间（毫秒）。 */
 export const UPDATE_CHECK_TIMEOUT_MS = 1500;
 
-/** 最新版本号的本地缓存有效期（毫秒）。 */
-export const UPDATE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-
-/** 默认缓存文件，与模板缓存一样放在系统临时目录。 */
-export const DEFAULT_UPDATE_CACHE_FILE = path.join(os.tmpdir(), 'yss-create-update-check.json');
-
 /** 关闭新版本检查的环境变量；切换到新版本时也用它防止子进程再次检查。 */
 export const NO_UPDATE_CHECK_ENV = 'YSS_CREATE_NO_UPDATE_CHECK';
+
+/** 子进程已成功进入 CLI 入口的握手文件环境变量，用于区分「npx 下载失败」与「新版本运行期报错」。 */
+export const RELAUNCH_HANDSHAKE_ENV = 'YSS_CREATE_RELAUNCH_HANDSHAKE';
 
 /**
  * Windows 下 npx 为 .cmd 包装脚本，必须经 shell 启动；此时参数会被 cmd 重新解析，
@@ -119,38 +116,6 @@ export const shouldCheckForUpdate = ({
 export const resolveRegistry = (env = process.env) => (env.npm_config_registry || DEFAULT_REGISTRY).replace(/\/+$/, '');
 
 /**
- * 读取未过期且属于同一 registry 的缓存版本号。
- *
- * @param {string} cacheFile 缓存文件
- * @param {string} registry registry 地址
- * @param {number} now 当前时间戳
- * @returns {Promise<string | null>}
- */
-const readCachedVersion = async (cacheFile, registry, now) => {
-  try {
-    const cache = JSON.parse(await fs.readFile(cacheFile, 'utf8'));
-    const fresh = now - cache.checkedAt >= 0 && now - cache.checkedAt < UPDATE_CACHE_TTL_MS;
-    if (cache.registry !== registry || !fresh || typeof cache.latestVersion !== 'string') return null;
-    return cache.latestVersion;
-  } catch {
-    return null;
-  }
-};
-
-/**
- * 写入缓存；写失败不影响主流程。
- *
- * @param {string} cacheFile 缓存文件
- * @param {{ registry: string, latestVersion: string, checkedAt: number }} cache 缓存内容
- * @returns {Promise<void>}
- */
-const writeCachedVersion = async (cacheFile, cache) => {
-  try {
-    await fs.writeFile(cacheFile, `${JSON.stringify(cache)}\n`, 'utf8');
-  } catch {}
-};
-
-/**
  * 向 registry 查询最新版本号；超时、离线、非 2xx、解析失败一律返回 null。
  *
  * @param {{ registry: string, timeoutMs: number, fetchImpl: typeof fetch, signal?: AbortSignal }} options 查询参数
@@ -196,9 +161,9 @@ const fetchLatestVersion = async ({ registry, timeoutMs, fetchImpl, signal }) =>
 };
 
 /**
- * 获取最新版本（24 小时内优先用本地缓存），只有高于当前版本的正式版才返回结果。
+ * 实时向 registry 查询最新版本，只有高于当前版本的正式版才返回结果。
  *
- * @param {{ currentVersion: string, registry?: string, timeoutMs?: number, fetchImpl?: typeof fetch, signal?: AbortSignal, cacheFile?: string, now?: () => number }} options 查询参数
+ * @param {{ currentVersion: string, registry?: string, timeoutMs?: number, fetchImpl?: typeof fetch, signal?: AbortSignal }} options 查询参数
  * @returns {Promise<UpdateInfo | null>}
  */
 export const checkForUpdate = async ({
@@ -207,15 +172,9 @@ export const checkForUpdate = async ({
   timeoutMs = UPDATE_CHECK_TIMEOUT_MS,
   fetchImpl = globalThis.fetch,
   signal,
-  cacheFile = DEFAULT_UPDATE_CACHE_FILE,
-  now = Date.now,
 }) => {
-  let latestVersion = await readCachedVersion(cacheFile, registry, now());
-  if (!latestVersion) {
-    latestVersion = await fetchLatestVersion({ registry, timeoutMs, fetchImpl, signal });
-    if (!latestVersion) return null;
-    await writeCachedVersion(cacheFile, { registry, latestVersion, checkedAt: now() });
-  }
+  const latestVersion = await fetchLatestVersion({ registry, timeoutMs, fetchImpl, signal });
+  if (!latestVersion) return null;
   return isNewerVersion(latestVersion, currentVersion) ? { currentVersion, latestVersion } : null;
 };
 
@@ -279,21 +238,65 @@ export const formatUpdateNotice = ({ currentVersion, latestVersion }) => {
 export const canRelaunch = (args, shell = needsShell) => !shell || args.every(arg => SHELL_SAFE_ARG.test(arg));
 
 /**
+ * 若当前进程是由旧版本通过 npx 切换拉起的子进程，在进入 CLI 主流程时写入握手标记，
+ * 告知父进程「npx 下载已完成且新版本已启动」。
+ *
+ * @param {Record<string, string | undefined>} [env=process.env] 环境变量
+ * @returns {Promise<void>}
+ */
+export const acknowledgeRelaunch = async (env = process.env) => {
+  const handshakeFile = env[RELAUNCH_HANDSHAKE_ENV];
+  if (!handshakeFile) return;
+  try {
+    await fs.writeFile(handshakeFile, '1', 'utf8');
+  } catch {}
+};
+
+/**
  * 通过 npx 下载并运行指定版本的 CLI，原样透传参数，并禁止子进程再次检查新版本。
+ *
+ * - 若 npx 无法启动，或 npx 在下载阶段失败（子进程尚未进入 CLI 入口即非零退出），返回 null，由调用方回退到当前版本继续创建。
+ * - 若用户按下 Ctrl+C 中断（信号中断或退出码 130），返回 130。
+ * - 若新版本已启动并完成握手，透传其真实退出码。
  *
  * @param {string} version 目标版本
  * @param {string[]} args 原始命令行参数（不含 node 与脚本路径）
  * @param {{ spawnImpl?: typeof spawn, env?: Record<string, string | undefined> }} [deps] 可注入依赖（测试用）
- * @returns {Promise<number | null>} 子进程退出码；npx 无法启动时返回 null
+ * @returns {Promise<number | null>} 子进程退出码；npx 启动或下载失败时返回 null
  */
-export const relaunchWithVersion = (version, args, { spawnImpl = spawn, env = process.env } = {}) =>
-  new Promise(resolve => {
-    const npxArgs = ['--yes', `--package=${CORE_PACKAGE_NAME}@${version}`, '--', CLI_PACKAGE_NAME, ...args];
-    const child = spawnImpl('npx', npxArgs, {
-      stdio: 'inherit',
-      shell: needsShell,
-      env: { ...env, [NO_UPDATE_CHECK_ENV]: '1' },
+export const relaunchWithVersion = async (version, args, { spawnImpl = spawn, env = process.env } = {}) => {
+  const handshakeFile = path.join(
+    os.tmpdir(),
+    `yss-create-relaunch-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.ack`
+  );
+
+  try {
+    const exitCode = await new Promise(resolve => {
+      const npxArgs = ['--yes', `--package=${CORE_PACKAGE_NAME}@${version}`, '--', CLI_PACKAGE_NAME, ...args];
+      const child = spawnImpl('npx', npxArgs, {
+        stdio: 'inherit',
+        shell: needsShell,
+        env: {
+          ...env,
+          [NO_UPDATE_CHECK_ENV]: '1',
+          [RELAUNCH_HANDSHAKE_ENV]: handshakeFile,
+        },
+      });
+      child.once('error', () => resolve(null));
+      child.once('exit', (code, signal) => resolve(signal ? 130 : (code ?? 1)));
     });
-    child.once('error', () => resolve(null));
-    child.once('exit', (code, signal) => resolve(signal ? 130 : (code ?? 1)));
-  });
+
+    if (exitCode === null || exitCode === 0 || exitCode === 130) {
+      return exitCode;
+    }
+
+    try {
+      await fs.access(handshakeFile);
+      return exitCode;
+    } catch {
+      return null;
+    }
+  } finally {
+    await fs.rm(handshakeFile, { force: true }).catch(() => {});
+  }
+};
