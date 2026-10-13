@@ -9,8 +9,18 @@ import path from 'node:path';
 import { EXIT_CODES } from './constants.mjs';
 import { syncDependencies } from './deps.mjs';
 import { YssCreateError } from './errors.mjs';
+import { syncSkills } from './skills.mjs';
 import { syncTemplate } from './template.mjs';
 import { pathExists } from './validate.mjs';
+
+/**
+ * 交给模板脚本的「后处理由 create 负责」开关：跳过模板自带的 Skills 同步与结尾 Next steps。
+ * 旧模板的 parseArgs 会把不带值的未知 --xxx 当布尔值忽略，因此可以先于模板发布。
+ */
+export const SCAFFOLD_DRIVER_FLAGS = ['--skip-skills', '--no-summary'];
+
+/** 告知模板脚本调用方身份的环境变量。 */
+export const SCAFFOLD_DRIVER_ENV = { YSS_CREATE_DRIVER: 'cli' };
 
 /**
  * 运行模板内的微应用生成脚本。
@@ -43,11 +53,13 @@ export const runScaffoldScript = (scriptPath, resolved, options = {}) => {
   if (resolved.openapiUrl) {
     args.push('--openapi-url', resolved.openapiUrl);
   }
+  args.push(...SCAFFOLD_DRIVER_FLAGS);
 
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, args, {
       stdio: ['inherit', routeToStderr ? 'pipe' : 'inherit', 'inherit'],
       shell: false,
+      env: { ...process.env, ...SCAFFOLD_DRIVER_ENV },
     });
     if (routeToStderr && child.stdout) {
       child.stdout.pipe(process.stderr);
@@ -118,9 +130,10 @@ export const customizeGeneratedProject = async (targetProjectRoot, appNameZh, de
  * 执行微应用完整生成流。
  *
  * @param {Record<string, any>} resolved 规范化后的参数对象
- * @param {{ onProgress?: (message: string) => void, scaffoldStdout?: 'inherit' | 'stderr', allowGitPrompt?: boolean }} [options]
- *   进度回调、模板脚本 stdout 去向，以及是否允许 git 在终端询问凭据（仅交互模式）
- * @returns {Promise<{ targetPath: string, templateCommit: string }>} 生成结果
+ * @param {{ onProgress?: (message: string) => void, scaffoldStdout?: 'inherit' | 'stderr', allowGitPrompt?: boolean, syncSkills?: boolean }} [options]
+ *   进度回调、模板脚本 stdout 去向、是否允许 git 在终端询问凭据（仅交互模式），
+ *   以及是否在生成后同步最新 AI Skills（默认是，仅供离线/内网流水线显式关闭）
+ * @returns {Promise<{ targetPath: string, templateCommit: string, skills: 'synced' | 'failed' | 'skipped' }>} 生成结果
  */
 export const generate = async (resolved, options = {}) => {
   const onProgress = options.onProgress || (() => undefined);
@@ -188,12 +201,25 @@ export const generate = async (resolved, options = {}) => {
     }
   }
 
+  let skills = 'skipped';
+  if (options.syncSkills !== false) {
+    if (!resolved.offline) onProgress('正在同步最新官方 AI Skills 规范...');
+    const skillsResult = await syncSkills(targetProjectRoot, {
+      offline: resolved.offline,
+      spawnImpl: options.skillsSpawnImpl,
+    });
+    skills = skillsResult.status;
+    if (skills === 'synced') onProgress('AI Skills 已同步至最新版');
+    warnings.push(...skillsResult.warnings);
+  }
+
   return {
     targetPath: targetProjectRoot,
     templateCommit: commit,
     dependencyUpdates,
     lockfile,
     hasVersionChange,
+    skills,
     warnings,
   };
 };

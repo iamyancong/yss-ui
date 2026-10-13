@@ -61,7 +61,8 @@ YSS_FRONTEND_TEMPLATE_URL=https://git.example.com/fe/my-template.git pnpm create
 6. **代理目标 (proxyTarget)**：自动读取环境变量 `YSS_PROXY_TARGET` 或系统测试环境预设地址。
 7. **项目描述**：可选；OpenAPI 文档地址不在向导中询问，需要时通过 `--openapi-url` 传入。
 8. **参数预览与确认**：向导会在终端表格中完整展示所有字段、配置值与来源（用户指定、自动推导、环境变量、默认预设），经用户二次确认后开始写入。
-9. **后续可选动作**：交互式询问是否立即安装依赖、同步官方 AI Skills 规范及初始化 Git 仓库。
+9. **AI Skills 自动同步**：骨架生成后总是同步最新官方 AI Skills 规范到新项目，不再询问（详见下文「AI Skills 自动同步」）。
+10. **后续可选动作**：交互式询问是否立即安装依赖、初始化 Git 仓库。
 
 ---
 
@@ -87,7 +88,7 @@ YSS_FRONTEND_TEMPLATE_URL=https://git.example.com/fe/my-template.git pnpm create
 | `--apply <file>` | 路径 | 读取计划文件，校验签名并按当前规则重新校验全部参数后执行创建；失败一律退出码 4 | - |
 | `--config <file\|->` | 路径 | 从 JSON 配置文件或标准输入读取参数 | - |
 | `--install / --no-install` | 布尔 | 创建完成后是否自动安装依赖 | 交互模式询问；非交互默认否 |
-| `--skills / --no-skills` | 布尔 | 创建完成后是否自动同步 `@yss-ui/skills` 规范 | 交互模式询问；非交互默认否 |
+| `--no-skills` | 布尔 | 跳过生成后的 AI Skills 同步，仅供无法联网的流水线使用（`--skills` 保留为兼容的空操作） | 默认总是同步最新版；`--offline` 时自动跳过 |
 | `--git / --no-git` | 布尔 | 创建完成后是否自动初始化 Git 并生成首个 commit | 交互模式询问；非交互默认否 |
 | `--pm <pnpm\|npm\|yarn>` | 字符串 | 指定包管理器，其他值退出码 2 | 默认根据 `npm_config_user_agent` 检测，兜底 pnpm |
 | `--no-sync-deps` | 布尔 | 不自动对齐 `@yss-ui/*` 依赖最新版本（保留模板写死版本） | 默认自动对齐最新版本 |
@@ -245,3 +246,13 @@ npx create-yss-app@latest --version
 - **镜像延迟保护**：使用私有源或 npmmirror 镜像时，CLI 会同时比对官方 npmjs 源与项目镜像源。若官方已发布新版但镜像尚未同步，CLI 坚决不写入镜像不存在的版本，而是安全回退到当前镜像可用的最高版本并输出提醒，保证后续依赖安装必定成功。
 - **Lockfile 自动同步**：依赖版本变更后，若未选择自动安装依赖，CLI 会在本地尝试执行 `pnpm install --lockfile-only --ignore-scripts` 刷新 `pnpm-lock.yaml`；若执行失败或本地缺失 pnpm，将自动清理旧的 `pnpm-lock.yaml`，防止遗留版本冲突的脏锁文件导致后续安装报错。
 - **显式关闭**：传递 `--no-sync-deps` 开关（或在 Plan 配置中设置 `syncDeps: false`）可完全跳过对齐。
+
+### 7. AI Skills 自动同步
+
+骨架生成后，CLI 总是执行 `npx -y @yss-ui/skills-cli@latest sync`，把最新官方 AI Skills 同步到新项目，交互模式不再询问。同步需要联网，最长等 120 秒。
+
+- **同步后校验**：模板提供 `scripts/check-skills.mjs` 时接着执行，校验不通过只告警。
+- **输出精简**：同步明细不刷屏，成功只输出一行「AI Skills 已同步至最新版」；失败时把子进程输出尾部打到 stderr 并告警，不影响退出码，可稍后在项目根目录手动执行同一命令。
+- **模板职责收敛**：CLI 调用模板脚本时固定追加 `--skip-skills --no-summary`，并设置环境变量 `YSS_CREATE_DRIVER=cli`。支持这两个参数的模板会跳过自带的 skills 同步与 `Next steps`，结尾只保留 CLI 的「后续快速开始」；旧模板会忽略这两个参数，生成结果不变。
+- **跳过同步**：`--offline` 自动跳过；无法联网的流水线可传 `--no-skills`。
+- **机器模式**：`--json` 输出新增 `skills` 字段，取值 `synced`、`failed`、`skipped`。

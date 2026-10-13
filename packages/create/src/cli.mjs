@@ -20,7 +20,7 @@ import {
   YssCreateError,
 } from './core/index.mjs';
 import { assertSupportedPackageManager, detectPackageManager, getNextSteps } from './pm.mjs';
-import { runGitInit, runInstall, runSkillsSync } from './post.mjs';
+import { runGitInit, runInstall } from './post.mjs';
 import { formatPreviewTable, resolvePreviewRegistry } from './preview.mjs';
 import {
   confirmCreation,
@@ -134,11 +134,10 @@ const readPlanFile = async planFile => {
  * 根据显式开关解析非交互模式下的后置动作；未显式开启一律为否。
  *
  * @param {Record<string, any>} values 解析后的命令行参数
- * @returns {{ install: boolean, skills: boolean, git: boolean }}
+ * @returns {{ install: boolean, git: boolean }}
  */
 const resolveExplicitPostActions = values => ({
   install: values.install === true && values['no-install'] !== true,
-  skills: values.skills === true && values['no-skills'] !== true,
   git: values.git === true && values['no-git'] !== true,
 });
 
@@ -146,7 +145,7 @@ const resolveExplicitPostActions = values => ({
  * 将 --xxx / --no-xxx 转为交互提问的预设值：显式传入则跳过提问。
  *
  * @param {Record<string, any>} values 解析后的命令行参数
- * @returns {{ install?: boolean, skills?: boolean, git?: boolean }}
+ * @returns {{ install?: boolean, git?: boolean }}
  */
 const resolvePostActionPresets = values => {
   const preset = key => {
@@ -154,8 +153,16 @@ const resolvePostActionPresets = values => {
     if (values[`no-${key}`] === true) return false;
     return undefined;
   };
-  return { install: preset('install'), skills: preset('skills'), git: preset('git') };
+  return { install: preset('install'), git: preset('git') };
 };
+
+/**
+ * 生成后是否同步最新 AI Skills：默认总是同步，仅 --no-skills 关闭（--skills 保留为兼容的空操作）。
+ *
+ * @param {Record<string, any>} values 解析后的命令行参数
+ * @returns {boolean}
+ */
+const shouldSyncSkills = values => values['no-skills'] !== true;
 
 /**
  * 打印 CLI 帮助文案。
@@ -187,8 +194,8 @@ ${pc.bold('自动化与流水线:')}
 
 ${pc.bold('后续行为控制:')}
   --install / --no-install    生成后是否安装依赖 (非交互默认否)
-  --skills / --no-skills      生成后是否同步 AI Skills 规范 (非交互默认否)
   --git / --no-git            是否初始化 Git 仓库与初始提交 (非交互默认否)
+  --no-skills                 跳过同步 AI Skills (默认生成后总是同步最新版，仅供无法联网的流水线使用)
   --pm <pnpm|npm|yarn>        显式指定包管理器
 
 ${pc.bold('进阶与调试:')}
@@ -290,10 +297,10 @@ const offerLatestVersion = async (result, args) => {
 };
 
 /**
- * 执行生成后的可选动作（安装依赖 / 同步 Skills / git init）。
+ * 执行生成后的可选动作（安装依赖 / git init）。AI Skills 已在 generate 内同步，不属于可选动作。
  *
  * @param {string} targetPath 生成的项目目录
- * @param {{ install: boolean, skills: boolean, git: boolean }} actions 要执行的动作
+ * @param {{ install: boolean, git: boolean }} actions 要执行的动作
  * @param {'pnpm' | 'npm' | 'yarn'} pm 包管理器
  * @param {(...args: any[]) => void} log 日志函数
  * @returns {Promise<void>}
@@ -302,10 +309,6 @@ const runPostActions = async (targetPath, actions, pm, log) => {
   if (actions.install) {
     log(pc.cyan(`\n📦 正在使用 ${pm} 安装项目依赖...`));
     await runInstall(targetPath, pm);
-  }
-  if (actions.skills) {
-    log(pc.cyan('\n🧠 正在同步官方 AI Skills 规范...'));
-    await runSkillsSync(targetPath);
   }
   if (actions.git) {
     log(pc.cyan('\n🔧 正在初始化 Git 仓库...'));
@@ -330,6 +333,7 @@ const printSuccess = (result, nextSteps, warnings, isJsonMode, title) => {
       templateCommit: result.templateCommit,
       dependencyUpdates: result.dependencyUpdates || [],
       lockfile: result.lockfile || 'unchanged',
+      skills: result.skills || 'skipped',
       warnings,
       nextSteps,
     });
@@ -414,6 +418,7 @@ export const runCli = async (rawArgv = process.argv) => {
         onProgress: msg => log(pc.dim(msg)),
         scaffoldStdout,
         install: explicitActions.install,
+        syncSkills: shouldSyncSkills(values),
       });
 
       const updatedDeps = (result.dependencyUpdates || []).filter(u => u.status === 'updated');
@@ -605,6 +610,7 @@ export const runCli = async (rawArgv = process.argv) => {
       allowGitPrompt: !isNonInteractive,
       install: isNonInteractive ? Boolean(values.install && !values['no-install']) : false,
       deferLockfile: !isNonInteractive,
+      syncSkills: shouldSyncSkills(values),
     });
 
     if (!isNonInteractive) p.log.success('微应用骨架代码生成完毕！');

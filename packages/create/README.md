@@ -48,6 +48,13 @@ npx @yss-ui/create --apply ./plan.json
 - **Lockfile 维护**：检测到依赖升级后，若未选择生成后立即安装依赖，CLI 会自动执行 `pnpm install --lockfile-only` 刷新根目录 `pnpm-lock.yaml`；若执行失败或无 pnpm 环境，将主动删除旧 lockfile，避免留下不一致的锁定导致后续安装失败。
 - **关闭对齐**：传入 `--no-sync-deps`（或在 plan/config 中设置 `syncDeps: false`）即可显式跳过依赖对齐，完全保留模板原写死版本。
 
+## AI Skills 自动同步
+
+生成后总是通过 `npx -y @yss-ui/skills-cli@latest sync` 把最新官方 AI Skills 同步到新项目，不再询问（需要联网，最长等 120 秒）；模板提供 `scripts/check-skills.mjs` 时会接着执行校验。同步明细不刷屏，只输出一行结果；同步失败只告警，不影响创建结果（可稍后在项目根目录手动执行同一命令）。
+
+- 模板脚本自带的 skills 同步与 `Next steps` 由 CLI 统一接管：调用模板时固定追加 `--skip-skills --no-summary` 并设置环境变量 `YSS_CREATE_DRIVER=cli`，结尾只保留 CLI 的「后续快速开始」。
+- `--offline` 自动跳过；无法联网的流水线可传 `--no-skills` 跳过。`--json` 输出新增 `skills: 'synced' | 'failed' | 'skipped'`。
+
 ## 退出码
 
 | 码 | 含义 |
@@ -63,7 +70,7 @@ npx @yss-ui/create --apply ./plan.json
 
 ## 隐私
 
-不收集任何遥测数据，不上报使用信息。网络访问仅限拉取模板仓库、你显式选择的依赖安装与 `@yss-ui/skills-cli` 同步，以及向当前 registry 发 GET 请求读取 `@yss-ui/create` 的最新版本号（公开元数据，不携带任何使用信息，24 小时内最多一次）。
+不收集任何遥测数据，不上报使用信息。网络访问仅限拉取模板仓库、对齐 `@yss-ui/*` 依赖版本、同步 AI Skills（`@yss-ui/skills-cli`）、你显式选择的依赖安装，以及向当前 registry 发 GET 请求读取 `@yss-ui/create` 的最新版本号（公开元数据，不携带任何使用信息，24 小时内最多一次）。
 
 ## 许可证
 

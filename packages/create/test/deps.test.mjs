@@ -386,8 +386,16 @@ registry = https://custom.registry.com
           json: async () => ({ 'dist-tags': { latest: '1.8.0' } }),
         });
 
+        const mockSpawn = () => ({
+          once: (evt, cb) => {
+            if (evt === 'exit') cb(0);
+          },
+          kill: () => undefined,
+        });
+
         const result = await syncDependencies(projectDir, {
           fetchImpl: mockFetch,
+          spawnImpl: mockSpawn,
         });
 
         // workspace:* 与 latest 不应作为候选被修改

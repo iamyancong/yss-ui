@@ -1,5 +1,5 @@
 /**
- * @fileoverview 脚手架后续可选操作模块（依赖安装、Skills 同步、Git 初始提交）。
+ * @fileoverview 脚手架后续可选操作模块（依赖安装、Git 初始提交）。
  * 所有子进程均以参数数组方式启动，不经过 shell 解析。
  */
 
@@ -52,16 +52,6 @@ const runCommand = (command, args, cwd, failureLabel) => {
 export const runInstall = (targetPath, pm = 'pnpm') => {
   const safePm = assertSupportedPackageManager(pm) || 'pnpm';
   return runCommand(safePm, ['install'], targetPath, '依赖安装');
-};
-
-/**
- * 在项目目录同步官方 AI Skills 规范。
- *
- * @param {string} targetPath 目标项目目录
- * @returns {Promise<void>}
- */
-export const runSkillsSync = targetPath => {
-  return runCommand('npx', ['-y', '@yss-ui/skills-cli', 'sync'], targetPath, 'AI Skills 同步');
 };
 
 /**

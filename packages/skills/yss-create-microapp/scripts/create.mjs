@@ -48,6 +48,7 @@ const printUsage = () => {
   --description <描述>           项目描述文案
   --openapi-url <http(s)://url>  OpenAPI JSON 文档地址
   --target-dir <父目录>          项目生成父目录 (默认当前工作目录)
+  --no-skills                   跳过同步 AI Skills (默认生成后总是同步最新版，仅供无法联网的流水线使用)
   --dry-run                     预检解析参数与路径，不写盘不联网`);
 };
 
@@ -117,10 +118,16 @@ const main = async () => {
   // eslint-disable-next-line no-console
   console.log(`- 本地缓存: ${resolved.cacheDir}`);
 
-  await generate(resolved, {
+  const result = await generate(resolved, {
     // eslint-disable-next-line no-console
     onProgress: msg => console.log(msg),
+    syncSkills: args['no-skills'] !== true,
   });
+
+  for (const warning of result.warnings || []) {
+    // eslint-disable-next-line no-console
+    console.warn(`⚠️  ${warning}`);
+  }
 
   // eslint-disable-next-line no-console
   console.log('🎉 本地微应用项目已创建。');

@@ -37,7 +37,15 @@ export { resolveOptions } from './options.mjs';
 
 export { diagnoseGitFailure, getGitErrorDetail, runGit, syncTemplate } from './template.mjs';
 
-export { customizeGeneratedProject, generate, runScaffoldScript } from './generator.mjs';
+export {
+  customizeGeneratedProject,
+  generate,
+  runScaffoldScript,
+  SCAFFOLD_DRIVER_ENV,
+  SCAFFOLD_DRIVER_FLAGS,
+} from './generator.mjs';
+
+export { SKILLS_CHECK_SCRIPT, SKILLS_CLI_SPEC, SKILLS_SYNC_MANUAL_COMMAND, syncSkills } from './skills.mjs';
 
 export { canonicalizePlan, computePlanHash, createPlan, parsePlanContent, PLAN_VERSION, verifyPlan } from './plan.mjs';
 

@@ -12,11 +12,12 @@ YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
 ## v1.7.0
 
-`2026-10-12`
+`2026-10-13`
 
 ### 🚀 Features
 
-- **yss-create-microapp**：生成后自动将 `@yss-ui/*` 依赖版本对齐至 registry 最新版，并自动维护 `pnpm-lock.yaml` 锁文件，解决沿用旧模板依赖与锁文件冲突问题；支持 `--no-sync-deps` 显式跳过 (#53)。
+- **yss-create-microapp**：生成后自动把 `@yss-ui/*` 依赖升到最新版，并处理好 `pnpm-lock.yaml`；想保留模板版本加 `--no-sync-deps` (#53)。
+- **yss-create-microapp**：生成后自动同步最新 AI Skills，不用再问用户。同步需要联网，最长等 120 秒；失败只提示，不影响创建。没网时加 `--no-skills` (#54)。
 
 ---
 

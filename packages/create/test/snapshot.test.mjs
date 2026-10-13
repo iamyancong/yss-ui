@@ -101,6 +101,21 @@ const proxyTarget = getArg('--proxy-target');
 // 模拟真实模板脚本会向 stdout 打印日志，用于验证 --json 模式下不会污染 stdout
 console.log('[stub] generating ' + appName + ' ...');
 
+// 按真实模板的 parseArgs 规则解析（不带值的 --xxx 视为布尔），写到项目目录之外供断言
+const parsed = {};
+for (let i = 0; i < args.length; i++) {
+  if (!args[i].startsWith('--')) continue;
+  const next = args[i + 1];
+  if (!next || next.startsWith('--')) parsed[args[i].slice(2)] = true;
+  else parsed[args[i].slice(2)] = args[++i];
+}
+await fs.mkdir(targetDir, { recursive: true });
+await fs.writeFile(path.join(targetDir, 'scaffold-received.json'), JSON.stringify({
+  argv: args,
+  parsed,
+  driver: process.env.YSS_CREATE_DRIVER || null,
+}));
+
 const appRoot = path.join(targetDir, appName);
 await fs.mkdir(path.join(appRoot, 'packages'), { recursive: true });
 await fs.mkdir(path.join(appRoot, 'src'), { recursive: true });
@@ -162,6 +177,7 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
               '--cache-dir',
               cacheSkill,
               '--no-sync-deps',
+              '--no-skills',
             ],
             { env: { ...process.env, CI: 'true' } }
           );
@@ -192,6 +208,7 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
               cacheCli,
               '--yes',
               '--no-sync-deps',
+              '--no-skills',
             ],
             { env: { ...process.env, CI: 'true' } }
           );
@@ -207,6 +224,23 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
 
       expect(Object.keys(skillFiles).sort()).toEqual(Object.keys(cliFiles).sort());
       expect(skillFiles).toEqual(cliFiles);
+
+      // 模板脚本收到「后处理由 create 负责」的开关，且按旧模板解析规则其他参数值不受影响
+      for (const outDir of [outSkill, outCli]) {
+        const received = JSON.parse(await fs.readFile(path.join(outDir, 'scaffold-received.json'), 'utf8'));
+        expect(received.argv.slice(-2)).toEqual(['--skip-skills', '--no-summary']);
+        expect(received.driver).toBe('cli');
+        expect(received.parsed).toEqual({
+          name: 'demo-app',
+          'target-dir': outDir,
+          port: FIXED_PORT,
+          'active-rule': '/demoApp',
+          'api-base': '/api/demoApp',
+          'proxy-target': expect.stringMatching(/^https?:\/\//),
+          'skip-skills': true,
+          'no-summary': true,
+        });
+      }
 
       // 5. --json 真实生成：模板脚本的 stdout 不能混入，stdout 必须可整体 JSON.parse
       const outJson = path.join(tempRoot, 'out-json');
@@ -230,6 +264,7 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
         '--yes',
         '--json',
         '--no-sync-deps',
+        '--no-skills',
       ]);
       expect(jsonRun.code).toBe(0);
       expect(jsonRun.stderr).toContain('[stub] generating');
@@ -240,6 +275,7 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
       expect(Array.isArray(jsonOutput.nextSteps)).toBe(true);
       expect(Array.isArray(jsonOutput.dependencyUpdates)).toBe(true);
       expect(jsonOutput.lockfile).toBe('unchanged');
+      expect(jsonOutput.skills).toBe('skipped');
       expect(await collectFilesWithHash(jsonOutput.targetPath)).toEqual(cliFiles);
 
       // 6. --plan-out → --apply 链路生成结果也与直接生成一致
@@ -270,7 +306,7 @@ await fs.writeFile(path.join(appRoot, 'src/index.ts'), '// Generated microapp co
       expect(planRun.code).toBe(0);
       await expect(fs.access(path.join(outApply, 'demo-app'))).rejects.toThrow();
 
-      const applyRun = await runProcess([cliEntry, '--apply', planFile, '--json']);
+      const applyRun = await runProcess([cliEntry, '--apply', planFile, '--json', '--no-skills']);
       expect(applyRun.code).toBe(0);
       const applyOutput = JSON.parse(applyRun.stdout.trim());
       expect(applyOutput.ok).toBe(true);

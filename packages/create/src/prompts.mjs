@@ -285,7 +285,7 @@ export const confirmCreation = async (resolved, sources, targetPath) => {
  * 询问后续初始化选项。
  *
  * @param {object} defaults 默认选择
- * @returns {Promise<{ install: boolean, skills: boolean, git: boolean }>}
+ * @returns {Promise<{ install: boolean, git: boolean }>}
  */
 export const promptPostActions = async (defaults = {}) => {
   const install =
@@ -295,16 +295,6 @@ export const promptPostActions = async (defaults = {}) => {
           await p.confirm({
             message: '是否立即安装项目依赖？',
             initialValue: false,
-          })
-        );
-
-  const skills =
-    defaults.skills !== undefined
-      ? defaults.skills
-      : handleCancel(
-          await p.confirm({
-            message: '是否同步官方 AI Skills 规范到新项目？',
-            initialValue: true,
           })
         );
 
@@ -320,7 +310,6 @@ export const promptPostActions = async (defaults = {}) => {
 
   return {
     install: Boolean(install),
-    skills: Boolean(skills),
     git: Boolean(git),
   };
 };

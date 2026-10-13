@@ -291,14 +291,14 @@ describe('prompts 交互提问流程测试', () => {
     );
     expect(confirmed).toBe(true);
 
+    p.confirm.mockClear();
     p.confirm
       .mockResolvedValueOnce(true) // install
-      .mockResolvedValueOnce(true) // skills
       .mockResolvedValueOnce(false); // git
 
     const post = await promptPostActions();
-    expect(post.install).toBe(true);
-    expect(post.skills).toBe(true);
-    expect(post.git).toBe(false);
+    expect(post).toEqual({ install: true, git: false });
+    expect(p.confirm).toHaveBeenCalledTimes(2);
+    expect(p.confirm.mock.calls.map(([arg]) => arg.message).join('\n')).not.toMatch(/Skills/);
   });
 });
