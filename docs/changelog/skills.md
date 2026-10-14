@@ -10,6 +10,16 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.7.2
+
+`2026-10-14`
+
+### 📝 Documentation
+
+- **yss-create-microapp**：在 SKILL.md 失败兜底策略中补充本地脚本缺失时的安装指引（优先 `npx @yss-ui/create`，或运行 `npx -y @yss-ui/skills-cli sync`）与禁止自行编写临时生成脚本的硬约束；在硬约束中明确使用内部模板仓库时的 Git 凭据前置要求 (#36)。
+
+---
+
 ## v1.7.1
 
 `2026-10-13`

@@ -10,6 +10,19 @@ toc: content
 
 YSS MCP 文档服务（`@yss-ui/mcp`）的版本更新记录。
 
+## v0.5.2
+
+`2026-10-14`
+
+### 🚀 Features
+
+- **skills 依赖引导**：索引构建时自动识别含脚本的 Skill 并标记 `requiresLocalInstall`；`get_skill` 在正文前置注入本地脚本依赖提示，其中微应用脚手架优先推荐 `npx @yss-ui/create` CLI 免装方式，其他脚本提示确认本地文件或 `npx -y @yss-ui/skills-cli sync` 安装，严禁自行编写替代脚本 (#36)。
+- **list_skills 增强**：对依赖本地脚本的 Skill 增加「需本地安装 Skills」标注，纯文档型 Skill 输出保持不变 (#36)。
+- **search_docs 标注**：搜索命中带本地脚本的 Skill 时在来源标注「（需本地安装 Skills）」(#36)。
+- **文档完善**：MCP README 与文档站 `/guide/mcp` 补充「MCP 与 Skills 的关系」小节及推荐的一体化接入步骤 (#36)。
+
+---
+
 ## v0.5.1
 
 `2026-10-14`

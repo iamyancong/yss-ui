@@ -23,6 +23,24 @@ const MOCK_INDEX = {
   ],
   skills: [
     {
+      name: 'yss-create-microapp',
+      category: 'app',
+      description: '在本地创建微应用脚手架工程',
+      content: '# Skill: yss-create-microapp\n\n创建本地微应用项目脚手架',
+      references: [],
+      scripts: [
+        {
+          path: 'create.mjs',
+          size: 1024,
+          firstLineComment: '脚手架入口',
+          content: '// 脚手架入口\nconsole.log(1);',
+        },
+      ],
+      hasReferences: false,
+      hasScripts: true,
+      requiresLocalInstall: true,
+    },
+    {
       name: 'yss-ui-business-page-generation',
       category: 'app',
       description: '指导生成或改造 Vue3 YSS UI 业务页面',
@@ -35,14 +53,26 @@ const MOCK_INDEX = {
       ],
       scripts: [
         {
-          path: 'scripts/create.mjs',
+          path: 'page-script.mjs',
           size: 1024,
-          firstLineComment: '脚手架入口',
-          content: '// 脚手架入口\nconsole.log(1);',
+          firstLineComment: '页面辅助脚本',
+          content: '// 页面辅助脚本\nconsole.log(2);',
         },
       ],
       hasReferences: true,
       hasScripts: true,
+      requiresLocalInstall: true,
+    },
+    {
+      name: 'ytable-usage',
+      category: 'app',
+      description: '指导使用 YTable 表格',
+      content: '# Skill: ytable-usage\n\n指导使用表格',
+      references: [],
+      scripts: [],
+      hasReferences: false,
+      hasScripts: false,
+      requiresLocalInstall: false,
     },
   ],
   codegenRules: '',
@@ -212,3 +242,62 @@ test('get_skill 支持 include 与精确 file 查询', () => {
   assert.ok(notFoundFile.includes('未找到'), '未找到文件应提示');
   assert.ok(notFoundFile.includes('可用附属文件'), '应列出可用附属文件');
 });
+
+test('needsLocalInstall 能准确识别带脚本与纯文档 Skill', () => {
+  const { needsLocalInstall } = require('./store');
+  assert.equal(needsLocalInstall({ requiresLocalInstall: true }), true);
+  assert.equal(needsLocalInstall({ scripts: [{ path: 'create.mjs' }] }), true);
+  assert.equal(needsLocalInstall({ requiresLocalInstall: false, scripts: [] }), false);
+  assert.equal(needsLocalInstall(null), false);
+});
+
+test('带脚本的 Skill 在 list_skills 中标注「需本地安装 Skills」，纯文档型 Skill 输出不变', () => {
+  const result = handleToolCall(store, 'list_skills');
+  // 带有脚本的 skill（如 yss-create-microapp 或 mock 中的 yss-ui-business-page-generation）
+  assert.match(result, /需本地安装 Skills/, '带脚本的 Skill 应打上「需本地安装 Skills」标记');
+  // 纯文档型 Skill（如 ytable-usage）不应包含该标记
+  const ytableLine = result.split('\n').find(line => line.includes('ytable-usage'));
+  assert.ok(ytableLine, '列表中应包含 ytable-usage');
+  assert.ok(!ytableLine.includes('需本地安装 Skills'), '纯文档型 Skill 不应标注「需本地安装 Skills」');
+});
+
+test('带脚本的 Skill 在 get_skill 前置输出安装指引，且仅脚手架 Skill 推荐 CLI', () => {
+  // 1. yss-create-microapp: 推荐 CLI 方式免装 Skills，且脚本路径为 scripts/create.mjs（无重复 scripts/）
+  const microappResult = handleToolCall(store, 'get_skill', { name: 'yss-create-microapp' });
+  assert.ok(microappResult.includes('⚠️ **前置提示**'), 'yss-create-microapp 应包含前置提示');
+  assert.ok(microappResult.includes('npx @yss-ui/create'), 'yss-create-microapp 应推荐优先使用 CLI 方式');
+  assert.ok(microappResult.includes('`scripts/create.mjs`'), '脚本路径应为 scripts/create.mjs，不得出现 scripts/scripts');
+  assert.ok(!microappResult.includes('scripts/scripts/create.mjs'), '不得出现重复的 scripts/scripts/ 前缀');
+  assert.ok(microappResult.includes('npx -y @yss-ui/skills-cli sync'), '应提示脚本方式使用 skills-cli 安装');
+  assert.ok(microappResult.includes('禁止自行编写替代脚本'), '应包含严禁自行编写替代脚本的警告');
+
+  // 2. 其他带脚本的 Skill（如 mock 中的 yss-ui-business-page-generation）: 有前置提示与 sync 引导，但绝对不得推荐 @yss-ui/create
+  const mockStore = new DocStore(MOCK_INDEX);
+  const otherResult = handleToolCall(mockStore, 'get_skill', { name: 'yss-ui-business-page-generation' });
+  assert.ok(otherResult.includes('⚠️ **前置提示**'), '其他带脚本 Skill 也应有前置提示');
+  assert.ok(otherResult.includes('npx -y @yss-ui/skills-cli sync'), '其他带脚本 Skill 应提示 skills-cli sync');
+  assert.ok(!otherResult.includes('@yss-ui/create'), '其他非微应用脚手架 Skill 绝对不得出现 @yss-ui/create 推荐');
+
+  // 3. 纯文档型 Skill（如 ytable-usage）无前置 banner
+  const docResult = handleToolCall(store, 'get_skill', { name: 'ytable-usage' });
+  assert.ok(!docResult.includes('⚠️ **前置提示**'), '纯文档型 Skill 不应输出前置提示');
+  assert.ok(docResult.startsWith('# Skill: ytable-usage'), '纯文档型 Skill 应直接以标题开头');
+});
+
+test('search_docs 命中带脚本 Skill 时在来源标注「（需本地安装 Skills）」，纯文档型不标注', () => {
+  const mockStore = new DocStore(MOCK_INDEX);
+  // 1. 命中带脚本的 skill
+  const hits = mockStore.search('创建微应用', 5);
+  assert.ok(hits.length > 0, '搜索应命中微应用');
+  const microappHit = hits.find(h => h.source.includes('yss-create-microapp'));
+  assert.ok(microappHit, '结果列表中应包含 yss-create-microapp');
+  assert.equal(microappHit.source, 'skill: yss-create-microapp（需本地安装 Skills）');
+
+  // 2. 命中纯文档型的 skill
+  const tableHits = mockStore.search('使用表格', 5);
+  assert.ok(tableHits.length > 0, '搜索应命中表格');
+  const tableHit = tableHits.find(h => h.source.includes('ytable-usage'));
+  assert.ok(tableHit, '结果列表中应包含 ytable-usage');
+  assert.equal(tableHit.source, 'skill: ytable-usage');
+});
+

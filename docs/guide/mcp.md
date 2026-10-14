@@ -18,6 +18,23 @@ toc: content
 
 相比一次性塞入全量 `llms-full.txt`，MCP 的优势是**准**（只取当前需要的章节，不稀释上下文）和**新**（索引随包版本发布，不受工具缓存影响）。推荐组合 = Skills + MCP。
 
+## MCP 与 Skills 的关系
+
+MCP 与 Skills 各司其职，协同配合：
+- **MCP Server（只读查询）**：纯只读、零网络、零本地写盘或命令执行。用于 AI 编码时即时查阅组件真实 API、171+ 官方 Demo 源码与技能规范说明。
+- **Skills 技能（规范与脚本）**：将开发规范硬约束与**内置执行脚本**同步到项目或全局编辑器目录（`.agents/skills/`、`.cursor/skills/` 等）。
+- **协同约束**：纯文档型 Skill 通过 MCP 即可直接阅读并遵守；但包含**本地可执行脚本**的 Skill（如 `yss-create-microapp` 创建微应用脚手架）需要通过 `@yss-ui/skills-cli` 安装到本地。当只安装了 MCP 时，`get_skill` 会在前置位置显式提示脚本依赖并要求先执行安装，**严禁自行编写替代脚本**。
+
+### 推荐一体化接入
+
+```bash
+# 1. 接入 MCP Server（供 AI 工具按需精准查询 API 与 Demo 源码）
+npx -y @yss-ui/mcp install
+
+# 2. 同步官方开发 Skills（供 AI 遵循硬约束规范与执行微应用脚手架）
+npx -y @yss-ui/skills-cli sync
+```
+
 ## 可用工具
 
 | 工具 | 用途 |

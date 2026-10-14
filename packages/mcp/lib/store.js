@@ -285,8 +285,9 @@ class DocStore {
       }
       const score = scoreText(`${skill.name} ${skill.description}`) + scoreText(`${skill.content}${refText}`) * 0.6;
       if (score > 0.3) {
+        const installNotice = needsLocalInstall(skill) ? '（需本地安装 Skills）' : '';
         hits.push({
-          source: `skill: ${skill.name}`,
+          source: `skill: ${skill.name}${installNotice}`,
           heading: skill.description.slice(0, 60),
           score,
           snippet: skill.content.slice(0, 400),
@@ -299,4 +300,15 @@ class DocStore {
   }
 }
 
-module.exports = { DocStore, tokenize, normalizeName };
+/**
+ * 判定 Skill 是否依赖本地安装（包含辅助执行脚本）。
+ *
+ * @param {object} skill Skill 对象
+ * @returns {boolean} 是否需要本地安装
+ */
+function needsLocalInstall(skill) {
+  if (!skill) return false;
+  return Boolean(skill.requiresLocalInstall || (skill.scripts && skill.scripts.length > 0));
+}
+
+module.exports = { DocStore, tokenize, normalizeName, needsLocalInstall };

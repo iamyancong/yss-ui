@@ -2,7 +2,7 @@
  * MCP 工具定义与处理器：全部基于本地索引，零网络、确定性。
  */
 
-const { DocStore } = require('./store');
+const { DocStore, needsLocalInstall } = require('./store');
 
 /** 工具定义（tools/list 返回的 JSON Schema）。 */
 const TOOL_DEFINITIONS = [
@@ -291,6 +291,9 @@ function handleToolCall(store, name, args = {}) {
           if (skill.hasScripts || (skill.scripts && skill.scripts.length > 0)) {
             tags.push(`scripts: ${skill.scripts?.length || 1}`);
           }
+          if (needsLocalInstall(skill)) {
+            tags.push('需本地安装 Skills');
+          }
           const tagSuffix = tags.length > 0 ? ` [${tags.join(', ')}]` : '';
           lines.push(`- ${skill.name}${tagSuffix}: ${skill.description}`);
         }
@@ -334,7 +337,24 @@ function handleToolCall(store, name, args = {}) {
         return `未找到 Skill "${skill.name}" 下的文件 "${args.file}"。可用附属文件:\n${available.map(f => `- ${f}`).join('\n') || '（无附属文件）'}`;
       }
 
-      let output = `# Skill: ${skill.name}\n\n> ${skill.description}\n\n${skill.content}`;
+      let banner = '';
+      if (needsLocalInstall(skill)) {
+        const entryScript =
+          skill.scripts?.find(s => s.path === 'create.mjs' || !s.path.includes('/')) || skill.scripts?.[0];
+        const mainScript = entryScript ? `scripts/${entryScript.path}` : '内置脚本';
+        if (skill.name === 'yss-create-microapp') {
+          banner =
+            `> ⚠️ **前置提示**：本 Skill 依赖脚手架 CLI 或本地脚本 \`${mainScript}\`，MCP 仅提供规范说明，无法直接执行命令或生成文件。\n` +
+            `> - **推荐方式（免装 Skills）**：优先使用官方 CLI 创建项目，例如：\`npx @yss-ui/create "<appName>" --name-zh "<中文名>" --target-dir "<目录>" --yes --json\`；\n` +
+            `> - **脚本方式（需本地文件）**：若需使用内置脚本 \`${mainScript}\`，执行前先确认本地项目（如 \`.agents/skills/${skill.name}/\`、\`.agent/skills/${skill.name}/\`、\`.cursor/skills/${skill.name}/\`）或全局目录中对应文件存在；不存在时再运行 \`npx -y @yss-ui/skills-cli sync\` 安装，**禁止自行编写替代脚本**。\n\n`;
+        } else {
+          banner =
+            `> ⚠️ **前置提示**：本 Skill 依赖本地脚本 \`${mainScript}\`，MCP 仅提供规范说明，无法直接执行命令或生成文件。\n` +
+            `> 执行前先确认本地项目（如 \`.agents/skills/${skill.name}/\`、\`.agent/skills/${skill.name}/\`、\`.cursor/skills/${skill.name}/\`）或全局目录中对应文件存在；不存在时请先运行 \`npx -y @yss-ui/skills-cli sync\` 安装 Skills，**禁止自行编写替代脚本**。\n\n`;
+        }
+      }
+
+      let output = `${banner}# Skill: ${skill.name}\n\n> ${skill.description}\n\n${skill.content}`;
       const includes = Array.isArray(args.include) ? args.include : [];
 
       if (includes.includes('references') && skill.references && skill.references.length > 0) {

@@ -30,7 +30,7 @@ toc: content
 - 优先推荐调用 CLI 方式：`npx @yss-ui/create --yes --json`；在完全离线或无 npm 环境下回退使用内置脚本 `node .agents/skills/yss-create-microapp/scripts/create.mjs`。
 - 真正拉取模板前必须先使用相同参数追加 `--dry-run`，确认参数、缓存边界和最终路径。
 - 模板缓存必须位于系统临时目录且名称以 `yss-frontend-template` 开头；脚本不得对任意用户目录执行 `reset --hard` 或 `clean -fd`。
-- 默认模板为 GitHub 公开仓库 `https://github.com/iamyancong/microapp-template-vue3.git`（分支 `main`），无需凭据；非交互模式不会询问 git 凭据。用户需要其他模板时用 `--template-url` 或环境变量 `YSS_FRONTEND_TEMPLATE_URL` 覆盖，不得自行猜测替代地址。
+- 默认模板为 GitHub 公开仓库 `https://github.com/iamyancong/microapp-template-vue3.git`（分支 `main`），无需凭据；非交互模式不会询问 git 凭据。用户指定内部模板仓库时，需确保本机已有对应 Git 凭据与访问权限，否则 dry-run 后真实拉取会失败；用户需要其他模板时用 `--template-url` 或环境变量 `YSS_FRONTEND_TEMPLATE_URL` 覆盖，不得自行猜测替代地址。
 - 可选参数默认值：`port` 默认从 8081 起向上探测首个空闲端口；`activeRule` 默认由 `appName` 推导小驼峰（驼峰不合法时退回短横线，如 `app-1 → /app-1`、`crm2 → /crm-2`）；`apiBase` 默认为 `/api${activeRule}`；`proxyTarget` 优先级为 `--proxy-target` > `YSS_PROXY_TARGET` 环境变量 > 常量预设。
 - CLI 的 `--json` 输出中 stdout 只有一行 JSON，日志在 stderr；解析结果时只读 stdout。拼错的参数（如 `--dryrun`）会直接退出码 2，不要靠猜测重试。
 - 生成后默认会自动将 `@yss-ui/*` 依赖对齐至 registry 最新版本并处理 `pnpm-lock.yaml` 锁定；如需严格保留模板原写死版本可传入 `--no-sync-deps`。
@@ -75,8 +75,9 @@ node .agents/skills/yss-create-microapp/scripts/create.mjs \
 
 ## 失败兜底策略
 
+- 本地脚本缺失时：若执行 `scripts/create.mjs` 前发现对应文件在项目或全局不存在，必须提示用户运行 `npx -y @yss-ui/skills-cli sync` 安装官方 Skills（或使用 `npx @yss-ui/create`），并立即终止；**严禁自行编写临时替代脚本**。
 - 参数不完整或不合法时，输出明确中文原因及示例（退出码 2），不带错误默认值继续。
 - 目标目录已存在时立即中止（退出码 3），提示更换目录或应用名。
 - 模板缓存不是期望的 Git 仓库或 remote 不一致时，报告冲突并换用新的安全缓存路径，不清理原目录。
 - 模板拉取或脚手架失败时，保留完整错误和已生成路径，不在不明状态下反复覆盖重试。
-- 模板拉取失败（退出码 5）时，把报错中的诊断原样转告用户：检查能否访问 GitHub，或由用户提供 `--template-url`。
+- 模板拉取失败（退出码 5）时，把报错中的诊断原样转告用户：检查能否访问 GitHub，或由用户提供 `--template-url`；若使用内部模板仓库，确保本机已配置对应 Git 访问权限（凭据）。

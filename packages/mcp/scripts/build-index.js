@@ -273,6 +273,8 @@ function buildSkills() {
         }))
       : [];
 
+    const hasScripts = scripts.length > 0;
+
     skills.push({
       name: entry.name,
       category: categoryOf[entry.name] || 'other',
@@ -281,7 +283,8 @@ function buildSkills() {
       references,
       scripts,
       hasReferences: references.length > 0,
-      hasScripts: scripts.length > 0,
+      hasScripts,
+      requiresLocalInstall: hasScripts,
     });
   }
   return skills;

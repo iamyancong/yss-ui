@@ -15,9 +15,25 @@ AI 生成 YSS UI 业务页面不准确的根因之一，是模型只能"凭记�
 
 查询零网络、零 LLM 依赖、确定性输出；索引版本与组件库版本对齐。
 
+## MCP 与 Skills 的关系
+
+- **@yss-ui/mcp**：负责**只读知识查询**（组件 API 表、官方 Demo 源码、Skills 规范说明与硬规则），零网络、确定性，不直接执行命令或写盘。
+- **@yss-ui/skills-cli**：负责将**开发规范与内置执行脚本**同步到本地项目或全局配置（`.agents/skills/`、`.cursor/skills/` 等）。
+- **协同约束**：纯文档型 Skill 经由 MCP 即可完整查阅；而带本地执行脚本的 Skill（如 `yss-create-microapp` 创建微应用脚手架）必须先在本地安装 Skills 才能执行其包装脚本。MCP 会在读取时给出前置安装提示，**严禁自行编写替代脚本**。
+
+### 推荐一体化接入
+
+```bash
+# 1. 安装 MCP 查询服务（配置 AI 工具按需查 API 与 Demo）
+npx -y @yss-ui/mcp install
+
+# 2. 同步开发规范与内置脚手架脚本到本地项目
+npx -y @yss-ui/skills-cli sync
+```
+
 ## 使用
 
-### 一键安装（推荐）
+### 一键安装 MCP（推荐）
 
 ```bash
 npx -y @yss-ui/mcp install                    # 交互式勾选 AI 工具
