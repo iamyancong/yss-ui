@@ -144,7 +144,46 @@ registry = https://custom.registry.com
       expect(res.warning).toContain('无法获取 @yss-ui/components 最新元数据');
     });
 
-    it('npmmirror 获取元数据失败时支持从 npm 官方源兜底最新版本', async () => {
+    it('元数据 404 时直接返回 null 且不进行重试', async () => {
+      let callCount = 0;
+      const mockFetch = async () => {
+        callCount += 1;
+        return { ok: false, status: 404 };
+      };
+
+      const res = await fetchPackageMetadata('@yss-ui/not-exist', OFFICIAL_REGISTRY, {
+        fetchImpl: mockFetch,
+      });
+
+      expect(res).toBeNull();
+      expect(callCount).toBe(1);
+    });
+
+    it('镜像元数据 404，官方是 1.0.6，镜像里有 1.0.6 这个版本：期望兜底到 1.0.6', async () => {
+      const mockFetch = async url => {
+        if (url.includes('registry.npmjs.org')) {
+          return {
+            ok: true,
+            json: async () => ({
+              'dist-tags': { latest: '1.0.6' },
+            }),
+          };
+        }
+        if (url.includes('1.0.6')) {
+          return { ok: true, status: 200 };
+        }
+        return { ok: false, status: 404 };
+      };
+
+      const res = await resolveLatestPackageVersion('@yss-ui/utils', 'https://registry.npmmirror.com', {
+        fetchImpl: mockFetch,
+      });
+
+      expect(res.resolvedVersion).toBe('1.0.6');
+      expect(res.warning).toContain('已从 npm 官方源兜底至最新版本 1.0.6');
+    });
+
+    it('镜像元数据 404，镜像里也没有 1.0.6 这个版本：期望 resolvedVersion 为 null，保留模板版本', async () => {
       const mockFetch = async url => {
         if (url.includes('registry.npmjs.org')) {
           return {
@@ -161,8 +200,31 @@ registry = https://custom.registry.com
         fetchImpl: mockFetch,
       });
 
+      expect(res.resolvedVersion).toBeNull();
+      expect(res.warning).toContain('无法获取 @yss-ui/utils 最新元数据，已保留模板版本');
+    });
+
+    it('第一次超时、第二次成功：期望重试后拿到版本，fetch 被调用两次', async () => {
+      let callCount = 0;
+      const mockFetch = async () => {
+        callCount += 1;
+        if (callCount === 1) {
+          return null;
+        }
+        return {
+          ok: true,
+          json: async () => ({
+            'dist-tags': { latest: '1.0.6' },
+          }),
+        };
+      };
+
+      const res = await resolveLatestPackageVersion('@yss-ui/utils', OFFICIAL_REGISTRY, {
+        fetchImpl: mockFetch,
+      });
+
       expect(res.resolvedVersion).toBe('1.0.6');
-      expect(res.warning).toContain('已从 npm 官方源兜底至最新版本 1.0.6');
+      expect(callCount).toBe(2);
     });
 
     it('超时与网络异常优雅返回 null', async () => {
@@ -447,6 +509,77 @@ registry = https://custom.registry.com
         expect(result.warnings.length).toBeGreaterThan(0);
         const pkgJson = JSON.parse(await fs.readFile(path.join(projectDir, 'packages/package.json'), 'utf8'));
         expect(pkgJson.dependencies['@yss-ui/components']).toBe('^1.7.3');
+      } finally {
+        await fs.rm(projectDir, { recursive: true, force: true });
+      }
+    });
+
+    it('模板是 ^1.0.6，查到的也是 1.0.6：期望 updates 状态为 unchanged，warnings 为空', async () => {
+      const projectDir = await setupProjectFixture();
+      try {
+        // 配置 npmmirror 为生效 scoped registry
+        await fs.writeFile(
+          path.join(projectDir, '.npmrc'),
+          '@yss-ui:registry=https://registry.npmmirror.com/\n'
+        );
+
+        const pkgPath = path.join(projectDir, 'packages/package.json');
+        await fs.writeFile(
+          pkgPath,
+          JSON.stringify(
+            {
+              name: 'test-child',
+              dependencies: {
+                '@yss-ui/utils': '^1.0.6',
+              },
+            },
+            null,
+            2
+          )
+        );
+
+        const rootPkgPath = path.join(projectDir, 'package.json');
+        await fs.writeFile(
+          rootPkgPath,
+          JSON.stringify(
+            {
+              name: 'test-root',
+              devDependencies: {},
+            },
+            null,
+            2
+          )
+        );
+
+        const mockFetch = async url => {
+          if (url.includes('registry.npmjs.org')) {
+            return {
+              ok: true,
+              json: async () => ({
+                'dist-tags': { latest: '1.0.6' },
+              }),
+            };
+          }
+          if (url.includes('1.0.6')) {
+            return { ok: true, status: 200 };
+          }
+          return { ok: false, status: 404 };
+        };
+
+        const result = await syncDependencies(projectDir, {
+          env: {},
+          fetchImpl: mockFetch,
+          spawnImpl: mockSpawnSuccess,
+        });
+
+        expect(result.updates.length).toBe(1);
+        expect(result.updates[0]).toMatchObject({
+          name: '@yss-ui/utils',
+          from: '^1.0.6',
+          to: '^1.0.6',
+          status: 'unchanged',
+        });
+        expect(result.warnings).toEqual([]);
       } finally {
         await fs.rm(projectDir, { recursive: true, force: true });
       }

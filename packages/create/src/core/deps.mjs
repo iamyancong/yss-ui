@@ -152,18 +152,100 @@ export const fetchPackageMetadata = async (pkgName, registry, options = {}) => {
   const timeoutMs = options.timeoutMs ?? SINGLE_PKG_TIMEOUT_MS;
   if (typeof fetchImpl !== 'function' || options.signal?.aborted) return null;
 
+  const runFetch = async () => {
+    if (options.signal?.aborted) return null;
+
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    options.signal?.addEventListener('abort', abort, { once: true });
+
+    const encodedPkg = encodeURIComponent(pkgName).replace(/^%40/, '@');
+    const targetUrl = `${normalizeRegistry(registry)}/${encodedPkg}`;
+
+    let timer;
+    const timeoutPromise = new Promise(resolve => {
+      timer = setTimeout(() => {
+        abort();
+        resolve(null);
+      }, timeoutMs);
+    });
+
+    const requestPromise = (async () => {
+      try {
+        const response = await fetchImpl(targetUrl, {
+          headers: {
+            accept: 'application/json, application/vnd.npm.install-v1+json; q=0.8',
+          },
+          signal: controller.signal,
+        });
+        if (response?.status === 404) {
+          return { notFound: true };
+        }
+        if (!response?.ok) return null;
+        const data = await response.json();
+        const latest = data?.['dist-tags']?.latest;
+        const versions = data?.versions || {};
+        const latestVersionInfo = latest && versions[latest] ? versions[latest] : null;
+        const peerDependencies = latestVersionInfo?.peerDependencies || {};
+        return {
+          latest: typeof latest === 'string' ? latest : undefined,
+          versions,
+          peerDependencies,
+        };
+      } catch {
+        return null;
+      }
+    })();
+
+    try {
+      return await Promise.race([requestPromise, timeoutPromise]);
+    } finally {
+      clearTimeout(timer);
+      options.signal?.removeEventListener('abort', abort);
+    }
+  };
+
+  const initial = await runFetch();
+  if (initial?.notFound) {
+    return null;
+  }
+  if (initial !== null || options.signal?.aborted) {
+    return initial;
+  }
+  const retryResult = await runFetch();
+  if (retryResult?.notFound) {
+    return null;
+  }
+  return retryResult;
+};
+
+/**
+ * 检查特定版本在指定 registry 中是否存在（返回 200 状态）。
+ * 用于公共镜像（如 npmmirror）在包级元数据不可用时，验证具体版本是否可以从该镜像下载。
+ *
+ * @param {string} pkgName 包名
+ * @param {string} version 版本号
+ * @param {string} registry registry 地址
+ * @param {{ timeoutMs?: number, fetchImpl?: typeof fetch, signal?: AbortSignal }} [options]
+ * @returns {Promise<boolean>}
+ */
+export const checkPackageVersionExists = async (pkgName, version, registry, options = {}) => {
+  const fetchImpl = options.fetchImpl || globalThis.fetch;
+  const timeoutMs = options.timeoutMs ?? SINGLE_PKG_TIMEOUT_MS;
+  if (typeof fetchImpl !== 'function' || options.signal?.aborted) return false;
+
   const controller = new AbortController();
   const abort = () => controller.abort();
   options.signal?.addEventListener('abort', abort, { once: true });
 
   const encodedPkg = encodeURIComponent(pkgName).replace(/^%40/, '@');
-  const targetUrl = `${normalizeRegistry(registry)}/${encodedPkg}`;
+  const targetUrl = `${normalizeRegistry(registry)}/${encodedPkg}/${encodeURIComponent(version)}`;
 
   let timer;
   const timeoutPromise = new Promise(resolve => {
     timer = setTimeout(() => {
       abort();
-      resolve(null);
+      resolve(false);
     }, timeoutMs);
   });
 
@@ -175,19 +257,9 @@ export const fetchPackageMetadata = async (pkgName, registry, options = {}) => {
         },
         signal: controller.signal,
       });
-      if (!response.ok) return null;
-      const data = await response.json();
-      const latest = data?.['dist-tags']?.latest;
-      const versions = data?.versions || {};
-      const latestVersionInfo = latest && versions[latest] ? versions[latest] : null;
-      const peerDependencies = latestVersionInfo?.peerDependencies || {};
-      return {
-        latest: typeof latest === 'string' ? latest : undefined,
-        versions,
-        peerDependencies,
-      };
+      return response?.status === 200 || (response?.ok && response?.status === undefined);
     } catch {
-      return null;
+      return false;
     }
   })();
 
@@ -238,11 +310,19 @@ export const resolveLatestPackageVersion = async (pkgName, projectRegistry, opti
   if (!projectLatest) {
     const isPublicMirror = /npmmirror\.com|taobao\.org|cnpmjs\.org/i.test(normProjectReg);
     if (isPublicMirror && officialLatest) {
-      return {
-        resolvedVersion: officialLatest,
-        warning: `当前源 (${normProjectReg}) 无法获取 ${pkgName} 最新元数据，已从 npm 官方源兜底至最新版本 ${officialLatest}`,
-        peerDependencies: officialResult?.peerDependencies,
-      };
+      const existsInMirror = await checkPackageVersionExists(
+        pkgName,
+        officialLatest,
+        normProjectReg,
+        options
+      );
+      if (existsInMirror) {
+        return {
+          resolvedVersion: officialLatest,
+          warning: `当前源 (${normProjectReg}) 无法获取 ${pkgName} 最新元数据，已从 npm 官方源兜底至最新版本 ${officialLatest}`,
+          peerDependencies: officialResult?.peerDependencies,
+        };
+      }
     }
     return {
       resolvedVersion: null,
@@ -441,6 +521,7 @@ export const syncDependencies = async (targetProjectRoot, options = {}) => {
     deferLockfile = false,
     fetchImpl = globalThis.fetch,
     spawnImpl = spawn,
+    env = process.env,
     onProgress = () => undefined,
   } = options;
 
@@ -494,7 +575,7 @@ export const syncDependencies = async (targetProjectRoot, options = {}) => {
   }
 
   // 3. 解析 registry
-  const projectRegistry = await resolveProjectRegistry(targetProjectRoot);
+  const projectRegistry = await resolveProjectRegistry(targetProjectRoot, env);
 
   // 4. 若为 offline 模式，完全跳过网络请求
   if (offline) {
@@ -537,9 +618,6 @@ export const syncDependencies = async (targetProjectRoot, options = {}) => {
   const resultMap = new Map();
   for (const item of queryResults) {
     resultMap.set(item.pkgName, item);
-    if (item.warning && !preferOffline) {
-      warnings.push(item.warning);
-    }
   }
 
   // 6. 应用版本更新并写回 package.json
@@ -554,7 +632,16 @@ export const syncDependencies = async (targetProjectRoot, options = {}) => {
 
       if (!resolvedVersion) {
         if (!preferOffline) {
-          warnings.push(`查询 ${pkgName} 最新版本失败或超时，已保留原版本 ${occ.originalSpec}`);
+          if (queryInfo?.warning) {
+            if (!warnings.includes(queryInfo.warning)) {
+              warnings.push(queryInfo.warning);
+            }
+          } else {
+            const defaultFailWarning = `查询 ${pkgName} 最新版本失败或超时，已保留原版本 ${occ.originalSpec}`;
+            if (!warnings.includes(defaultFailWarning)) {
+              warnings.push(defaultFailWarning);
+            }
+          }
         }
         updates.push({
           name: pkgName,
@@ -583,6 +670,10 @@ export const syncDependencies = async (targetProjectRoot, options = {}) => {
 
       // 存在版本升级变更
       hasVersionChange = true;
+      if (queryInfo?.warning && !preferOffline && !warnings.includes(queryInfo.warning)) {
+        warnings.push(queryInfo.warning);
+      }
+
       const fileJson = fileContents.get(occ.relPath);
       if (fileJson && fileJson[occ.section]) {
         fileJson[occ.section][pkgName] = targetSpec;
