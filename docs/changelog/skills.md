@@ -10,7 +10,7 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
-## v1.7.2
+## v1.8.0
 
 `2026-10-14`
 
