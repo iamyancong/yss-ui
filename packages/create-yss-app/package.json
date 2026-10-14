@@ -1,6 +1,6 @@
 {
   "name": "create-yss-app",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "基于 @yss-ui/create 的微应用创建 CLI 别名包，支持 npm create yss-app",
   "license": "MIT",
   "scripts": {
@@ -13,7 +13,10 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "files": ["index.mjs", "README.md"],
+  "files": [
+    "index.mjs",
+    "README.md"
+  ],
   "publishConfig": {
     "access": "public"
   },
@@ -22,7 +25,14 @@
     "url": "https://github.com/iamyancong/yss-ui.git",
     "directory": "packages/create-yss-app"
   },
-  "keywords": ["yss", "yss-ui", "create", "scaffold", "microapp", "cli"],
+  "keywords": [
+    "yss",
+    "yss-ui",
+    "create",
+    "scaffold",
+    "microapp",
+    "cli"
+  ],
   "dependencies": {
     "@yss-ui/create": "workspace:^"
   }
