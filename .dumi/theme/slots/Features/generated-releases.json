@@ -11,7 +11,7 @@
   {
     "key": "skills",
     "pkg": "@yss-ui/skills",
-    "version": "v1.9.0",
+    "version": "v1.9.1",
     "date": "2026-10-15",
     "highlight": "30 个 skill 的触发路由评测与安全扫描并入发布门禁",
     "link": "/changelog/skills",
