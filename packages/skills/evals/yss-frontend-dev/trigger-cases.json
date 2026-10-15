@@ -1,0 +1,42 @@
+{
+  "skill": "yss-frontend-dev",
+  "purpose": "前端业务页面开发总入口与流程编排器触发评测",
+  "cases": [
+    {
+      "id": "dev-frontend-page",
+      "prompt": "开发前端页面",
+      "should_trigger": true,
+      "assert": "前端页面开发触发 yss-frontend-dev。"
+    },
+    {
+      "id": "new-frontend-view",
+      "prompt": "新增前端页面与业务功能",
+      "should_trigger": true,
+      "assert": "新增页面与功能触发 yss-frontend-dev。"
+    },
+    {
+      "id": "modify-frontend-page",
+      "prompt": "修改前端页面业务功能",
+      "should_trigger": true,
+      "assert": "修改前端页面触发 yss-frontend-dev。"
+    },
+    {
+      "id": "english-develop-page",
+      "prompt": "develop a frontend page for my project",
+      "should_trigger": true,
+      "assert": "英文提示触发 yss-frontend-dev。"
+    },
+    {
+      "id": "near-miss-create-app",
+      "prompt": "在线使用官方脚手架初始化工程骨架",
+      "should_trigger": false,
+      "assert": "新建微应用工程归 create-yss-app。"
+    },
+    {
+      "id": "near-miss-commit",
+      "prompt": "前端代码提交",
+      "should_trigger": false,
+      "assert": "代码提交归 frontend-commit。"
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+name: Export Skills to skills.sh Distribution Repo
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry-run mode (validate and generate without pushing to remote)"
+        required: false
+        default: false
+        type: boolean
+  workflow_call:
+    secrets:
+      SKILLS_SH_DEPLOY_KEY:
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    name: Validate, Export & Sync to yss-ui-skills
+    runs-on: ubuntu-latest
+    env:
+      HAS_DEPLOY_KEY: ${{ secrets.SKILLS_SH_DEPLOY_KEY != '' }}
+    steps:
+      - name: Checkout yss-ui repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8.10.0
+          run_install: false
+
+      - name: Run Skills Security Gate
+        run: |
+          node scripts/scan-skills-security.js
+          python3 scripts/verify-no-secrets.py
+
+      - name: Run Export Unit Tests
+        run: |
+          node scripts/export-skills-sh.test.mjs
+
+      - name: Export Public Skills
+        run: |
+          node scripts/export-skills-sh.mjs --clean --out-dir dist-skills-sh
+
+      - name: Sync Branch to iamyancong/yss-ui-skills
+        if: ${{ !inputs.dry_run && env.HAS_DEPLOY_KEY == 'true' }}
+        env:
+          DEPLOY_KEY: ${{ secrets.SKILLS_SH_DEPLOY_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          TEMP_CLONE=$(mktemp -d)
+          git clone git@github.com:iamyancong/yss-ui-skills.git "$TEMP_CLONE"
+
+          # 拷贝导出产物
+          rm -rf "$TEMP_CLONE/skills" "$TEMP_CLONE/README.md" "$TEMP_CLONE/LICENSE"
+          cp -r dist-skills-sh/* "$TEMP_CLONE/"
+
+          cd "$TEMP_CLONE"
+          if [[ -n $(git status -s) ]]; then
+            BRANCH="sync-skills-${GITHUB_SHA::7}"
+            git checkout -b "$BRANCH"
+            git add -A
+            git commit -m "chore(skills): sync public skills from yss-ui@${GITHUB_SHA::7}"
+            git push origin "$BRANCH"
+            echo "Successfully pushed branch $BRANCH to iamyancong/yss-ui-skills."
+            echo "Notice: skills.sh indexes the default branch. Please review and merge $BRANCH into main."
+          else
+            echo "No changes detected in exported skills."
+          fi

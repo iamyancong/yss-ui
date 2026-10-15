@@ -195,6 +195,8 @@ export default defineConfig({
         {
           title: '业务开发',
           children: [
+            { title: 'Create YSS App', link: '/skills/create-yss-app' },
+            { title: 'YSS Frontend Dev', link: '/skills/yss-frontend-dev' },
             { title: 'YSS Create Microapp', link: '/skills/yss-create-microapp' },
             { title: 'YSS UI Business Page Generation', link: '/skills/yss-ui-business-page-generation' },
             { title: 'Theme Token Usage', link: '/skills/theme-token-usage' },

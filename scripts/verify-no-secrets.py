@@ -9,8 +9,10 @@ IGNORE_EXTS = {'.lock', '.png', '.jpg', '.jpeg', '.svg', '.webp', '.woff', '.wof
 IGNORE_FILES = {'verify-no-secrets.py'}
 
 PATTERNS = [
+    (re.compile(r'(?<![\w.-])10\.\d{1,3}\.\d{1,3}\.\d{1,3}(?![\w.-])'), 'Internal IP (10.x.x.x)'),
+    (re.compile(r'(?<![\w.-])172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}(?![\w.-])'), 'Internal IP (172.16-31.x.x)'),
     (re.compile(r'192\.168\.\d+\.\d+'), 'Internal IP (192.168.x.x)'),
-    (re.compile(r'harbor\.' + r'dm\.com'), 'Harbor Registry'),
+    (re.compile(r'(?:[a-zA-Z0-9_\-]+\.)*' + r'dm' + r'\.com'), 'Internal Domain'),
     (re.compile(r'NpmToken\.[a-zA-Z0-9_\-]+'), 'NPM Internal Token'),
 ]
 

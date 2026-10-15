@@ -1,0 +1,133 @@
+{
+  "skill": "yss-frontend-dev",
+  "purpose": "前端业务页面开发总入口与页面构成部件分流路由正确性评测",
+  "cases": [
+    {
+      "id": "case-01-no-project",
+      "prompt": "当前目录还没项目，帮我做一个订单页面",
+      "expected_first_skill": "create-yss-app",
+      "reason": "无微应用工程状态必须先路由至脚手架创建"
+    },
+    {
+      "id": "case-02-scaffold-new",
+      "prompt": "这里是个空目录，需要搭建新的微前端工程",
+      "expected_first_skill": "create-yss-app",
+      "reason": "空目录搭建微前端工程"
+    },
+    {
+      "id": "case-03-crud-full",
+      "prompt": "实现完整的用户管理 CRUD 页面，包含列表、弹窗表单和详情",
+      "expected_first_skill": "yss-ui-business-page-generation",
+      "reason": "整页 CRUD 总入口"
+    },
+    {
+      "id": "case-04-order-list",
+      "prompt": "做一个带查询条件的订单列表，支持分页和重置",
+      "expected_first_skill": "page-list-module",
+      "reason": "列表页表格+查询区"
+    },
+    {
+      "id": "case-05-customer-query",
+      "prompt": "开发客户查询页面，包含顶部筛选和数据表格",
+      "expected_first_skill": "page-list-module",
+      "reason": "标准列表与筛选"
+    },
+    {
+      "id": "case-06-edit-table-inline",
+      "prompt": "做一个可编辑表格，支持在行内修改单价和数量",
+      "expected_first_skill": "yedit-table-usage",
+      "reason": "行内编辑表格"
+    },
+    {
+      "id": "case-07-edit-table-detail",
+      "prompt": "开发费用报销明细表格，用户可以点击添加行和删除行",
+      "expected_first_skill": "yedit-table-usage",
+      "reason": "明细行增删与可编辑表格"
+    },
+    {
+      "id": "case-08-form-drawer",
+      "prompt": "在右侧抽屉里做一个新增商品表单，带字段校验",
+      "expected_first_skill": "page-form-module",
+      "reason": "表单弹窗/抽屉模块"
+    },
+    {
+      "id": "case-09-form-step",
+      "prompt": "新增审批表单，需要分步骤填写基本信息和审批人",
+      "expected_first_skill": "page-form-module",
+      "reason": "分步表单录入"
+    },
+    {
+      "id": "case-10-form-detail-view",
+      "prompt": "做一个订单详情查看页面，纯只读展示",
+      "expected_first_skill": "page-form-module",
+      "reason": "表单查看态与详情"
+    },
+    {
+      "id": "case-11-tree-org",
+      "prompt": "做一个部门组织架构树，支持搜索节点",
+      "expected_first_skill": "ytree-usage",
+      "reason": "树组件应用"
+    },
+    {
+      "id": "case-12-tree-table",
+      "prompt": "左侧是分类树，点击树节点后右侧表格加载对应的资产列表",
+      "expected_first_skill": "ytree-usage",
+      "reason": "左树右表场景"
+    },
+    {
+      "id": "case-13-excel-sheet",
+      "prompt": "需要一个类 Excel 工作簿，支持多 sheet 协同查看",
+      "expected_first_skill": "ysheet-usage",
+      "reason": "电子表格协同组件"
+    },
+    {
+      "id": "case-14-file-import",
+      "prompt": "做一个批量导入 Excel 数据的弹窗，两步完成导入并显示结果",
+      "expected_first_skill": "yfile-import-usage",
+      "reason": "文件导入组件"
+    },
+    {
+      "id": "case-15-export-download",
+      "prompt": "把表格选中的数据导出为 Excel 文件流并下载",
+      "expected_first_skill": "file-export-download",
+      "reason": "文件导出与下载"
+    },
+    {
+      "id": "case-16-api-integrate",
+      "prompt": "对接 Orval 生成的后端查询和保存接口",
+      "expected_first_skill": "api-integration",
+      "reason": "接口对接与 Orval 集成"
+    },
+    {
+      "id": "case-17-theme-token",
+      "prompt": "根据设计规范调整页面的主色与 hover 态，适配动态换肤",
+      "expected_first_skill": "theme-token-usage",
+      "reason": "主题 Token 与换肤"
+    },
+    {
+      "id": "case-18-component-select",
+      "prompt": "判断当前需求该用 YTable 还是 a-table，从哪个包导入",
+      "expected_first_skill": "component-selection-imports",
+      "reason": "组件选型与导入契约"
+    },
+    {
+      "id": "case-19-i18n-locale",
+      "prompt": "为当前页面增加中英文国际化语言包和切换逻辑",
+      "expected_first_skill": "i18n-locale-management",
+      "reason": "国际化与多语言管理"
+    },
+    {
+      "id": "case-20-prototype-accept",
+      "prompt": "对照 UI 原型设计图验收当前订单页面还原度",
+      "expected_first_skill": "prototype-page-acceptance",
+      "reason": "原型还原验收"
+    },
+    {
+      "id": "case-21-bigscreen-gap",
+      "prompt": "开发一个可视化监控大屏和实时数据图表看板",
+      "expected_first_skill": "yss-ui-business-page-generation",
+      "gap": true,
+      "reason": "未命中专用构件组件，兜底至整页生成并在交付清单标注缺口"
+    }
+  ]
+}

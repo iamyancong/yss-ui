@@ -33,13 +33,30 @@ toc: content
 
 ## 安装与同步
 
+### 方式一：通过官方 npm CLI 同步（推荐业务项目全量集成）
+
 在业务项目根目录执行：
 
 ```bash
 npx @yss-ui/skills-cli sync
 ```
 
-该命令会：
+### 方式二：通过 skills.sh 公开分发安装（跨生态 / 独立安装）
+
+支持通过 Vercel 维护的开源规范 [skills.sh](https://www.skills.sh) 安装官方业务技能：
+
+```bash
+# 安装全量公开业务技能
+npx skills add iamyancong/yss-ui-skills
+
+# 仅安装顶层脚手架技能
+npx skills add iamyancong/yss-ui-skills --skill create-yss-app
+
+# 仅安装前端业务开发编排总线
+npx skills add iamyancong/yss-ui-skills --skill yss-frontend-dev
+```
+
+CLI 同步命令包含以下完整处理流程：
 
 1. 从 npm registry（公网或内网私服）拉取最新 `@yss-ui/skills` 包；
 2. 同步业务向技能到 `.agents/skills/`（Codex / Agent Skills 标准主目录）；

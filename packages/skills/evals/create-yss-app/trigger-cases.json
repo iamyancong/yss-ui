@@ -1,0 +1,84 @@
+{
+  "skill": "create-yss-app",
+  "purpose": "微前端微应用脚手架首选顶层入口评测",
+  "cases": [
+    {
+      "id": "create-app-direct",
+      "prompt": "在线创建一个微应用",
+      "should_trigger": true,
+      "assert": "首选触发 create-yss-app 生成微应用工程。"
+    },
+    {
+      "id": "new-micro-frontend",
+      "prompt": "新建微前端项目工程",
+      "should_trigger": true,
+      "assert": "新建微前端项目首选 create-yss-app。"
+    },
+    {
+      "id": "scaffold-qiankun",
+      "prompt": "新建 qiankun 子应用工程骨架",
+      "should_trigger": true,
+      "assert": "通过脚手架新建 qiankun 子应用。"
+    },
+    {
+      "id": "init-order-microapp",
+      "prompt": "帮我在线初始化一个微应用工程",
+      "should_trigger": true,
+      "assert": "初始化新微应用工程。"
+    },
+    {
+      "id": "create-yss-app-cli",
+      "prompt": "使用官方脚手架快速生成项目",
+      "should_trigger": true,
+      "assert": "触发 create-yss-app 进行脚手架初始化。"
+    },
+    {
+      "id": "scaffold-vue3-subapp",
+      "prompt": "搭建一个微前端工程骨架",
+      "should_trigger": true,
+      "assert": "搭建微前端工程骨架。"
+    },
+    {
+      "id": "english-create-app",
+      "prompt": "create yss app",
+      "should_trigger": true,
+      "assert": "英文提示触发 create-yss-app。"
+    },
+    {
+      "id": "english-scaffold-micro",
+      "prompt": "scaffold micro-frontend project",
+      "should_trigger": true,
+      "assert": "英文脚手架提示触发 create-yss-app。"
+    },
+    {
+      "id": "near-miss-page",
+      "prompt": "在已有项目中编写订单查询逻辑",
+      "should_trigger": false,
+      "assert": "页面开发应路由至 yss-frontend-dev 或 yss-ui-business-page-generation。"
+    },
+    {
+      "id": "near-miss-offline",
+      "prompt": "脱机环境下执行本地内置脚本",
+      "should_trigger": false,
+      "assert": "脱机环境明确由 yss-create-microapp 承接。"
+    },
+    {
+      "id": "near-miss-commit",
+      "prompt": "微前端代码提交",
+      "should_trigger": false,
+      "assert": "代码提交归 frontend-commit。"
+    },
+    {
+      "id": "near-miss-gitlab",
+      "prompt": "在 GitLab 上建微应用仓库并部署到测试服",
+      "should_trigger": false,
+      "assert": "建仓与部署归雨燕平台。"
+    },
+    {
+      "id": "near-miss-table",
+      "prompt": "给现有微应用表格添加分页和搜索",
+      "should_trigger": false,
+      "assert": "表格功能归 page-list-module。"
+    }
+  ]
+}

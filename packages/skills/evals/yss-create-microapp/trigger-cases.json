@@ -1,24 +1,30 @@
 {
   "skill": "yss-create-microapp",
-  "purpose": "触发行为规约：微前端子应用脚手架的确定性词法路由。",
+  "purpose": "触发行为规约：离线或无 npm 环境下微应用初始化的后备路由。",
   "cases": [
     {
-      "id": "create-microapp",
-      "prompt": "创建一个新的微应用",
+      "id": "offline-create-microapp",
+      "prompt": "脱机离线环境下使用内置脚本搭建子工程",
       "should_trigger": true,
-      "assert": "用 YSS 模板脚手架在本地生成子应用工程。"
+      "assert": "离线脱机环境触发 yss-create-microapp。"
     },
     {
-      "id": "qiankun-subapp",
-      "prompt": "生成 qiankun 子应用",
+      "id": "script-scaffold",
+      "prompt": "执行本地脚本从本地模板拉取初始化子应用",
       "should_trigger": true,
-      "assert": "生成 Vue3 + TypeScript + qiankun 子应用。"
+      "assert": "使用内置 Node 离线脚本搭建子应用。"
     },
     {
-      "id": "scaffold-new",
-      "prompt": "用 YSS 模板脚手架新建微前端项目",
+      "id": "offline-no-npm",
+      "prompt": "网络受限无外网访问时直接执行本地脚本",
       "should_trigger": true,
-      "assert": "走脚手架标准流程并完成初始化校验。"
+      "assert": "网络受限环境触发后备脚手架。"
+    },
+    {
+      "id": "near-miss-online-create",
+      "prompt": "使用官方脚手架在线快速生成微应用",
+      "should_trigger": false,
+      "assert": "在线首选归 create-yss-app，不触发本后备。"
     },
     {
       "id": "near-miss-frontend-commit",

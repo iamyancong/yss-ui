@@ -147,6 +147,25 @@ const LINE_PATTERNS = [
     severity: 'WARN',
     message: '在 shell 中倾倒进程环境变量',
   },
+  // --- 私网 IP、内部域名与敏感凭据 ---
+  {
+    rx: /(?<![\w.-])(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})(?![\w.-])/, // skillscan:allow
+    check: 'SEC01',
+    severity: 'CRITICAL',
+    message: '出现内网/私有 IP 地址（10.x.x.x / 172.16-31.x.x / 192.168.x.x）',
+  },
+  {
+    rx: new RegExp('(?:[a-zA-Z0-9_-]+\\.)*' + 'dm' + '\\.com', 'i'), // skillscan:allow
+    check: 'SEC02',
+    severity: 'CRITICAL',
+    message: '出现公司内部系统或代码托管/镜像域名',
+  },
+  {
+    rx: /_authToken\s*=|npmToken\.[a-zA-Z0-9_\-]+/i, // skillscan:allow
+    check: 'CRED03',
+    severity: 'CRITICAL',
+    message: '触碰 npm 认证 Token 或凭据字段',
+  },
   // --- 未锁版本安装 ---
   {
     rx: /\bpip3?\s+install\b(?![^\n#]*(?:==|--require-hashes|-r\s|-e\s|\.\s*$))/, // skillscan:allow

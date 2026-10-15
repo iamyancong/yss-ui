@@ -53,7 +53,9 @@
       "formily-mode-slot-detail",
       "formily-step-flow",
       "i18n-locale-management",
-      "yss-create-microapp"
+      "yss-create-microapp",
+      "create-yss-app",
+      "yss-frontend-dev"
     ],
     "universal": []
   },

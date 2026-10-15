@@ -10,6 +10,23 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.9.0
+
+`2026-10-15`
+
+### 🚀 Features
+
+- **create-yss-app**：新增微应用工程搭建首选顶层 Skill，通过官方脚手架与 `@yss-ui/create` CLI 交互在线快速生成工程骨架；强制实施 `--dry-run --json` 预检门禁与用户确认机制，支持驼峰 `activeRule`、端口探测与代理配置推导，脱机离线自动提示切换至 `yss-create-microapp` (#49)。
+- **yss-frontend-dev**：新增业务开发与流程编排总线顶层 Skill（仅 72 行轻量路由），提供状态识别、页面有限构件（列表、编辑表格、表单、树、Sheet、导入导出等）分流路由与真实 MCP API 查阅质量门禁，未命中构件在交付清单中显式标注缺口 (#49)。
+- **skills.sh 公开分发与流水线**：新增 `scripts/export-skills-sh.mjs` 导出脚本与 `.github/workflows/export-skills-sh.yml`，依据 `skills.config.json` 自动解析导出 30 个业务公开白名单，排除 library 维护类、已废弃技能与 Java 后端提交规范；生成 `skills/MANIFEST.json` 并支持同步至 `iamyancong/yss-ui-skills` 独立分发仓供 skills.sh 索引收录 (#49)。
+- **安全扫描规则增强**：在 `scripts/scan-skills-security.js` 与 `scripts/verify-no-secrets.py` 中扩充私网 IP（`10.x`、`172.16-31.x`、`192.168.x`）及内部系统域名检测规则；导出流水线实施零容忍门禁（不认 `skillscan:allow` 豁免）且深度核验相对链接与断链 (#49)。
+
+### 🔄 Refactor
+
+- **yss-create-microapp**：重塑为完全脱机、局域网或无 npm 环境下的底层脚本后备入口，更新触发评测集并消除与在线首选入口 `create-yss-app` 的词法路由冲突 (#49)。
+
+---
+
 ## v1.8.0
 
 `2026-10-14`

@@ -54,6 +54,8 @@ pnpm sync:skills:ides
 
 ### 📱 业务开发 (Application)
 
+- [Create YSS App](./create-yss-app.md)：新建微应用工程首选入口，通过官方脚手架与 CLI 交互在线快速生成。
+- [YSS Frontend Dev](./yss-frontend-dev.md)：业务开发总入口与流程编排总线，通过状态识别与有限构件分流调度。
 - [YSS Create Microapp](./yss-create-microapp.md)：本地创建微应用，一键生成基于模板的项目骨架。
 - [YSS UI Business Page Generation](./yss-ui-business-page-generation.md)：业务页面生成总控，串联组件、Hooks、Utils、表格、树和表单规则。
 - [Theme Token Usage](./theme-token-usage.md)：主题 Token、交互态、透明色派生与明暗模式规范。
