@@ -21,11 +21,15 @@ test('resolvePublicSkills: 准确提取业务白名单并排除废弃/维护/后
 
   // 必须排除的废弃与内部 skill
   assert.ok(!skills.includes('java-backend-commit'), '必须排除 java-backend-commit');
+  assert.ok(!skills.includes('yss-create-microapp'), '必须排除离线兜底 yss-create-microapp');
   assert.ok(!skills.includes('page-module-development'), '必须排除已废弃的 page-module-development');
   assert.ok(!skills.includes('microapp-commit'), '必须排除已废弃的 microapp-commit');
   assert.ok(!skills.includes('sync-internal-dev'), '必须排除内部维护工具 sync-internal-dev');
   assert.ok(!skills.includes('component-development'), '必须排除 library 维护分类');
   assert.ok(!skills.includes('release-workflow'), '必须排除 release-workflow');
+
+  // 校验排除 yss-create-microapp 后的公开技能数量
+  assert.ok(skills.length >= 29, `公开导出 skill 数量应至少为 29 (当前: ${skills.length})`);
 });
 
 test('scanFileSecurity: 敏感信息命中时正确抛出安全门禁错误（且导出不认 allow 豁免）', () => {
@@ -144,7 +148,7 @@ test('runExport: 完整端到端导出到临时目录', () => {
 
   try {
     const report = runExport({ outDir: tempDir, clean: true });
-    assert.ok(report.skillsCount >= 25, '导出技能数量应达到预期');
+    assert.ok(report.skillsCount >= 29, `导出技能数量应至少为 29 (当前: ${report.skillsCount})`);
     assert.ok(report.filesCount >= 40, '导出文件总数应达到预期');
 
     // 检查目录结构
@@ -153,6 +157,7 @@ test('runExport: 完整端到端导出到临时目录', () => {
     assert.ok(fs.existsSync(path.join(tempDir, 'skills/MANIFEST.json')), '应生成 MANIFEST.json');
     assert.ok(fs.existsSync(path.join(tempDir, 'skills/create-yss-app/SKILL.md')), '应包含 create-yss-app');
     assert.ok(fs.existsSync(path.join(tempDir, 'skills/yss-frontend-dev/SKILL.md')), '应包含 yss-frontend-dev');
+    assert.ok(!fs.existsSync(path.join(tempDir, 'skills/yss-create-microapp')), '导出结果不应包含 yss-create-microapp');
 
     // 校验 README 内容包含一键安装命令
     const readme = fs.readFileSync(path.join(tempDir, 'README.md'), 'utf8');

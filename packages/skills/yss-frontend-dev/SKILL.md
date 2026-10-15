@@ -20,7 +20,7 @@ description: 开发前端页面、新增或修改前端页面、列表页、表�
 ## 不适用场景
 
 - **空目录从零新建微应用工程**：当前目录无工程时，必须转交 `../create-yss-app/SKILL.md` 初始化骨架。
-- **脱机离线创建微应用**：网络受限脱机时转交 `../yss-create-microapp/SKILL.md`。
+- **脱机离线创建微应用**：网络受限脱机时，请使用内部离线 Skill `yss-create-microapp`（仅内部 sync:skills 分发可用）。
 - **组件库底层维护**：维护 yss-ui 组件库自身源码、单测或发版请使用 `library` 维护类技能。
 
 ---

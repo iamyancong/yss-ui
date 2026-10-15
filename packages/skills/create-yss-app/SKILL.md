@@ -8,7 +8,7 @@ description: 新建或初始化 YSS 微前端微应用工程首选入口，通�
 本 Skill 是面向用户与 AI 智能体新建微应用工程的**首选顶层入口**，采用极薄封装理念，通过标准化参数推导与交互预检，最终调用官方 `@yss-ui/create` CLI（即 `npm create yss-app`）完成代码生成。
 
 > [!NOTE]
-> 在线网络环境下优先使用本 Skill。若处于完全离线环境或无法连通 npm，请切换至后备 Skill `../yss-create-microapp/SKILL.md`。
+> 在线网络环境下优先使用本 Skill。若处于完全离线环境或无法连通 npm，请使用内部离线 Skill `yss-create-microapp`（仅内部 sync:skills 分发可用）。
 
 ---
 
@@ -23,7 +23,7 @@ description: 新建或初始化 YSS 微前端微应用工程首选入口，通�
 ## 不适用场景
 
 - **已有微应用内开发页面**：已有项目请转交 `../yss-frontend-dev/SKILL.md` 或 `../yss-ui-business-page-generation/SKILL.md`。
-- **脱机离线或无 npm 网络环境**：无法连接公网 npm 时，转交 `../yss-create-microapp/SKILL.md` 使用内置离线脚本生成。
+- **脱机离线或无 npm 网络环境**：无法连接公网 npm 时，请使用内部离线 Skill `yss-create-microapp`（仅内部 sync:skills 分发可用）使用内置离线脚本生成。
 - **GitLab 建仓或服务器流水线部署**：本 Skill 仅负责本地工程生成，远程仓库与服务器发布请配合雨燕平台。
 
 ---
@@ -101,9 +101,11 @@ npx -y @yss-ui/skills-cli@latest sync
    - 退出码 `2`（参数非法）：核查英文名称与路由规范，修正参数后调用，禁止盲目重试；
    - 退出码 `3`（目标已存在）：禁止覆盖，提示用户更换目标目录名；
    - 退出码 `4`（端口冲突）：通过 `--port <port>` 手动传入指定空闲端口；
-   - 退出码 `5`（网络/模板拉取失败）：检查网络或切换离线脚本。完整排障见 [troubleshooting.md](./references/troubleshooting.md)。
+   - 退出码 `5`（网络/模板拉取失败）：检查网络；离线方案见下方第 2 条。完整排障见 [troubleshooting.md](./references/troubleshooting.md)。
 2. **完全离线 / 无 npm 降级通道**：
-   若因内网隔离无法使用公网 CLI，立即提示切换使用内置离线脚本：
+   先检查 `.agents/skills/yss-create-microapp/scripts/create.mjs` 是否存在（仅内部 sync:skills 分发提供）：
+   - 存在：执行下方离线脚本；
+   - 不存在：告知用户当前环境无离线方案，需恢复 npm 网络后再使用 `npm create yss-app`，禁止自行拼装工程。
    ```bash
    node .agents/skills/yss-create-microapp/scripts/create.mjs \
      --name "<appName>" \

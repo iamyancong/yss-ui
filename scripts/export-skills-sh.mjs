@@ -30,6 +30,7 @@ export const SKILLS_PKG_PATH = path.join(SKILLS_SRC_DIR, 'package.json');
 /** 显式排除的 skills（业务不适宜公开或维护类） */
 export const EXCLUDED_SKILLS = new Set([
   'java-backend-commit', // 后端提交规范，不进前端分发仓
+  'yss-create-microapp', // 离线兜底，仅内部 sync:skills 分发
 ]);
 
 /** 敏感内容扫描正则规则（采用拼接写法，严禁在源码中暴露明文字符串） */

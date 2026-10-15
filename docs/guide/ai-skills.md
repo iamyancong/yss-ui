@@ -27,7 +27,8 @@ toc: content
 - `yss-formily` + formily 四件套：表单基础 / 联动 / 三态插槽 / 分步流程；
 - `api-integration`：Orval API 对接（mutator 错误契约、长整型精度）；
 - `theme-token-usage`：主题 Token 与换肤（禁止硬编码色值）；
-- `yss-create-microapp`：新建本地微应用（已纳入默认同步，一键生成标准微前端子应用骨架）。
+- `create-yss-app`：新建微应用工程首选入口（通过官方脚手架与 CLI 在线快速生成微前端工程骨架）；
+- `yss-create-microapp`：离线兜底脚手架（仅内部 sync:skills 分发可用，脱机时生成工程）。
 
 完整清单与内容见 [Skills 文档区](/skills)。所有 skill 经过仓库级质量门禁（结构校验、触发路由评测、安全扫描）后才会发布。
 
@@ -47,13 +48,13 @@ npx @yss-ui/skills-cli sync
 
 ```bash
 # 安装全量公开业务技能
-npx skills add iamyancong/yss-ui-skills
+npx skills add iamyancong/yss-ui-skills --skill '*' -y
 
 # 仅安装顶层脚手架技能
-npx skills add iamyancong/yss-ui-skills --skill create-yss-app
+npx skills add iamyancong/yss-ui-skills --skill create-yss-app -y
 
 # 仅安装前端业务开发编排总线
-npx skills add iamyancong/yss-ui-skills --skill yss-frontend-dev
+npx skills add iamyancong/yss-ui-skills --skill yss-frontend-dev -y
 ```
 
 CLI 同步命令包含以下完整处理流程：

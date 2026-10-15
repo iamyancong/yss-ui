@@ -10,6 +10,17 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.9.2
+
+`2026-10-15`
+
+### 🐛 Bug Fixes
+
+- **公开分发排除离线兜底**：公开分发仓 yss-ui-skills 排除离线兜底 Skill yss-create-microapp，避免与 create-yss-app 入口混淆；内部 sync:skills 分发不受影响 (#49)。
+- **消除相对断链与增强离线探测**：create-yss-app 中对 yss-create-microapp 的引用改为纯文字，避免公开导出时产生断链；完全离线降级通道增加本地脚本存在性探测，未安装时引导恢复网络而非报错 (#49)。
+
+---
+
 ## v1.9.1
 
 `2026-10-15`
