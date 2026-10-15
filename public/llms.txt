@@ -119,7 +119,9 @@ YSS UI 是基于 Vue 3、Ant Design Vue 与 VXE-Table 的企业级中后台组�
 - formily-mode-slot-detail: https://iamyancong.github.io/yss-ui/skills/formily-mode-slot-detail — 指导 YFormily 新增、编辑、查看三态与插槽渲染；当配置 mode 0/1/2、查看态只读、详情页 Descriptions 展示、detail-options、Schema Slot 或详情字段插槽时使用。
 - formily-step-flow: https://iamyancong.github.io/yss-ui/skills/formily-step-flow — 指导基于 Ant Design Vue Steps 与多 YFormily 实例的分步表单与向导流程录入，覆盖各步骤独立校验、跨步数据持久保留、最终确认预览与聚合提交闭环；当业务需要分步录入、分阶段流程或多步骤向导时使用。单页普通表单请使用 formily-foundation，单纯字段联动请使用 formily-linkage-effects。
 - i18n-locale-management: https://iamyancong.github.io/yss-ui/skills/i18n-locale-management — 指导 Vue3 微前端（主应用与微应用）中国际化（i18n）字典的模块化设计、简繁英三语镜像对齐、命名分层、Vite 自动化加载、微前端通信与业务消费规范；当新增业务模块、维护多语言字典、支持繁体中文/英文、重构页面文案或调用 $t/useI18n 时使用。
-- yss-create-microapp: https://iamyancong.github.io/yss-ui/skills/yss-create-microapp — 在本地创建一个新的微应用、生成 qiankun 子应用或用 YSS 模板脚手架新建微前端项目，自动生成工程骨架并配置路由、状态管理与 Ant Design Vue 依赖；当需要从零搭建新子应用、运行微应用脚手架时使用。已初始化完毕的项目内模块迭代与单个视图编写不适用本工具。
+- yss-create-microapp: https://iamyancong.github.io/yss-ui/skills/yss-create-microapp — 离线脱机环境或网络受限时创建微应用的内置脚本后备，使用本地模板与离线脚本初始化微前端子应用工程；当无法访问外网、无 npm 连通性、网络受限或需直接执行本地脚本搭建子工程时使用。在线正常网络环境首选 create-yss-app，已有工程开发业务页面请使用 yss-frontend-dev。
+- create-yss-app: https://iamyancong.github.io/yss-ui/skills/create-yss-app — 新建或初始化 YSS 微前端微应用工程首选入口，通过官方脚手架与 CLI 交互在线快速生成微前端工程骨架；create yss app scaffold micro-frontend project；当在线从零搭建微应用、新建 qiankun 子应用或运行脚手架创建项目时使用。已有项目开发迭代请转交 yss-frontend-dev，脱机离线创建请改用 yss-create-microapp。
+- yss-frontend-dev: https://iamyancong.github.io/yss-ui/skills/yss-frontend-dev — 开发前端页面、新增或修改前端页面、列表页、表单、微应用业务功能总入口与流程编排器；develop a frontend page。通过状态识别与有限构件分流调度对应专业子 Skill。从零新建空工程项目请使用 create-yss-app，单独维护组件库自身请使用 library 类维护技能。
 
 ### other
 
