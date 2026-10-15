@@ -10,6 +10,18 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.9.1
+
+`2026-10-15`
+
+### 🐛 Bug Fixes
+
+- **导出白名单补齐**：在公开导出子目录白名单 `allowedSubdirs` 中补齐 `examples`，修复随 Skill 分发时遗漏业务代码示例（如 `page-skeleton` 等模版）的问题 (#49)。
+- **一键安装体验完善**：分发仓库 `iamyancong/yss-ui-skills` 首页 README 补充一键全量安装命令 `npx skills add iamyancong/yss-ui-skills --skill '*' -y`，规范安装使用说明 (#49)。
+- **发版自动导出闭环**：在 npm 发版工作流中增加 `@yss-ui/skills` 发布校验，发版成功后自动调用导出流水线直接同步推送至主分支 `main` (#49)。
+
+---
+
 ## v1.9.0
 
 `2026-10-15`

@@ -27,6 +27,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.ref_name || 'main' }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -52,7 +53,7 @@ jobs:
         run: |
           node scripts/export-skills-sh.mjs --clean --out-dir dist-skills-sh
 
-      - name: Sync Branch to iamyancong/yss-ui-skills
+      - name: Sync to iamyancong/yss-ui-skills (main)
         if: ${{ !inputs.dry_run && env.HAS_DEPLOY_KEY == 'true' }}
         env:
           DEPLOY_KEY: ${{ secrets.SKILLS_SH_DEPLOY_KEY }}
@@ -74,13 +75,11 @@ jobs:
 
           cd "$TEMP_CLONE"
           if [[ -n $(git status -s) ]]; then
-            BRANCH="sync-skills-${GITHUB_SHA::7}"
-            git checkout -b "$BRANCH"
+            git checkout main
             git add -A
             git commit -m "chore(skills): sync public skills from yss-ui@${GITHUB_SHA::7}"
-            git push origin "$BRANCH"
-            echo "Successfully pushed branch $BRANCH to iamyancong/yss-ui-skills."
-            echo "Notice: skills.sh indexes the default branch. Please review and merge $BRANCH into main."
+            git push origin main
+            echo "Successfully pushed to main branch of iamyancong/yss-ui-skills."
           else
             echo "No changes detected in exported skills."
           fi

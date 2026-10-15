@@ -34,7 +34,12 @@ const PACKAGES = {
     alignVersionWith: 'create',
   },
   'skills-cli': { dir: 'packages/skills-cli', name: '@yss-ui/skills-cli' },
-  skills: { dir: 'packages/skills', name: '@yss-ui/skills', changelog: 'docs/changelog/skills.md' },
+  skills: {
+    dir: 'packages/skills',
+    name: '@yss-ui/skills',
+    changelog: 'docs/changelog/skills.md',
+    extraInputs: ['scripts/export-skills-sh.mjs', 'scripts/export-skills-sh.node.test.mjs'],
+  },
   mcp: {
     dir: 'packages/mcp',
     name: '@yss-ui/mcp',

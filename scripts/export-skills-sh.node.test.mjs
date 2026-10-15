@@ -7,6 +7,7 @@ import {
   resolvePublicSkills,
   scanFileSecurity,
   validateRelativeLinks,
+  collectExportFiles,
   runExport,
 } from './export-skills-sh.mjs';
 
@@ -108,6 +109,36 @@ test('validateRelativeLinks: 检测跨技能引用（含 references 路径与断
   );
 });
 
+test('collectExportFiles: 默认收集 allowedSubdirs 包含 examples/scripts/references/agents 子目录及 SKILL.md', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yss-collect-test-'));
+  try {
+    fs.writeFileSync(path.join(tempDir, 'SKILL.md'), '# Skill');
+    fs.writeFileSync(path.join(tempDir, 'unrelated.txt'), 'ignore me');
+
+    fs.mkdirSync(path.join(tempDir, 'examples/nested'), { recursive: true });
+    fs.writeFileSync(path.join(tempDir, 'examples/demo.vue'), '<template></template>');
+    fs.writeFileSync(path.join(tempDir, 'examples/nested/sample.ts'), 'export const x = 1;');
+
+    fs.mkdirSync(path.join(tempDir, 'references'), { recursive: true });
+    fs.writeFileSync(path.join(tempDir, 'references/params.md'), '# Params');
+
+    fs.mkdirSync(path.join(tempDir, 'not-allowed'), { recursive: true });
+    fs.writeFileSync(path.join(tempDir, 'not-allowed/secret.txt'), 'do not export');
+
+    const files = collectExportFiles(tempDir);
+    const relFiles = files.map(f => path.relative(tempDir, f).replace(/\\/g, '/'));
+
+    assert.ok(relFiles.includes('SKILL.md'), '应包含 SKILL.md');
+    assert.ok(relFiles.includes('examples/demo.vue'), '应包含 examples/demo.vue');
+    assert.ok(relFiles.includes('examples/nested/sample.ts'), '应包含嵌套 examples 文件');
+    assert.ok(relFiles.includes('references/params.md'), '应包含 references 文件');
+    assert.ok(!relFiles.includes('unrelated.txt'), '不应包含非 SKILL.md 的根文件');
+    assert.ok(!relFiles.some(f => f.startsWith('not-allowed')), '不应收集未在白名单的子目录');
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test('runExport: 完整端到端导出到临时目录', () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yss-skills-export-test-'));
 
@@ -123,10 +154,18 @@ test('runExport: 完整端到端导出到临时目录', () => {
     assert.ok(fs.existsSync(path.join(tempDir, 'skills/create-yss-app/SKILL.md')), '应包含 create-yss-app');
     assert.ok(fs.existsSync(path.join(tempDir, 'skills/yss-frontend-dev/SKILL.md')), '应包含 yss-frontend-dev');
 
+    // 校验 README 内容包含一键安装命令
+    const readme = fs.readFileSync(path.join(tempDir, 'README.md'), 'utf8');
+    assert.ok(readme.includes("npx skills add iamyancong/yss-ui-skills --skill '*' -y"), 'README 应包含一键安装命令');
+
     // 校验 MANIFEST.json 内容
     const manifest = JSON.parse(fs.readFileSync(path.join(tempDir, 'skills/MANIFEST.json'), 'utf8'));
     assert.equal(manifest.skillsCount, report.skillsCount);
     assert.ok(manifest.files['skills/create-yss-app/SKILL.md'], 'MANIFEST 应收录 create-yss-app 文件哈希');
+    assert.ok(
+      Object.keys(manifest.files).some(f => f.includes('/examples/')),
+      'MANIFEST 应包含 examples 下的代码示例文件'
+    );
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }

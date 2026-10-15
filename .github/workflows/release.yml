@@ -31,6 +31,8 @@ jobs:
   release:
     name: Verify CI & Publish Packages to npm
     runs-on: ubuntu-latest
+    outputs:
+      skills_released: ${{ steps.check_skills.outputs.skills_released }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -135,3 +137,27 @@ jobs:
           else
             echo "No WECOM_WEBHOOK_KEY provided, skip notification."
           fi
+
+      - name: Check if skills package was published
+        id: check_skills
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          if [ -f scripts/.release-summary.json ]; then
+            HAS_SKILLS=$(node -e "
+              const fs = require('fs');
+              const data = JSON.parse(fs.readFileSync('scripts/.release-summary.json', 'utf8'));
+              const has = (data.packages || []).some(p => p.name === '@yss-ui/skills');
+              process.stdout.write(has ? 'true' : 'false');
+            ")
+            echo "skills_released=$HAS_SKILLS" >> $GITHUB_OUTPUT
+          else
+            echo "skills_released=false" >> $GITHUB_OUTPUT
+          fi
+
+  export_skills:
+    name: Auto Export Skills to skills.sh
+    needs: release
+    if: ${{ inputs.dry_run != true && needs.release.outputs.skills_released == 'true' }}
+    uses: ./.github/workflows/export-skills-sh.yml
+    secrets:
+      SKILLS_SH_DEPLOY_KEY: ${{ secrets.SKILLS_SH_DEPLOY_KEY }}

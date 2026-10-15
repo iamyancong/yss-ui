@@ -113,7 +113,7 @@ export function calcSha256(filePath) {
  * @param {string[]} [allowedSubdirs] 允许拷贝的子目录名
  * @returns {string[]} 文件绝对路径
  */
-function collectExportFiles(dir, allowedSubdirs = ['references', 'scripts', 'agents']) {
+export function collectExportFiles(dir, allowedSubdirs = ['references', 'scripts', 'agents', 'examples']) {
   const files = [];
   const entries = fs.readdirSync(dir, { withFileTypes: true });
 
@@ -285,7 +285,7 @@ export function runExport(options = {}) {
     fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
 
     // 写入基础 README.md 与 LICENSE
-    const readmeContent = `# YSS UI Official AI Skills\n\nOfficial public skills for YSS micro-frontend ecosystem, indexed by [skills.sh](https://www.skills.sh).\n\n## Installation\n\n\`\`\`bash\nnpx skills add iamyancong/yss-ui-skills\n\`\`\`\n\nTotal Skills: ${publicSkills.length}\n\n> **Notice**: skills.sh indexes the default branch (\`main\`). Automated synchronization pushes changes to \`sync-skills-*\` branches, which should be merged into \`main\` after review.\n`;
+    const readmeContent = `# YSS UI Official AI Skills\n\nOfficial public skills for YSS micro-frontend ecosystem, indexed by [skills.sh](https://www.skills.sh).\n\n## Installation\n\n\`\`\`bash\nnpx skills add iamyancong/yss-ui-skills --skill '*' -y\n\`\`\`\n\nTotal Skills: ${publicSkills.length}\n`;
     fs.writeFileSync(path.join(outDir, 'README.md'), readmeContent, 'utf8');
 
     const licenseSrc = path.join(ROOT_DIR, 'LICENSE');
