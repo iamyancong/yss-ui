@@ -69,7 +69,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 20,
+      "commits": 21,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     },
@@ -247,7 +247,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 2,
+      "commits": 3,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     }
@@ -504,6 +504,15 @@
       "url": "https://github.com/iamyancong"
     }
   ],
+  "/skills/create-yss-app": [
+    {
+      "name": "iamyancong",
+      "email": "wangyancong@ysstech.com",
+      "commits": 1,
+      "avatar": "https://github.com/iamyancong.png?size=64",
+      "url": "https://github.com/iamyancong"
+    }
+  ],
   "/skills/documentation": [
     {
       "name": "iamyancong",
@@ -578,18 +587,18 @@
   ],
   "/skills": [
     {
+      "name": "iamyancong",
+      "email": "wangyancong@ysstech.com",
+      "commits": 2,
+      "avatar": "https://github.com/iamyancong.png?size=64",
+      "url": "https://github.com/iamyancong"
+    },
+    {
       "name": "cursoragent",
       "email": "cursoragent@cursor.com",
       "commits": 1,
       "avatar": "https://github.com/cursoragent.png?size=64",
       "url": "https://github.com/cursoragent"
-    },
-    {
-      "name": "iamyancong",
-      "email": "wangyancong@ysstech.com",
-      "commits": 1,
-      "avatar": "https://github.com/iamyancong.png?size=64",
-      "url": "https://github.com/iamyancong"
     }
   ],
   "/skills/java-backend-commit": [
@@ -776,7 +785,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 6,
+      "commits": 7,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     }
@@ -786,6 +795,15 @@
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
       "commits": 4,
+      "avatar": "https://github.com/iamyancong.png?size=64",
+      "url": "https://github.com/iamyancong"
+    }
+  ],
+  "/skills/yss-frontend-dev": [
+    {
+      "name": "iamyancong",
+      "email": "wangyancong@ysstech.com",
+      "commits": 1,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     }

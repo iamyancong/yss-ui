@@ -46,7 +46,7 @@ jobs:
 
       - name: Run Export Unit Tests
         run: |
-          node scripts/export-skills-sh.test.mjs
+          node scripts/export-skills-sh.node.test.mjs
 
       - name: Export Public Skills
         run: |
