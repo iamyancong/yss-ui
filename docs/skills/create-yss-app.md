@@ -1,12 +1,12 @@
 ---
 name: create-yss-app
-description: 新建或初始化 YSS 微前端微应用工程首选入口，通过官方脚手架与 CLI 交互在线快速生成微前端工程骨架；create yss app scaffold micro-frontend project；当在线从零搭建微应用、新建 qiankun 子应用或运行脚手架创建项目时使用。已有项目开发迭代请转交 yss-frontend-dev，脱机离线创建请改用 yss-create-microapp。
+description: 新建或初始化 YSS 微前端微应用工程首选入口，通过官方脚手架与 CLI 交互在线快速生成微前端工程骨架；create yss app scaffold micro-frontend project；当在线从零搭建微应用、新建 qiankun 子应用或运行脚手架创建项目时使用。已有项目开发迭代请转交 yss-frontend-dev，脱机离线创建请改用内部离线方案。
 toc: content
 ---
 
 # 新建 YSS 微前端微应用工程
 
-> 新建或初始化 YSS 微前端微应用工程首选入口，通过官方脚手架与 CLI 交互在线快速生成微前端工程骨架；create yss app scaffold micro-frontend project；当在线从零搭建微应用、新建 qiankun 子应用或运行脚手架创建项目时使用。已有项目开发迭代请转交 yss-frontend-dev，脱机离线创建请改用 yss-create-microapp。
+> 新建或初始化 YSS 微前端微应用工程首选入口，通过官方脚手架与 CLI 交互在线快速生成微前端工程骨架；create yss app scaffold micro-frontend project；当在线从零搭建微应用、新建 qiankun 子应用或运行脚手架创建项目时使用。已有项目开发迭代请转交 yss-frontend-dev，脱机离线创建请改用内部离线方案。
 
 
 本 Skill 是面向用户与 AI 智能体新建微应用工程的**首选顶层入口**，采用极薄封装理念，通过标准化参数推导与交互预检，最终调用官方 `@yss-ui/create` CLI（即 `npm create yss-app`）完成代码生成。

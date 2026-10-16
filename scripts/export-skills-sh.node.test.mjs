@@ -5,8 +5,11 @@ import path from 'node:path';
 import os from 'node:os';
 import {
   resolvePublicSkills,
+  resolveNonPublicSkills,
   scanFileSecurity,
   validateRelativeLinks,
+  sanitizeExportContent,
+  validateSkillDescription,
   collectExportFiles,
   runExport,
 } from './export-skills-sh.mjs';
@@ -77,7 +80,7 @@ test('scanFileSecurity: 敏感信息命中时正确抛出安全门禁错误（�
   );
 });
 
-test('validateRelativeLinks: 检测跨技能引用（含 references 路径与断链）', () => {
+test('validateRelativeLinks: 检测跨技能引用（含 Markdown 链接、反引号路径、裸路径与断链）', () => {
   const publicSkillSet = new Set(['page-list-module', 'ytable-usage', 'create-yss-app']);
 
   // 合法相对链接（SKILL.md 与 references 目录内文件）
@@ -85,10 +88,16 @@ test('validateRelativeLinks: 检测跨技能引用（含 references 路径与断
     validateRelativeLinks('test-skill', '请查看 [表格使用](../ytable-usage/SKILL.md) 了解详情', publicSkillSet);
   });
   assert.doesNotThrow(() => {
+    validateRelativeLinks('test-skill', '请查看 `../ytable-usage/SKILL.md` 了解详情', publicSkillSet);
+  });
+  assert.doesNotThrow(() => {
     validateRelativeLinks('test-skill', '请查看 [参数规范](../create-yss-app/references/params.md) 了解详情', publicSkillSet);
   });
+  assert.doesNotThrow(() => {
+    validateRelativeLinks('test-skill', '代码导入不误报: import YExample from "../index.vue"; import { x } from "../constant";', publicSkillSet);
+  });
 
-  // 引用了未公开技能应抛错
+  // Markdown 链接引用未公开技能应抛错
   assert.throws(
     () => {
       validateRelativeLinks(
@@ -98,6 +107,64 @@ test('validateRelativeLinks: 检测跨技能引用（含 references 路径与断
       );
     },
     /引用了未公开或被排除的 Skill: sync-internal-dev/
+  );
+
+  // 反引号包裹引用未公开技能（Issue 58 核心漏洞场景）必须被识别并抛错
+  assert.throws(
+    () => {
+      validateRelativeLinks(
+        'frontend-commit',
+        '- yss-ui 组件库仓库自身的提交与发版：使用 `../commit-linting/SKILL.md`。',
+        publicSkillSet
+      );
+    },
+    /引用了未公开或被排除的 Skill: commit-linting/
+  );
+
+  assert.throws(
+    () => {
+      validateRelativeLinks(
+        'yss-formily',
+        '- 组件库内部改造 YFormily 源码：使用 `../component-development/SKILL.md`。',
+        publicSkillSet
+      );
+    },
+    /引用了未公开或被排除的 Skill: component-development/
+  );
+
+  // 反引号包裹引用未公开技能的子目录（scripts/、examples/、agents/）必须被识别并抛错
+  assert.throws(
+    () => {
+      validateRelativeLinks(
+        'test-skill',
+        '调用脚本 `../sync-internal-dev/scripts/sync.mjs` 处理。',
+        publicSkillSet
+      );
+    },
+    /引用了未公开或被排除的 Skill: sync-internal-dev/
+  );
+
+  assert.throws(
+    () => {
+      validateRelativeLinks(
+        'test-skill',
+        '参考示例 `../component-development/examples/demo.vue` 实现。',
+        publicSkillSet
+      );
+    },
+    /引用了未公开或被排除的 Skill: component-development/
+  );
+
+  // 裸路径引用未公开技能必须抛错
+  assert.throws(
+    () => {
+      validateRelativeLinks(
+        'test-skill',
+        '遇到问题转交 ../java-backend-commit/SKILL.md 处理。',
+        publicSkillSet
+      );
+    },
+    /引用了未公开或被排除的 Skill: java-backend-commit/
   );
 
   // 引用了公开技能但不存在的子文件应抛断链错
@@ -111,6 +178,108 @@ test('validateRelativeLinks: 检测跨技能引用（含 references 路径与断
     },
     /存在断链，目标文件不存在/
   );
+});
+
+test('sanitizeExportContent: 导出时将非公开 Skill 引用安全改写为纯文字提示（方案 A）', () => {
+  const publicSkillSet = new Set(['page-list-module', 'ytable-usage']);
+
+  const input = `
+- yss-ui 组件库仓库自身的提交与发版：使用 \`../commit-linting/SKILL.md\`。
+- Java、Spring Boot、Maven、Gradle 后端仓库：使用 \`../java-backend-commit/SKILL.md\`。
+- 组件库内部改造 YFormily 源码：使用 \`../component-development/SKILL.md\`。
+- 列表页请参考：使用 \`../page-list-module/SKILL.md\`。
+- 超链接形式：请参考 [内部发版](../release-workflow/SKILL.md) 了解详情。
+- 脚本子目录形式：调用 \`../sync-internal-dev/scripts/sync.mjs\` 自动化处理。
+`;
+
+  const output = sanitizeExportContent(input, publicSkillSet);
+
+  // 非公开 skill 的相对路径被改写为统一纯文字说明
+  assert.ok(
+    output.includes('使用内部维护 Skill `commit-linting`（仅内部 sync:skills 分发可用）。'),
+    'commit-linting 应被平滑改写为内部维护提示'
+  );
+  assert.ok(
+    output.includes('使用内部维护 Skill `java-backend-commit`（仅内部 sync:skills 分发可用）。'),
+    'java-backend-commit 应被平滑改写为内部维护提示'
+  );
+  assert.ok(
+    output.includes('使用内部维护 Skill `component-development`（仅内部 sync:skills 分发可用）。'),
+    'component-development 应被平滑改写为内部维护提示'
+  );
+  assert.ok(
+    output.includes('内部发版（内部维护 Skill `release-workflow`，仅内部 sync:skills 分发可用）'),
+    '超链接形式应被改写为纯文字提示'
+  );
+  assert.ok(
+    output.includes('调用内部维护 Skill `sync-internal-dev`（仅内部 sync:skills 分发可用） 自动化处理。'),
+    '脚本子目录路径应被改写为纯文字提示'
+  );
+
+  // 公开 skill 依然保留原有的相对引用
+  assert.ok(
+    output.includes('使用 `../page-list-module/SKILL.md`。'),
+    '公开技能引用不得被误改写'
+  );
+
+  // 经净化后的内容必须能顺利通过 validateRelativeLinks
+  assert.doesNotThrow(() => {
+    validateRelativeLinks('test-skill', output, publicSkillSet);
+  });
+});
+
+test('validateSkillDescription: 拦截 frontmatter description 中残留的未公开技能名', () => {
+  const nonPublicSkills = new Set(['yss-create-microapp', 'component-development', 'commit-linting']);
+
+  // 包含未公开 skill 抛错
+  assert.throws(
+    () => {
+      const badFm = `---
+name: create-yss-app
+description: 新建微应用首选入口；脱机离线创建请改用 yss-create-microapp。
+---
+# Content`;
+      validateSkillDescription('create-yss-app', badFm, nonPublicSkills);
+    },
+    /frontmatter description 中引用了未公开的 Skill: yss-create-microapp/
+  );
+
+  assert.throws(
+    () => {
+      const badFm = `---
+name: vue3-best-practices
+description: Vue3 开发规范；组件库维护参考 component-development。
+---
+# Content`;
+      validateSkillDescription('vue3-best-practices', badFm, nonPublicSkills);
+    },
+    /frontmatter description 中引用了未公开的 Skill: component-development/
+  );
+
+  // YAML 折行 / 多行写法（>-）也必须被扫描并拦截
+  assert.throws(
+    () => {
+      const badMultilineFm = `---
+name: sample-skill
+description: >-
+  这是一个跨行书写的微应用开发技能描述，
+  用于测试换行场景；脱机离线创建请改用 yss-create-microapp。
+---
+# Content`;
+      validateSkillDescription('sample-skill', badMultilineFm, nonPublicSkills);
+    },
+    /frontmatter description 中引用了未公开的 Skill: yss-create-microapp/
+  );
+
+  // 正常 description 顺利通过
+  assert.doesNotThrow(() => {
+    const goodFm = `---
+name: create-yss-app
+description: 新建微应用首选入口；脱机离线创建请改用内部离线方案。
+---
+# Content`;
+    validateSkillDescription('create-yss-app', goodFm, nonPublicSkills);
+  });
 });
 
 test('collectExportFiles: 默认收集 allowedSubdirs 包含 examples/scripts/references/agents 子目录及 SKILL.md', () => {
@@ -143,7 +312,7 @@ test('collectExportFiles: 默认收集 allowedSubdirs 包含 examples/scripts/re
   }
 });
 
-test('runExport: 完整端到端导出到临时目录', () => {
+test('runExport: 完整端到端导出到临时目录并通过全量断链与描述校验', () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yss-skills-export-test-'));
 
   try {
@@ -170,6 +339,54 @@ test('runExport: 完整端到端导出到临时目录', () => {
     assert.ok(
       Object.keys(manifest.files).some(f => f.includes('/examples/')),
       'MANIFEST 应包含 examples 下的代码示例文件'
+    );
+
+    // 核心验收项：递归全量扫描导出的所有 Markdown 文件，断言零命中未公开 Skill 的相对路径！
+    const forbiddenPattern = /\.\.\/(?:commit-linting|java-backend-commit|component-development|yss-create-microapp)\b/;
+    const skillsBaseDir = path.join(tempDir, 'skills');
+    const allExportedFiles = [];
+    function scanDir(dir) {
+      for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, ent.name);
+        if (ent.isDirectory()) scanDir(full);
+        else if (ent.isFile() && full.endsWith('.md')) allExportedFiles.push(full);
+      }
+    }
+    scanDir(skillsBaseDir);
+
+    for (const mdPath of allExportedFiles) {
+      const mdContent = fs.readFileSync(mdPath, 'utf8');
+      const rel = path.relative(tempDir, mdPath);
+      assert.ok(
+        !forbiddenPattern.test(mdContent),
+        `导出的公开文件 ${rel} 中不得残留未公开 Skill 的相对路径引用`
+      );
+    }
+
+    // 校验 frontend-commit 中的 2 处非公开引用已被正确改写
+    const exportedFrontendCommit = fs.readFileSync(path.join(tempDir, 'skills/frontend-commit/SKILL.md'), 'utf8');
+    assert.ok(
+      exportedFrontendCommit.includes('使用内部维护 Skill `commit-linting`（仅内部 sync:skills 分发可用）。'),
+      'frontend-commit 中的 commit-linting 路径应被改写'
+    );
+    assert.ok(
+      exportedFrontendCommit.includes('使用内部维护 Skill `java-backend-commit`（仅内部 sync:skills 分发可用）。'),
+      'frontend-commit 中的 java-backend-commit 路径应被改写'
+    );
+
+    // 校验 yss-formily 与 yss-ui-business-page-generation 中的 component-development 已被改写
+    const exportedYssFormily = fs.readFileSync(path.join(tempDir, 'skills/yss-formily/SKILL.md'), 'utf8');
+    assert.ok(
+      exportedYssFormily.includes('使用内部维护 Skill `component-development`（仅内部 sync:skills 分发可用）。'),
+      'yss-formily 中的 component-development 路径应被改写'
+    );
+
+    // 校验 create-yss-app description 已无 yss-create-microapp
+    const exportedCreateApp = fs.readFileSync(path.join(tempDir, 'skills/create-yss-app/SKILL.md'), 'utf8');
+    const descMatch = exportedCreateApp.match(/description:\s*(.+)/);
+    assert.ok(
+      descMatch && !descMatch[1].includes('yss-create-microapp'),
+      'create-yss-app description 不得包含 yss-create-microapp'
     );
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });

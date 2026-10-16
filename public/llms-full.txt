@@ -182,7 +182,7 @@ YSS UI 是基于 Vue 3、Ant Design Vue 与 VXE-Table 的企业级中后台组�
 - prototype-page-acceptance: https://iamyancong.github.io/yss-ui/skills/prototype-page-acceptance — 当用户提供原型截图、老项目源代码或旧页面设计图要求复刻业务页面时，指导预先提取视觉和交互验收清单，并在实现后逐项对照布局、按钮位置、表格自适应高度与控件类型完成交付验收；纯后台接口对接或无原型界面的通用需求无需使用本技能。
 - api-integration: https://iamyancong.github.io/yss-ui/skills/api-integration — 指导在 Vue3 业务列表、表单、详情和操作 Hook 中集成 Orval API，覆盖真实生成产物选择、mutator 响应契约、错误提示、加载状态、请求选项和长整型精度；当页面对接查询、新增、编辑、删除、详情或文件流接口时使用。
 - file-export-download: https://iamyancong.github.io/yss-ui/skills/file-export-download — 指导 Vue3 YSS UI 微应用实现文件导出、报表下载、模板下载和附件下载，覆盖 OpenAPI binary 响应、Orval 生成方法检查、responseType blob 兜底、Blob 响应类型、Content-Disposition 文件名、handleBlobResponse、loading 与错误处理；当需求出现导出、下载、Excel、CSV、PDF、ZIP、Blob 或文件流时使用。
-- vue3-best-practices: https://iamyancong.github.io/yss-ui/skills/vue3-best-practices — 在 Vue3 + TypeScript 业务页面、公共组件和 Composables 中规范响应式状态解构、组件跨级通信、异步竞态取消机制与长整型大数精度处理；当实现或重构复杂的 Vue3 业务逻辑与 Hooks 时使用。表单特定规范请结合 yss-formily，组件库维护参考 component-development。
+- vue3-best-practices: https://iamyancong.github.io/yss-ui/skills/vue3-best-practices — 在 Vue3 + TypeScript 业务页面、公共组件和 Composables 中规范响应式状态解构、组件跨级通信、异步竞态取消机制与长整型大数精度处理；当实现或重构复杂的 Vue3 业务逻辑与 Hooks 时使用。表单特定规范请结合 yss-formily，组件库维护请参考内部维护类规范。
 - frontend-commit: https://iamyancong.github.io/yss-ui/skills/frontend-commit — 分析并提交 Vue、React、TypeScript、JavaScript、Vite、微前端和前端 monorepo 项目的 Git 改动；当用户要求生成 commit message、检查提交规范、拆分原子提交、暂存并执行 git commit，或修复 commitlint 与 commit-msg hook 拒绝时使用。读取仓库实际规则和 diff，选择业务 scope，生成英文 type/scope 与中文标题和正文，并安全验证提交。
 - java-backend-commit: https://iamyancong.github.io/yss-ui/skills/java-backend-commit — 分析并提交 Java、Spring Boot、Maven、Gradle、单体服务和多模块后端项目的 Git 改动；当用户要求生成 commit message、检查提交规范、拆分原子提交、暂存并执行 git commit，或修复 commitlint 与 commit-msg hook 拒绝时使用。读取仓库实际规则、模块结构和 diff，选择服务或业务域 scope，生成英文 type/scope 与中文标题和正文，并安全验证提交。
 - yss-formily: https://iamyancong.github.io/yss-ui/skills/yss-formily — 指导在 YSS UI 业务页面中正确使用 @yss-ui/components 的 YFormily；当新增、编辑、查看、查询、联动、详情插槽、分步表单或动态 schema 需求出现时使用，并校验组件导入、提交与错误处理边界。
@@ -192,7 +192,7 @@ YSS UI 是基于 Vue 3、Ant Design Vue 与 VXE-Table 的企业级中后台组�
 - formily-step-flow: https://iamyancong.github.io/yss-ui/skills/formily-step-flow — 指导基于 Ant Design Vue Steps 与多 YFormily 实例的分步表单与向导流程录入，覆盖各步骤独立校验、跨步数据持久保留、最终确认预览与聚合提交闭环；当业务需要分步录入、分阶段流程或多步骤向导时使用。单页普通表单请使用 formily-foundation，单纯字段联动请使用 formily-linkage-effects。
 - i18n-locale-management: https://iamyancong.github.io/yss-ui/skills/i18n-locale-management — 指导 Vue3 微前端（主应用与微应用）中国际化（i18n）字典的模块化设计、简繁英三语镜像对齐、命名分层、Vite 自动化加载、微前端通信与业务消费规范；当新增业务模块、维护多语言字典、支持繁体中文/英文、重构页面文案或调用 $t/useI18n 时使用。
 - yss-create-microapp: https://iamyancong.github.io/yss-ui/skills/yss-create-microapp — 离线脱机环境或网络受限时创建微应用的内置脚本后备，使用本地模板与离线脚本初始化微前端子应用工程；当无法访问外网、无 npm 连通性、网络受限或需直接执行本地脚本搭建子工程时使用。在线正常网络环境首选 create-yss-app，已有工程开发业务页面请使用 yss-frontend-dev。
-- create-yss-app: https://iamyancong.github.io/yss-ui/skills/create-yss-app — 新建或初始化 YSS 微前端微应用工程首选入口，通过官方脚手架与 CLI 交互在线快速生成微前端工程骨架；create yss app scaffold micro-frontend project；当在线从零搭建微应用、新建 qiankun 子应用或运行脚手架创建项目时使用。已有项目开发迭代请转交 yss-frontend-dev，脱机离线创建请改用 yss-create-microapp。
+- create-yss-app: https://iamyancong.github.io/yss-ui/skills/create-yss-app — 新建或初始化 YSS 微前端微应用工程首选入口，通过官方脚手架与 CLI 交互在线快速生成微前端工程骨架；create yss app scaffold micro-frontend project；当在线从零搭建微应用、新建 qiankun 子应用或运行脚手架创建项目时使用。已有项目开发迭代请转交 yss-frontend-dev，脱机离线创建请改用内部离线方案。
 - yss-frontend-dev: https://iamyancong.github.io/yss-ui/skills/yss-frontend-dev — 开发前端页面、新增或修改前端页面、列表页、表单、微应用业务功能总入口与流程编排器；develop a frontend page。通过状态识别与有限构件分流调度对应专业子 Skill。从零新建空工程项目请使用 create-yss-app，单独维护组件库自身请使用 library 类维护技能。
 
 ### other
@@ -8936,7 +8936,7 @@ const submitAll = async () => {
 
 ## 触发条件
 
-维护 Vue3 主应用或微应用三语词典、国际化响应式配置、语言切换、生命周期桥接、请求头与日期数字展示时使用。组件库维护还应结合 component-development；组件 API、能力边界以当前源码和组件文档为准。
+维护 Vue3 主应用或微应用三语词典、国际化响应式配置、语言切换、生命周期桥接、请求头与日期数字展示时使用。组件库维护请参考内部维护类规范；组件 API、能力边界以当前源码和组件文档为准。
 
 ## 不适用场景
 

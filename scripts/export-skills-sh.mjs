@@ -76,6 +76,35 @@ export function resolvePublicSkills(configPath = SKILLS_CONFIG_PATH) {
 }
 
 /**
+ * 动态计算全部未公开或被排除的 skills 集合。
+ *
+ * @param {string} [configPath] skills.config.json 路径
+ * @returns {Set<string>} 非公开 skill 名称集合
+ */
+export function resolveNonPublicSkills(configPath = SKILLS_CONFIG_PATH) {
+  if (!fs.existsSync(configPath)) {
+    throw new Error(`找不到技能配置文件: ${configPath}`);
+  }
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  const allKnown = new Set([
+    ...(config.categories?.library || []),
+    ...(config.categories?.app || []),
+    ...(config.categories?.hooks || []),
+    ...(config.categories?.universal || []),
+    ...(config.deprecatedSkills || []),
+    ...EXCLUDED_SKILLS,
+  ]);
+  const publicSkills = new Set(resolvePublicSkills(configPath));
+  const nonPublic = new Set();
+  for (const name of allKnown) {
+    if (!publicSkills.has(name)) {
+      nonPublic.add(name);
+    }
+  }
+  return nonPublic;
+}
+
+/**
  * 扫描文本中的敏感内容，对外导出时零容忍（不认 skillscan:allow 豁免）。
  *
  * @param {string} filePath 相对文件路径
@@ -150,14 +179,15 @@ function collectNestedFiles(dir) {
 }
 
 /**
- * 校验 Markdown 相对链接。
- * 覆盖 ../xxx/SKILL.md、../xxx/references/... 等所有跨 skill 相对路径。
+ * 校验 Markdown 相对链接与跨 Skill 引用路径。
+ * 覆盖 Markdown 链接 [text](../xxx/...)、反引号 `../xxx/...` 与裸路径等所有跨 skill 相对路径。
  *
  * @param {string} skillName 当前 skill 名称
  * @param {string} content Markdown 内容
  * @param {Set<string>} publicSkillSet 公开技能集合
  */
 export function validateRelativeLinks(skillName, content, publicSkillSet) {
+  // 1. 扫描标准 Markdown 超链接
   const linkRegex = /\[[^\]]*\]\(([^)]+)\)/g;
   let match;
   while ((match = linkRegex.exec(content)) !== null) {
@@ -184,6 +214,128 @@ export function validateRelativeLinks(skillName, content, publicSkillSet) {
       }
     }
   }
+
+  // 2. 额外扫描反引号与裸文本中的跨 skill 引用（形如 `../<skill>/...` 或裸 ../<skill>/...）
+  // 覆盖 SKILL.md 以及 references/、scripts/、agents/、examples/ 等全部随 Skill 分发的子目录
+  const crossSkillRegex =
+    /(?:`\.\.\/([a-zA-Z0-9_-]+)\/(SKILL\.md|(?:references|scripts|agents|examples)\/[^`]+)`)|(?:\.\.\/([a-zA-Z0-9_-]+)\/(SKILL\.md|(?:references|scripts|agents|examples)\/[^\s)`"'，；。！？!?]+))/g;
+  let refMatch;
+  while ((refMatch = crossSkillRegex.exec(content)) !== null) {
+    const targetSkill = refMatch[1] || refMatch[3];
+    const subPath = refMatch[2] || refMatch[4];
+    const fullMatched = refMatch[0];
+
+    if (!publicSkillSet.has(targetSkill)) {
+      throw new Error(
+        `[链接校验失败] ${skillName} 引用了未公开或被排除的 Skill: ${targetSkill} (path: ${fullMatched})`
+      );
+    }
+    const targetFullPath = path.join(SKILLS_SRC_DIR, targetSkill, subPath);
+    if (!fs.existsSync(targetFullPath)) {
+      throw new Error(
+        `[链接校验失败] ${skillName} 存在断链，目标文件不存在: ${targetSkill}/${subPath} (path: ${fullMatched})`
+      );
+    }
+  }
+}
+
+/**
+ * 对外导出时对 Markdown 内容进行净化。
+ * 将指向未公开或被排除 Skill 的相对路径改写为统一纯文字，
+ * 既保障 packages/skills 内部可用性（方案 A），又杜绝公开分发断链。
+ *
+ * @param {string} content Markdown 内容
+ * @param {Set<string>} publicSkillSet 公开技能集合
+ * @returns {string} 净化后的 Markdown 内容
+ */
+export function sanitizeExportContent(content, publicSkillSet) {
+  // 1. 处理反引号包裹的跨 skill 相对路径（如：使用 `../commit-linting/SKILL.md`）
+  let result = content.replace(
+    /(使用|请使用|转交)?\s*`\.\.\/([a-zA-Z0-9_-]+)\/(?:SKILL\.md|(?:references|scripts|agents|examples)\/[^`]+)`/g,
+    (match, verb, targetSkill) => {
+      if (!publicSkillSet.has(targetSkill)) {
+        const prefix = verb ? `${verb}` : '';
+        return `${prefix}内部维护 Skill \`${targetSkill}\`（仅内部 sync:skills 分发可用）`;
+      }
+      return match;
+    }
+  );
+
+  // 2. 处理标准 Markdown 超链接（如：[xxx](../component-development/SKILL.md)）
+  result = result.replace(
+    /\[([^\]]+)\]\(\.\.\/([a-zA-Z0-9_-]+)\/(?:SKILL\.md|(?:references|scripts|agents|examples)\/[^)#\s]+)\)/g,
+    (match, linkText, targetSkill) => {
+      if (!publicSkillSet.has(targetSkill)) {
+        return `${linkText}（内部维护 Skill \`${targetSkill}\`，仅内部 sync:skills 分发可用）`;
+      }
+      return match;
+    }
+  );
+
+  // 3. 处理裸跨 skill 相对路径
+  result = result.replace(
+    /(使用|请使用|转交)?\s*(?<![`a-zA-Z0-9_.-])\.\.\/([a-zA-Z0-9_-]+)\/(?:SKILL\.md|(?:references|scripts|agents|examples)\/[^\s)`"'，；。！？!?]+)/g,
+    (match, verb, targetSkill) => {
+      if (!publicSkillSet.has(targetSkill)) {
+        const prefix = verb ? `${verb}` : '';
+        return `${prefix}内部维护 Skill \`${targetSkill}\`（仅内部 sync:skills 分发可用）`;
+      }
+      return match;
+    }
+  );
+
+  return result;
+}
+
+/**
+ * 从 Markdown frontmatter 中提取 description 文本，支持单行及 YAML 多行/折行写法。
+ *
+ * @param {string} content Markdown 内容
+ * @returns {string} 提取到的 description 文本
+ */
+export function extractFrontmatterDescription(content) {
+  const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  if (!fmMatch) return '';
+  const lines = fmMatch[1].split(/\r?\n/);
+  let collecting = false;
+  const descLines = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!collecting) {
+      if (/^description\s*:/i.test(trimmed)) {
+        collecting = true;
+        const inlineVal = trimmed.replace(/^description\s*:\s*[>|]?-?\s*/i, '');
+        if (inlineVal) descLines.push(inlineVal);
+      }
+    } else {
+      if (/^[a-zA-Z0-9_-]+\s*:/i.test(line)) {
+        break;
+      }
+      if (trimmed) descLines.push(trimmed);
+    }
+  }
+  return descLines.join(' ').replace(/^['"]|['"]$/g, '').trim();
+}
+
+/**
+ * 校验 Skill 的 frontmatter description，禁止出现未公开或被排除的 Skill 名称。
+ *
+ * @param {string} skillName 当前 skill 名称
+ * @param {string} content Markdown 内容
+ * @param {Set<string>} nonPublicSkills 非公开技能集合
+ */
+export function validateSkillDescription(skillName, content, nonPublicSkills) {
+  const description = extractFrontmatterDescription(content);
+  if (!description) return;
+
+  for (const nonPublic of nonPublicSkills) {
+    const regex = new RegExp(`(?<![a-zA-Z0-9_-])${nonPublic}(?![a-zA-Z0-9_-])`);
+    if (regex.test(description)) {
+      throw new Error(
+        `[描述校验失败] ${skillName} 的 frontmatter description 中引用了未公开的 Skill: ${nonPublic}`
+      );
+    }
+  }
 }
 
 /**
@@ -202,6 +354,7 @@ export function runExport(options = {}) {
 
   const publicSkills = resolvePublicSkills();
   const publicSkillSet = new Set(publicSkills);
+  const nonPublicSkillSet = resolveNonPublicSkills();
 
   console.log(`[export-skills-sh] 解析出 ${publicSkills.length} 个公开白名单 Skills...`);
 
@@ -251,17 +404,20 @@ export function runExport(options = {}) {
 
       const content = fs.readFileSync(srcFile, 'utf8');
 
-      // 1. 安全扫描
+      // 1. 安全扫描（对原始源文件进行敏感信息扫描）
       scanFileSecurity(`${skillName}/${relPath}`, content);
 
-      // 2. 链接检查（若是 Markdown）
+      // 2. 导出内容净化与门禁校验（若是 Markdown）
+      let exportContent = content;
       if (srcFile.endsWith('.md')) {
-        validateRelativeLinks(skillName, content, publicSkillSet);
+        exportContent = sanitizeExportContent(content, publicSkillSet);
+        validateRelativeLinks(skillName, exportContent, publicSkillSet);
+        validateSkillDescription(skillName, exportContent, nonPublicSkillSet);
       }
 
       if (!dryRun) {
         fs.mkdirSync(path.dirname(destFile), { recursive: true });
-        fs.writeFileSync(destFile, content, 'utf8');
+        fs.writeFileSync(destFile, exportContent, 'utf8');
 
         // 保持可执行权限
         if (srcFile.endsWith('.mjs') || srcFile.endsWith('.sh') || srcFile.endsWith('.js')) {
@@ -275,7 +431,7 @@ export function runExport(options = {}) {
       }
 
       const manifestRel = `skills/${skillName}/${relPath}`;
-      manifest.files[manifestRel] = calcSha256(srcFile);
+      manifest.files[manifestRel] = crypto.createHash('sha256').update(exportContent).digest('hex');
       totalFilesCopied += 1;
     }
   }

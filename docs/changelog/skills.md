@@ -10,6 +10,18 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.9.3
+
+`2026-10-16`
+
+### 🐛 Bug Fixes
+
+- **相对链接门禁补齐**：增强 `scripts/export-skills-sh.mjs` 中的 `validateRelativeLinks`，将扫描与净化范围拓展至行内反引号代码块（`` `../<skill>/...` ``）及裸路径，全面覆盖 `SKILL.md` 及 `references/`、`scripts/`、`agents/`、`examples/` 等随 Skill 分发的全量子目录；新增 `validateSkillDescription` 门禁（支持单行与 YAML 折行/多行），拦截 frontmatter description 中残留的非公开 Skill 名称 (#58)。
+- **导出期非公开 Skill 引用自动净化**：新增 `sanitizeExportContent`，在保持 `packages/skills` 源码中相对链接可点击跳转（方案 A）的同时，对外导出时自动将指向非公开 Skill（如 `commit-linting`、`component-development`、`java-backend-commit` 等）的路径平滑改写为统一纯文字提示（`内部维护 Skill \`xxx\`（仅内部 sync:skills 分发可用）`），彻底杜绝公开分发仓断链 (#58)。
+- **描述与正文残留修正**：修正 `create-yss-app` 与 `vue3-best-practices` 的 frontmatter description，消除对未公开 Skill（`yss-create-microapp`、`component-development`）的直接提及；修正 `i18n-locale-management` 正文引用口径，统一为「内部维护类规范」，引导 Agent 走规范选路 (#58)。
+
+---
+
 ## v1.9.2
 
 `2026-10-15`
