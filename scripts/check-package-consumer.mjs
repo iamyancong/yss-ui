@@ -39,6 +39,11 @@ const resolveViteCli = () => {
 
 const VITE_CLI = resolveViteCli();
 const PACKAGE_DIRECTORIES = ['utils', 'theme', 'hooks', 'components'];
+/**
+ * 需要业务项目自行安装的可选 peer：包管理器默认不会安装，先在缺失状态下验证，再单独链接验证子路径。
+ * 键为依赖名，值为使用它的子路径。
+ */
+const OPT_IN_PEERS = { '@aiden0z/pptx-renderer': '@yss-ui/components/file-preview/pptx' };
 
 /**
  * 执行命令，失败时保留完整子进程上下文。
@@ -221,6 +226,7 @@ const linkConsumerDependencies = consumerDirectory => {
 
     for (const dependencyName of dependencies) {
       if (dependencyName.startsWith('@yss-ui/')) continue;
+      if (dependencyName in OPT_IN_PEERS) continue;
       const destination = path.join(consumerDirectory, 'node_modules', dependencyName);
       if (fs.existsSync(destination)) continue;
 
@@ -234,6 +240,24 @@ const linkConsumerDependencies = consumerDirectory => {
       fs.symlinkSync(fs.realpathSync(source), destination, 'junction');
     }
   }
+};
+
+/**
+ * 链接一个可选 peer，模拟业务项目自行安装。
+ *
+ * @param {string} consumerDirectory 消费项目目录。
+ * @param {string} dependencyName 依赖名。
+ */
+const linkOptInPeer = (consumerDirectory, dependencyName) => {
+  const candidates = [
+    path.join(ROOT_DIR, 'packages', 'components', 'node_modules', dependencyName),
+    path.join(ROOT_DIR, 'node_modules', dependencyName),
+  ];
+  const source = candidates.find(candidate => fs.existsSync(candidate));
+  assert.ok(source, `可选 peer 未在工作区 devDependencies 中安装: ${dependencyName}`);
+  const destination = path.join(consumerDirectory, 'node_modules', dependencyName);
+  fs.mkdirSync(path.dirname(destination), { recursive: true });
+  fs.symlinkSync(fs.realpathSync(source), destination, 'junction');
 };
 
 /**
@@ -260,6 +284,8 @@ assert.match(import.meta.resolve('@yss-ui/components/monaco'), /monaco\.mjs$/);
 assert.match(import.meta.resolve('@yss-ui/components/echarts'), /echarts\.mjs$/);
 assert.match(import.meta.resolve('@yss-ui/components/table'), /table\.mjs$/);
 assert.match(import.meta.resolve('@yss-ui/components/formily'), /formily\.mjs$/);
+assert.match(import.meta.resolve('@yss-ui/components/file-preview'), /root.file-preview\.mjs$/);
+assert.match(import.meta.resolve('@yss-ui/components/file-preview/pptx'), /root.file-preview.pptx\.mjs$/);
 const locale = await import('@yss-ui/components/locale');
 for (const language of ['zh-CN', 'zh-TW', 'en-US']) {
   const pack = (await import('@yss-ui/components/locale/' + language)).default;
@@ -280,6 +306,8 @@ assert.match(require.resolve('@yss-ui/components/monaco'), /monaco\.cjs$/);
 assert.match(require.resolve('@yss-ui/components/echarts'), /echarts\.cjs$/);
 assert.match(require.resolve('@yss-ui/components/table'), /table\.cjs$/);
 assert.match(require.resolve('@yss-ui/components/formily'), /formily\.cjs$/);
+assert.match(require.resolve('@yss-ui/components/file-preview'), /root.file-preview\.cjs$/);
+assert.match(require.resolve('@yss-ui/components/file-preview/pptx'), /root.file-preview.pptx\.cjs$/);
 assert.equal(typeof require('@yss-ui/hooks').useLoading, 'function');
 assert.ok(Object.keys(require('@yss-ui/utils')).length > 0);
 assert.ok(Object.keys(require('@yss-ui/theme')).length > 0);
@@ -306,6 +334,15 @@ import { YMonaco, YMonacoDiff, type YMonacoProps } from '@yss-ui/components/mona
 import { YEcharts, type YEchartsProps } from '@yss-ui/components/echarts';
 import { YTable as SubpathTable, YEditTable as SubpathEditTable, type YTableProps, type YEditTableProps } from '@yss-ui/components/table';
 import { YFormily as SubpathFormily, type YFormilyProps } from '@yss-ui/components/formily';
+import { YFilePreview, registerPreviewRenderer, type PreviewRenderer } from '@yss-ui/components/file-preview';
+import { registerPptxRenderer, pptxRenderer, createPptxRenderer, type PptxRendererLibrary, type PptxRendererOptions } from '@yss-ui/components/file-preview/pptx';
+const pptxOptions: PptxRendererOptions = {};
+const unregisterPptx: () => void = registerPptxRenderer(pptxOptions);
+const customPptx: PreviewRenderer = createPptxRenderer({ load: () => import('@aiden0z/pptx-renderer') });
+registerPreviewRenderer(pptxRenderer);
+/** 真实的 @aiden0z/pptx-renderer 模块类型必须满足 PptxRendererLibrary，load: () => import(...) 才能通过类型检查 */
+const pptxLibraryCompatible: typeof import('@aiden0z/pptx-renderer') extends PptxRendererLibrary ? true : false = true;
+void [YFilePreview, unregisterPptx, customPptx, pptxLibraryCompatible];
 import { YConfigProvider, setGlobalLocale, useLocale, type YssLocale } from '@yss-ui/components/locale';
 import zhTW from '@yss-ui/components/locale/zh-TW';
 const locale: YssLocale = zhTW;
@@ -417,6 +454,61 @@ for (const [name, component] of Object.entries({ YButton, YTable, YFormily, YssF
 globalThis.yssInstallVerified = true;
 `;
   fs.writeFileSync(path.join(consumerDirectory, 'install.ts'), installSource);
+
+  /** 不使用 pptx 的项目：未安装 @aiden0z/pptx-renderer 也能构建，产物中不出现 @aiden0z/pptx-renderer。 */
+  fs.writeFileSync(
+    path.join(consumerDirectory, 'file-preview.ts'),
+    `import { YFilePreview, YFilePreviewModal, useFilePreview } from '@yss-ui/components/file-preview';\nglobalThis.yssFilePreviewConsumer = [YFilePreview, YFilePreviewModal, useFilePreview];\n`
+  );
+  fs.writeFileSync(path.join(consumerDirectory, 'file-preview.html'), '<script type="module" src="./file-preview.ts"></script>');
+  fs.writeFileSync(
+    path.join(consumerDirectory, 'file-preview.config.mjs'),
+    `
+import assert from 'node:assert/strict';
+export default {
+  build: { target: 'chrome90', rollupOptions: { input: 'file-preview.html' } },
+  plugins: [{ name: 'verify-file-preview-without-pptx', generateBundle(_, bundle) {
+    for (const item of Object.values(bundle)) {
+      if (item.type !== 'chunk') continue;
+      for (const id of Object.keys(item.modules)) assert.ok(!/@aiden0z\\/pptx-renderer|file-preview\\/pptx/.test(id), 'file-preview 主入口引入了 pptx 模块: ' + id);
+      assert.ok(!/["']@aiden0z\\/pptx-renderer["']/.test(item.code), 'file-preview 产物仍引用 @aiden0z/pptx-renderer: ' + item.fileName);
+    }
+  } }],
+};
+`
+  );
+
+  /** 启用 pptx 的项目：安装 @aiden0z/pptx-renderer 后注册，它（及 echarts、jszip）只出现在按需加载的分包里。 */
+  fs.writeFileSync(
+    path.join(consumerDirectory, 'pptx.ts'),
+    `import { YFilePreview } from '@yss-ui/components/file-preview';\nimport { registerPptxRenderer } from '@yss-ui/components/file-preview/pptx';\nregisterPptxRenderer();\nglobalThis.yssPptxConsumer = YFilePreview;\n`
+  );
+  fs.writeFileSync(path.join(consumerDirectory, 'pptx.html'), '<script type="module" src="./pptx.ts"></script>');
+  fs.writeFileSync(
+    path.join(consumerDirectory, 'pptx.config.mjs'),
+    `
+import assert from 'node:assert/strict';
+export default {
+  build: { target: 'chrome90', rollupOptions: { input: 'pptx.html' } },
+  plugins: [{ name: 'verify-pptx-lazy', generateBundle(_, bundle) {
+    const chunks = Object.values(bundle).filter(item => item.type === 'chunk');
+    const entry = chunks.find(item => item.isEntry);
+    assert.ok(entry, 'pptx entry missing');
+    const visited = new Set();
+    const visit = file => {
+      if (visited.has(file)) return;
+      visited.add(file);
+      const chunk = bundle[file];
+      if (!chunk || chunk.type !== 'chunk') return;
+      for (const id of Object.keys(chunk.modules)) assert.ok(!/node_modules\\/(?:@aiden0z\\/pptx-renderer|echarts|zrender|jszip)\\//.test(id), '@aiden0z/pptx-renderer 进入了首屏静态闭包: ' + id);
+      chunk.imports.forEach(visit);
+    };
+    visit(entry.fileName);
+    assert.ok(chunks.some(item => Object.keys(item.modules).some(id => /node_modules\\/@aiden0z\\/pptx-renderer\\//.test(id))), '@aiden0z/pptx-renderer 未打进按需分包');
+  } }],
+};
+`
+  );
   fs.writeFileSync(path.join(consumerDirectory, 'install.html'), '<script type="module" src="./install.ts"></script>');
   fs.writeFileSync(
     path.join(consumerDirectory, 'install.config.mjs'),
@@ -577,6 +669,35 @@ const main = async () => {
       ],
       { cwd: consumerDirectory, stdio: 'inherit' }
     );
+    run(
+      process.execPath,
+      [
+        VITE_CLI,
+        'build',
+        '--config',
+        'file-preview.config.mjs',
+        '--outDir',
+        path.join(tempRoot, 'file-preview-dist'),
+        '--logLevel',
+        'error',
+      ],
+      { cwd: consumerDirectory, stdio: 'inherit' }
+    );
+    for (const dependencyName of Object.keys(OPT_IN_PEERS)) linkOptInPeer(consumerDirectory, dependencyName);
+    run(
+      process.execPath,
+      [
+        VITE_CLI,
+        'build',
+        '--config',
+        'pptx.config.mjs',
+        '--outDir',
+        path.join(tempRoot, 'pptx-dist'),
+        '--logLevel',
+        'error',
+      ],
+      { cwd: consumerDirectory, stdio: 'inherit' }
+    );
     console.log('Consumer artifacts: ' + tempRoot);
     run(
       PNPM_COMMAND,
@@ -586,7 +707,7 @@ const main = async () => {
       }
     );
     console.log(
-      '✅ 发布包消费验证通过：4 个 tarball 的 Node 入口、Vite 浏览器构建、exports 与类型均可用；locale 三语子路径、根入口/卡片静态闭包与全量安装构建通过。'
+      '✅ 发布包消费验证通过：4 个 tarball 的 Node 入口、Vite 浏览器构建、exports 与类型均可用；locale 三语子路径、根入口/卡片静态闭包、全量安装构建，以及未安装 @aiden0z/pptx-renderer 的 file-preview 与按需启用的 file-preview/pptx 子路径通过。'
     );
   } finally {
     if (process.env.YSS_KEEP_CONSUMER !== 'true') cleanupTempDirectory(tempRoot);

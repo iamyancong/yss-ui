@@ -1,0 +1,268 @@
+{
+  "name": "file-preview-modal",
+  "propsCount": 27,
+  "props": {
+    "open": {
+      "name": "open",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "files": {
+      "name": "files",
+      "type": "array",
+      "tsType": "(FileSource | FilePreviewItem)[]",
+      "required": false,
+      "default": "[]",
+      "isCore": true
+    },
+    "index": {
+      "name": "index",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "0",
+      "isCore": true
+    },
+    "width": {
+      "name": "width",
+      "type": "any",
+      "tsType": "string | number",
+      "required": false,
+      "default": "\"85vw\"",
+      "isCore": true
+    },
+    "title": {
+      "name": "title",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "fileSwitcher": {
+      "name": "fileSwitcher",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "loop": {
+      "name": "loop",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "showDownload": {
+      "name": "showDownload",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "keyboard": {
+      "name": "keyboard",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "maxSize": {
+      "name": "maxSize",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "DEFAULT_MAX_FILE_SIZE",
+      "isCore": true
+    },
+    "textEncoding": {
+      "name": "textEncoding",
+      "type": "any",
+      "tsType": "TextEncoding",
+      "required": false,
+      "default": "\"auto\"",
+      "isCore": true
+    },
+    "csvMode": {
+      "name": "csvMode",
+      "type": "any",
+      "tsType": "CsvMode",
+      "required": false,
+      "default": "\"table\"",
+      "isCore": true
+    },
+    "csvRowNumber": {
+      "name": "csvRowNumber",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "getContainer": {
+      "name": "getContainer",
+      "type": "function",
+      "tsType": "string | false | HTMLElement | (() => HTMLElement)",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "customDownload": {
+      "name": "customDownload",
+      "type": "any",
+      "tsType": "FilePreviewCustomDownload",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "key": {
+      "name": "key",
+      "type": "any",
+      "tsType": "PropertyKey",
+      "required": false,
+      "isCore": false
+    },
+    "ref": {
+      "name": "ref",
+      "type": "any",
+      "tsType": "VNodeRef",
+      "required": false,
+      "isCore": false
+    },
+    "ref_for": {
+      "name": "ref_for",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ref_key": {
+      "name": "ref_key",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeMount": {
+      "name": "onVue:beforeMount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:mounted": {
+      "name": "onVue:mounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUpdate": {
+      "name": "onVue:beforeUpdate",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:updated": {
+      "name": "onVue:updated",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUnmount": {
+      "name": "onVue:beforeUnmount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:unmounted": {
+      "name": "onVue:unmounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "class": {
+      "name": "class",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "style": {
+      "name": "style",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    }
+  },
+  "emits": [
+    {
+      "name": "change",
+      "type": "[index: number, file: FilePreviewItem, ctx: FilePreviewContext]"
+    },
+    {
+      "name": "error",
+      "type": "[error: Error, ctx: FilePreviewContext]"
+    },
+    {
+      "name": "close",
+      "type": "[]"
+    },
+    {
+      "name": "loaded",
+      "type": "[payload: FilePreviewLoadedPayload, ctx: FilePreviewContext]"
+    },
+    {
+      "name": "unsupported",
+      "type": "[type: string, ctx: FilePreviewContext]"
+    },
+    {
+      "name": "update:open",
+      "type": "[open: boolean]"
+    },
+    {
+      "name": "update:index",
+      "type": "[index: number]"
+    }
+  ],
+  "slots": [
+    {
+      "name": "actions",
+      "type": "FilePreviewContext"
+    }
+  ],
+  "exposed": [
+    {
+      "name": "prev",
+      "type": "() => void"
+    },
+    {
+      "name": "next",
+      "type": "() => void"
+    },
+    {
+      "name": "goTo",
+      "type": "(index: number) => void"
+    },
+    {
+      "name": "download",
+      "type": "() => Promise<void>"
+    },
+    {
+      "name": "reload",
+      "type": "() => Promise<void>"
+    }
+  ]
+}

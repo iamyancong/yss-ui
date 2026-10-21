@@ -278,9 +278,15 @@ importers:
       "@univerjs/presets":
         specifier: 0.25.0
         version: 0.25.0(@types/react@18.3.28)(react-dom@18.3.1)(react@18.3.1)(rxjs@7.8.2)
+      "@vue-office/excel":
+        specifier: 1.7.14
+        version: 1.7.14(vue-demi@0.14.10)(vue@3.5.29)
       diff:
         specifier: ^8.0.3
         version: 8.0.3
+      docx-preview:
+        specifier: ^0.3.4
+        version: 0.3.7
       echarts:
         specifier: ^6.0.0
         version: 6.0.0
@@ -290,6 +296,9 @@ importers:
       monaco-editor-nls:
         specifier: ^3.1.0
         version: 3.1.0
+      numfmt:
+        specifier: 3.2.6
+        version: 3.2.6
       prettier:
         specifier: ^3.8.3
         version: 3.8.3
@@ -308,13 +317,22 @@ importers:
       sql-formatter:
         specifier: ^15.7.2
         version: 15.7.2
+      vue-demi:
+        specifier: ^0.14.10
+        version: 0.14.10(vue@3.5.29)
     devDependencies:
+      "@aiden0z/pptx-renderer":
+        specifier: 1.4.0
+        version: 1.4.0
       "@vitejs/plugin-vue":
         specifier: ^5.0.5
         version: 5.2.4(vite@5.4.21)(vue@3.5.29)
       ant-design-vue:
         specifier: ^4.0.7
         version: 4.2.6(vue@3.5.29)
+      rtf.js:
+        specifier: 3.0.9
+        version: 3.0.9
       vite:
         specifier: ^5.4.10
         version: 5.4.21(@types/node@20.19.34)(less@4.5.1)(sass@1.54.0)
@@ -410,6 +428,20 @@ importers:
         version: 3.9.1(@types/node@20.19.34)(typescript@5.9.3)(vite@5.4.21)
 
 packages:
+  /@aiden0z/pptx-renderer@1.4.0:
+    resolution:
+      { integrity: sha512-GUQbdJCYjTfXkJWtSgo5pIYXZYQjOQLlnjfRYE5ycpWgPa8rIK711wQa0kAl71H++vYnFYUp9fjQkKB8K/6ShA== }
+    peerDependencies:
+      pdfjs-dist: ">=5 <7"
+    peerDependenciesMeta:
+      pdfjs-dist:
+        optional: true
+    dependencies:
+      echarts: 6.0.0
+      jszip: 3.10.2
+      mtx-decompressor: 1.8.0
+    dev: true
+
   /@ampproject/remapping@2.3.0:
     resolution:
       { integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw== }
@@ -9474,6 +9506,23 @@ packages:
       vscode-uri: 3.1.0
     dev: true
 
+  /@vue-office/excel@1.7.14(vue-demi@0.14.10)(vue@3.5.29):
+    resolution:
+      { integrity: sha512-pVUgt+emDQUnW7q22CfnQ+jl43mM/7IFwYzOg7lwOwPEbiVB4K4qEQf+y/bc4xGXz75w1/e3Kz3G6wAafmFBFg== }
+    requiresBuild: true
+    peerDependencies:
+      "@vue/composition-api": ^1.7.1
+      vue: ^2.0.0 || >=3.0.0
+      vue-demi: ^0.14.6
+    peerDependenciesMeta:
+      "@vue/composition-api":
+        optional: true
+    dependencies:
+      vue: 3.5.29(typescript@5.9.3)
+      vue-demi: 0.14.10(vue@3.5.29)
+    dev: false
+    optional: true
+
   /@vue/babel-helper-vue-transform-on@1.5.0:
     resolution:
       { integrity: sha512-0dAYkerNhhHutHZ34JtTl2czVQHUNWv6xEbkdF5W+Yrv5pCWsqjeORdOgbtW2I9gWlt+wBmVn+ttqN9ZxR5tzA== }
@@ -11228,6 +11277,13 @@ packages:
       q: 1.5.1
     dev: true
 
+  /codepage@1.15.0:
+    resolution:
+      { integrity: sha512-3g6NUTPd/YtuuGrhMnOMRjFc+LJw/bnMp3+0r/Wcz3IXUuCosKRJvMphm5+Q+bvTVGcJJuRvVLuYba+WojaFaA== }
+    engines: { node: ">=0.8" }
+    requiresBuild: true
+    dev: true
+
   /codesandbox-import-util-types@2.2.3:
     resolution:
       { integrity: sha512-Qj00p60oNExthP2oR3vvXmUGjukij+rxJGuiaKM6tyUmSyimdZsqHI/TUvFFClAffk9s7hxGnQgWQ8KCce27qQ== }
@@ -11752,7 +11808,7 @@ packages:
   /core-util-is@1.0.3:
     resolution:
       { integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ== }
-    dev: true
+    requiresBuild: true
 
   /cors@2.8.6:
     resolution:
@@ -12429,6 +12485,15 @@ packages:
       esutils: 2.0.3
     dev: true
 
+  /docx-preview@0.3.7:
+    resolution:
+      { integrity: sha512-Lav69CTA/IYZPJTsKH7oYeoZjyg96N0wEJMNslGJnZJ+dMUZK85Lt5ASC79yUlD48ecWjuv+rkcmFt6EVPV0Xg== }
+    requiresBuild: true
+    dependencies:
+      jszip: 3.10.2
+    dev: false
+    optional: true
+
   /dom-align@1.12.4:
     resolution:
       { integrity: sha512-R8LUSEay/68zE5c8/3BDxiTEvgb4xZTF0RKmAHfiEVN3klfIpXfi2/QCoiWPccVQ0J/ZGdz9OjzL4uJEP/MRAw== }
@@ -12929,7 +12994,6 @@ packages:
     dependencies:
       tslib: 2.3.0
       zrender: 6.0.0
-    dev: false
 
   /editions@2.3.1:
     resolution:
@@ -15467,8 +15531,6 @@ packages:
     resolution:
       { integrity: sha512-XXOFtyqDjNDAQxVfYxuF7g9Il/IbWmmlQg2MYKOH8ExIT1qg6xc4zyS3HaEEATgs1btfzxq15ciUiY7gjSXRGQ== }
     requiresBuild: true
-    dev: false
-    optional: true
 
   /immutable@4.3.7:
     resolution:
@@ -16072,7 +16134,6 @@ packages:
   /isarray@1.0.0:
     resolution:
       { integrity: sha512-VLghIWNM6ELQzo7zwmcg0NmTVyWKYjvIeM83yjp0wRDTmUnrM678fQbcKBo6n2CJEF0szoG//ytg+TKla89ALQ== }
-    dev: true
 
   /isarray@2.0.5:
     resolution:
@@ -16436,6 +16497,16 @@ packages:
       object.values: 1.2.1
     dev: true
 
+  /jszip@3.10.2:
+    resolution:
+      { integrity: sha512-3l+rb15IOWtUhU0H5MFqES/T6Kh7abYwjosBey/vD6hDt8zoEffkSC5Ws5SGtgVw3gBx2NEbhTeSW1+kWkpyTQ== }
+    requiresBuild: true
+    dependencies:
+      lie: 3.3.0
+      pako: 1.0.11
+      readable-stream: 2.3.8
+      setimmediate: 1.0.5
+
   /kdbush@4.0.2:
     resolution:
       { integrity: sha512-WbCVYJ27Sz8zi9Q7Q0xHC+05iwkm3Znipc2XTlrnJbsHMYktW4hPhXUE8Ys1engBrvffoSCqbil1JQAa7clRpA== }
@@ -16566,6 +16637,13 @@ packages:
       immediate: 3.0.6
     dev: false
     optional: true
+
+  /lie@3.3.0:
+    resolution:
+      { integrity: sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ== }
+    requiresBuild: true
+    dependencies:
+      immediate: 3.0.6
 
   /lightningcss-darwin-arm64@1.22.1:
     resolution:
@@ -17930,6 +18008,11 @@ packages:
     resolution:
       { integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA== }
 
+  /mtx-decompressor@1.8.0:
+    resolution:
+      { integrity: sha512-suXE376dUmLX4PPxSmVmdWvu09oeesqmlE5NfKjb6XIUpDRjF2Mn47kM8nXWRkHb3l7ac0P+Crp0J0O984imRQ== }
+    dev: true
+
   /muggle-string@0.3.1:
     resolution:
       { integrity: sha512-ckmWDJjphvd/FvZawgygcUeQCxzvohjFO5RxTjj4eq8kw359gFF3E1brjfI+viLMxss5JrHTDRHZvu2/tuy0Qg== }
@@ -18590,7 +18673,6 @@ packages:
   /pako@1.0.11:
     resolution:
       { integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw== }
-    dev: true
 
   /param-case@3.0.4:
     resolution:
@@ -19614,7 +19696,7 @@ packages:
   /process-nextick-args@2.0.1:
     resolution:
       { integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag== }
-    dev: true
+    requiresBuild: true
 
   /process-okam@0.11.10:
     resolution:
@@ -20351,7 +20433,6 @@ packages:
       safe-buffer: 5.1.2
       string_decoder: 1.1.1
       util-deprecate: 1.0.2
-    dev: true
 
   /readable-stream@3.6.2:
     resolution:
@@ -20803,6 +20884,14 @@ packages:
       - supports-color
     dev: false
 
+  /rtf.js@3.0.9:
+    resolution:
+      { integrity: sha512-I1GpDat4i548WzmeZXv27f/743984fvEeeBS8BC01/Sop17pMlUl3M7DYcdcB3PUvOZTrFIMxGZx8qw7cSMAKQ== }
+    requiresBuild: true
+    dependencies:
+      codepage: 1.15.0
+    dev: true
+
   /run-applescript@5.0.0:
     resolution:
       { integrity: sha512-XcT5rBksx1QdIhlFOCtgZkB99ZEouFZ1E2Kc2LHqNW13U3/74YGdkQRmThTwxy4QIyookibDKYZOPqX//6BlAg== }
@@ -20854,7 +20943,7 @@ packages:
   /safe-buffer@5.1.2:
     resolution:
       { integrity: sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g== }
-    dev: true
+    requiresBuild: true
 
   /safe-buffer@5.2.1:
     resolution:
@@ -21204,7 +21293,6 @@ packages:
   /setimmediate@1.0.5:
     resolution:
       { integrity: sha512-MATJdZp8sLqDl/68LfQmbP8zKPLQNV6BIZoIgrscFDQ+RsvK/BxeDQOgyxKKoh0y/8h3BqVFnCqQ/gd+reiIXA== }
-    dev: true
 
   /setprototypeof@1.1.1:
     resolution:
@@ -21765,9 +21853,9 @@ packages:
   /string_decoder@1.1.1:
     resolution:
       { integrity: sha512-n/ShnvDi6FHbbVfviro+WojiFzv+s8MPMHBczVePfUpDJLwoLT0ht1l4YwBCbi8pJAveEEdnkHyPyTP/mzRfwg== }
+    requiresBuild: true
     dependencies:
       safe-buffer: 5.1.2
-    dev: true
 
   /string_decoder@1.3.0:
     resolution:
@@ -22531,7 +22619,6 @@ packages:
   /tslib@2.3.0:
     resolution:
       { integrity: sha512-N82ooyxVNm6h1riLCoyS9e3fuJ3AMG2zIZs2Gd1ATcSFjSA23Q0fzjjZeh0jbJvWVDZ0cJT8yaNNaaXHzueNjg== }
-    dev: false
 
   /tslib@2.8.1:
     resolution:
@@ -23206,6 +23293,7 @@ packages:
   /uuid@8.3.2:
     resolution:
       { integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg== }
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
     dev: true
 
@@ -24106,7 +24194,6 @@ packages:
       { integrity: sha512-41dFXEEXuJpNecuUQq6JlbybmnHaqqpGlbH1yxnA5V9MMP4SbohSVZsJIwz+zdjQXSSlR1Vc34EgH1zxyTDvhg== }
     dependencies:
       tslib: 2.3.0
-    dev: false
 
   /zwitch@2.0.4:
     resolution:

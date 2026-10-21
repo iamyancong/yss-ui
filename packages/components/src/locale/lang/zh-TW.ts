@@ -10,6 +10,7 @@ import monthCalendar from './zh-TW/monthCalendar';
 import monaco from './zh-TW/monaco';
 import splitPane from './zh-TW/splitPane';
 import sheet from './zh-TW/sheet';
+import filePreview from './zh-TW/filePreview';
 
 const zhTW: YssLocale = {
   name: 'zh-TW',
@@ -24,6 +25,7 @@ const zhTW: YssLocale = {
   monaco,
   splitPane,
   sheet,
+  filePreview,
 };
 
 export default zhTW;

@@ -171,3 +171,31 @@ writeFileSync(
 );
 
 if (!baseline) checkRootStyles(consumer);
+
+/** @aiden0z/pptx-renderer 是可选 peer：默认安装不带它，不用 pptx 的项目照常构建 file-preview，产物不引用它。 */
+if (!baseline) {
+  assert.ok(
+    !installed.some(row => row.name === '@aiden0z/pptx-renderer'),
+    '默认安装树不应包含 @aiden0z/pptx-renderer（需业务项目自行安装并启用 file-preview/pptx）'
+  );
+  writeFileSync(
+    join(consumer, 'file-preview-only.js'),
+    "import { YFilePreview, useFilePreview } from '@yss-ui/components/file-preview';\nglobalThis.yssFilePreview = [YFilePreview, useFilePreview];\n"
+  );
+  writeFileSync(join(consumer, 'file-preview-only.html'), '<script type="module" src="/file-preview-only.js"></script>');
+  writeFileSync(
+    join(consumer, 'file-preview.config.mjs'),
+    "export default { build: { outDir: 'dist-file-preview', rollupOptions: { input: 'file-preview-only.html' } } };\n"
+  );
+  execFileSync('pnpm', ['exec', 'vite', 'build', '--config', 'file-preview.config.mjs', '--logLevel', 'error'], {
+    cwd: consumer,
+    stdio: 'inherit',
+  });
+  const previewDist = join(consumer, 'dist-file-preview/assets');
+  for (const file of readdirSync(previewDist).filter(name => name.endsWith('.js'))) {
+    assert.ok(
+      !/["']@aiden0z\/pptx-renderer["']/.test(readFileSync(join(previewDist, file), 'utf8')),
+      `file-preview 产物引用了 @aiden0z/pptx-renderer：${file}`
+    );
+  }
+}

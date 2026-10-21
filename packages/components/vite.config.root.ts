@@ -32,7 +32,10 @@ export default defineConfig({
         lite: resolve(__dirname, 'src/lite.ts'),
         YTable: 'yss-table-styles',
         ...Object.fromEntries(
-          ['table', 'formily', 'monaco', 'echarts'].map(name => [name, resolve(__dirname, `src/${name}/index.ts`)])
+          ['table', 'formily', 'monaco', 'echarts', 'file-preview', 'file-preview/pptx'].map(name => [
+            name,
+            resolve(__dirname, `src/${name}/index.ts`),
+          ])
         ),
         sheet: resolve(__dirname, 'src/sheet/docs-exports.ts'),
         ...Object.fromEntries(
@@ -55,6 +58,10 @@ export default defineConfig({
           if (id === `${root}table/base.less`) return;
           if (id === `${root}table/index.ts`) return;
           if (!id.startsWith(root)) return;
+          /** 实验性 pptx 子路径留在自己的入口 chunk，不能并入 components/file-preview（主入口不得引用 @aiden0z/pptx-renderer） */
+          if (id.startsWith(`${root}file-preview/pptx/`)) return;
+          /** Excel 显示修正只在打开表格时按需加载，留在自己的异步 chunk */
+          if (id.startsWith(`${root}file-preview/excel/`)) return;
           const component = id.slice(root.length).split('/')[0];
           if (!component || component.includes('.') || component === 'locale' || component === 'sheet') return;
           return `components/${component}`;

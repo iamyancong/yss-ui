@@ -13,7 +13,7 @@
     "1.6.6": ["monaco", "echarts", "sheet", "locale"],
     "1.6.7": ["monaco", "echarts", "sheet", "table", "formily", "locale"]
   },
-  "installation": "单包安装；VXE/Formily 保持配套依赖。子路径与插件不减少默认安装树。",
+  "installation": "单包安装；VXE/Formily 保持配套依赖。子路径与插件不减少默认安装树。实验性 opt-in 能力依赖的可选 peer（@aiden0z/pptx-renderer）不在默认安装树，见 optionalFeatures，由需要的业务项目自行安装。",
   "styles": "支持 tree-shaking 的 ESM 构建中，无插件根入口具名导入与官方插件均按实际组件关联样式；显式导入 @yss-ui/components/style.css 或 @yss-ui/components/dist/style.css 保留无插件全量兼容，官方插件仍将这两个路径转换为基础 reset。CJS、默认安装及动态整包导入不承诺按具名组件裁剪。",
   "legacy": "旧项目保留根入口、lite、功能子路径和既有兼容插件；接入官方插件时移除旧插件，禁止同时启用。",
   "agentRules": [
@@ -23,6 +23,36 @@
     "新模板采用同包官方 Vite 插件；旧项目先检查已安装版本、exports 和当前构建插件。",
     "未知版本不推断插件能力；禁止同时启用旧产物解析插件与官方插件。",
     "路由和重弹窗按功能懒加载；不把 YSS/Formily/VXE 合并为全量 vendor。",
-    "文档站 Demo 的样式导入只用于文档环境，业务样式保持 scoped。"
+    "文档站 Demo 的样式导入只用于文档环境，业务样式保持 scoped。",
+    "FilePreview 的 pptx 是实验性 opt-in：仅当用户需要预览 .pptx 时才执行 pnpm add @aiden0z/pptx-renderer@1.4.0，并在 main.ts 调用一次 @yss-ui/components/file-preview/pptx 的 registerPptxRenderer()；不直接导入 @aiden0z/pptx-renderer，不在其他入口或页面里注册；.ppt / .doc 由后端转 PDF 后以 fileType: 'pdf' 预览。"
+  ],
+  "optionalFeatures": [
+    {
+      "id": "file-preview-pptx",
+      "components": ["file-preview", "file-preview-modal"],
+      "status": "experimental",
+      "introducedIn": "1.9.0",
+      "subpath": "@yss-ui/components/file-preview/pptx",
+      "exports": ["registerPptxRenderer", "pptxRenderer", "createPptxRenderer"],
+      "peerDependency": {
+        "name": "@aiden0z/pptx-renderer",
+        "range": "~1.4.0",
+        "verified": "1.4.0",
+        "optional": true
+      },
+      "when": "仅当用户明确需要在浏览器预览 .pptx 时启用；默认不安装 @aiden0z/pptx-renderer，不添加注册代码。",
+      "steps": [
+        "在业务项目执行：pnpm add @aiden0z/pptx-renderer@1.4.0",
+        "在应用入口 main.ts 调用一次：import { registerPptxRenderer } from '@yss-ui/components/file-preview/pptx'; registerPptxRenderer();"
+      ],
+      "doNot": [
+        "在业务代码里直接导入 @aiden0z/pptx-renderer 或使用它的 PptxViewer / renderSlide。",
+        "从 @yss-ui/components、@yss-ui/components/lite 或 @yss-ui/components/file-preview 导入 pptx 相关 API。",
+        "在每个页面或组件里重复调用 registerPptxRenderer()。",
+        "把旧版 .ppt / .doc 当作 pptx 处理：它们由后端转换为 PDF，前端用 FileSourceLoader 返回结果并设置 fileType: 'pdf'。"
+      ],
+      "behavior": "未注册：.pptx 显示「暂不支持预览」并提示安装 @aiden0z/pptx-renderer、调用 registerPptxRenderer()（触发 unsupported）；已注册但未安装：显示「缺少预览依赖」（MissingDependencyError）。",
+      "caveats": "实验性：不支持动画与切换效果，字体取决于系统（文件内嵌字体会加载），少数复杂效果（3D、部分艺术字）与 PowerPoint 有差异；文件中的外部链接媒体不加载。@aiden0z/pptx-renderer 为 Apache-2.0 开源；依赖 echarts 6、jszip（组件库默认安装树已有），额外安装约 6MB，按需加载分包 gzip 约 400KB（原始约 1.4MB）。"
+    }
   ]
 }

@@ -1,0 +1,955 @@
+// 文件预览样式（非 scoped）：渲染器动态创建的节点与传送到 body 的弹窗都需要命中这些样式，
+// 所有选择器统一使用 yss-file-preview 前缀，避免污染业务页面。
+.yss-file-preview {
+  --yss-file-preview-primary: var(--yss-color-primary-6, var(--ant-primary-color, #4676f6));
+  --yss-file-preview-error: var(--yss-color-error-6, var(--ant-error-color, #ff4d4f));
+  --yss-file-preview-warning: var(--ant-warning-color, #faad14);
+  --yss-file-preview-bg: var(--ant-component-background, #fff);
+  --yss-file-preview-bg-soft: var(--ant-background-color-light, #fafafa);
+  --yss-file-preview-border: var(--ant-border-color-split, rgb(5 5 5 / 6%));
+  --yss-file-preview-text: var(--ant-text-color, rgb(0 0 0 / 88%));
+  --yss-file-preview-text-secondary: var(--ant-text-color-secondary, rgb(0 0 0 / 45%));
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 240px;
+  overflow: hidden;
+  color: var(--yss-file-preview-text);
+  background-color: var(--yss-file-preview-bg);
+  box-sizing: border-box;
+
+  &__body {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+  }
+
+  &__content,
+  &__host {
+    width: 100%;
+    height: 100%;
+  }
+
+  &__content {
+    overflow: auto;
+  }
+
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background-color: var(--yss-file-preview-bg);
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  &__icon {
+    margin-bottom: 12px;
+    font-size: 40px;
+    color: var(--yss-file-preview-text-secondary);
+
+    &--warning {
+      color: var(--yss-file-preview-warning);
+    }
+
+    &--error {
+      color: var(--yss-file-preview-error);
+    }
+  }
+
+  &__title {
+    margin-bottom: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--yss-file-preview-text);
+  }
+
+  &__desc {
+    max-width: 520px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--yss-file-preview-text-secondary);
+    word-break: break-word;
+  }
+
+  &__code {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 0 6px;
+    font-family: var(--ant-font-family-code, "SFMono-Regular", consolas, monospace);
+    background-color: var(--yss-file-preview-bg-soft);
+    border-radius: 4px;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 8px;
+  }
+}
+
+.yss-file-preview-pdf {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.yss-file-preview-excel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+
+  &__sheet {
+    flex: 1;
+    min-height: 0;
+  }
+
+  &__notice {
+    flex: none;
+    padding: 6px 12px;
+    // 提示条底色固定为浅黄，文字颜色也固定，暗色主题下同样可读
+    color: rgb(0 0 0 / 88%);
+    font-size: 12px;
+    line-height: 20px;
+    background-color: #fffbe6;
+    border-bottom: 1px solid #ffe58f;
+  }
+}
+
+.yss-file-preview-docx {
+  min-height: 100%;
+  background-color: var(--yss-file-preview-bg-soft);
+
+  .yss-file-preview-docx-doc-wrapper {
+    padding: 24px 0;
+    background-color: transparent;
+  }
+
+  &__image-placeholder {
+    display: inline-flex;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    min-height: 24px;
+    max-width: 100%;
+    padding: 4px;
+    overflow: hidden;
+    font-size: 12px;
+    line-height: 1.4;
+    color: rgb(0 0 0 / 45%);
+    text-align: center;
+    vertical-align: middle;
+    background-color: #fafafa;
+    border: 1px dashed #d9d9d9;
+  }
+}
+
+.yss-file-preview-image {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--yss-file-preview-bg-soft);
+  outline: none;
+
+  &:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--yss-file-preview-primary);
+  }
+
+  &__viewport {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    overscroll-behavior: contain;
+
+    &.is-pannable {
+      cursor: grab;
+    }
+
+    &.is-dragging {
+      cursor: grabbing;
+      user-select: none;
+    }
+  }
+
+  &__stage {
+    position: relative;
+  }
+
+  &__img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    max-width: none;
+    transform-origin: center center;
+    user-select: none;
+    // 透明图片下显示棋盘格，便于看清边缘
+    background-color: var(--yss-file-preview-bg);
+    background-image:
+      linear-gradient(45deg, var(--yss-file-preview-border) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--yss-file-preview-border) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--yss-file-preview-border) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--yss-file-preview-border) 75%);
+    background-position:
+      0 0,
+      0 8px,
+      8px -8px,
+      -8px 0;
+    background-size: 16px 16px;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 12%);
+  }
+
+  &__toolbar {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 8px;
+    color: var(--yss-file-preview-text);
+    background-color: var(--yss-file-preview-bg);
+    border: 1px solid var(--yss-file-preview-border);
+    border-radius: 999px;
+    box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
+    transform: translateX(-50%);
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    font-size: 16px;
+    color: inherit;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    border-radius: 50%;
+
+    &:hover:not(:disabled),
+    &:focus-visible {
+      color: var(--yss-file-preview-primary);
+      background-color: var(--yss-file-preview-bg-soft);
+      outline: none;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.35;
+    }
+  }
+
+  &__icon {
+    display: inline-flex;
+  }
+
+  &__percent {
+    min-width: 48px;
+    font-size: 12px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--yss-file-preview-text-secondary);
+  }
+
+  &__divider {
+    width: 1px;
+    height: 16px;
+    margin: 0 4px;
+    background-color: var(--yss-file-preview-border);
+  }
+}
+
+.yss-file-preview-pptx {
+  // 幻灯片列表的底色比页面略深，白色幻灯片与间距才分得清（可通过该变量覆盖）
+  --yss-file-preview-pptx-bg: #eceef1;
+
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  overflow: hidden auto;
+  background-color: var(--yss-file-preview-pptx-bg);
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  &__item {
+    min-width: 0;
+
+    &.is-hidden .yss-file-preview-pptx__slide {
+      opacity: 0.6;
+    }
+  }
+
+  &__slide {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background-color: #fff;
+    box-shadow:
+      0 1px 3px rgb(0 0 0 / 12%),
+      0 4px 12px rgb(0 0 0 / 6%);
+  }
+
+  &__canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+  }
+
+  &__page {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 6px;
+    color: var(--yss-file-preview-text-secondary);
+    font-size: 12px;
+    line-height: 20px;
+  }
+
+  &__badge {
+    padding: 0 6px;
+    color: var(--yss-file-preview-text-secondary);
+    font-size: 12px;
+    line-height: 18px;
+    border: 1px solid var(--yss-file-preview-border);
+    border-radius: 4px;
+  }
+
+  &__slide-error,
+  &__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--yss-file-preview-text-secondary);
+    font-size: 14px;
+  }
+
+  &__slide-error {
+    position: absolute;
+    inset: 0;
+  }
+
+  &__empty {
+    height: 100%;
+  }
+
+  // 显示不了的图片（格式不支持、缺失、外链、损坏）：带说明文字的占位，替代浏览器的裂图图标
+  &__media-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    color: #8c8c8c;
+    font-size: 14px;
+    line-height: 1.4;
+    text-align: center;
+    background-color: #f5f5f5;
+    border: 2px dashed #d9d9d9;
+  }
+
+  &__media-placeholder-text {
+    padding: 0 8px;
+  }
+}
+
+.yss-file-preview-text {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background-color: var(--yss-file-preview-bg-soft);
+
+  &__content {
+    flex: 1;
+    margin: 0;
+    padding: 16px 20px;
+    font-family: var(--ant-font-family-code, "SFMono-Regular", consolas, monospace);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--yss-file-preview-text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    tab-size: 4;
+  }
+
+  &__more {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 20px;
+    font-size: 13px;
+    color: var(--yss-file-preview-text-secondary);
+    background-color: var(--yss-file-preview-bg);
+    border-top: 1px solid var(--yss-file-preview-border);
+  }
+
+  &__more-btn {
+    padding: 2px 12px;
+    font-size: 13px;
+    color: var(--yss-file-preview-primary);
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid var(--yss-file-preview-primary);
+    border-radius: 4px;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--yss-file-preview-bg);
+      background-color: var(--yss-file-preview-primary);
+    }
+  }
+}
+
+// 弹窗：Modal 传送到 body，必须用全局选择器。
+// antd 弹窗内部节点的类名带前缀（ConfigProvider 的 prefixCls 可改），这里只用本组件自己的类名
+// （见 utils/modalClasses.ts），任意前缀下布局都一致。
+.yss-file-preview-modal {
+  .yss-file-preview-modal__dialog {
+    max-width: 100vw;
+    padding-bottom: 0;
+  }
+
+  .yss-file-preview-modal__content {
+    display: flex;
+    flex-direction: column;
+    height: 85vh;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .yss-file-preview-modal__titlebar {
+    flex-shrink: 0;
+    margin: 0;
+    padding-block: 10px;
+    padding-inline: 20px 12px;
+    border-bottom: 1px solid var(--yss-fpm-split, rgb(5 5 5 / 6%));
+  }
+
+  .yss-file-preview-modal__main {
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  &__name {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__counter {
+    flex-shrink: 0;
+    min-width: 3em;
+    font-size: 13px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-weight: 400;
+    color: var(--yss-fpm-counter, rgb(0 0 0 / 65%));
+  }
+
+  &__tools {
+    display: flex;
+    flex-shrink: 0;
+    gap: 4px;
+    align-items: center;
+    height: 32px;
+  }
+
+  // 业务操作区：与图标按钮同一条中线，右侧分隔线与关闭按钮前的一致
+  &__actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    height: 100%;
+    padding-inline-end: 8px;
+    margin-inline-end: 4px;
+    border-inline-end: 1px solid var(--yss-fpm-split, rgb(5 5 5 / 6%));
+  }
+
+  &__divider {
+    flex-shrink: 0;
+    width: 1px;
+    height: 16px;
+    margin-inline: 4px;
+    background: var(--yss-fpm-split, rgb(5 5 5 / 6%));
+  }
+
+  &__body {
+    position: relative;
+    height: 100%;
+
+    .yss-file-preview {
+      height: 100%;
+    }
+  }
+
+  &__nav {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 2px;
+  }
+
+  // 标题栏图标按钮（翻页、全屏、下载、关闭）：统一 32px 方块、16px 图标、同一组颜色 Token（组件内联写入 --yss-fpm-*）
+  // 可用时悬停 / 按下有填充背景，聚焦有焦点环；到首尾时真正禁用（禁用色、不可点光标、无悬停背景）
+  // 重复类名提高优先级，覆盖按钮自身样式（不依赖 antd 的 .{prefix}-btn 类名）
+  &__icon-btn&__icon-btn {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    font-size: 16px;
+    color: var(--yss-fpm-icon, rgb(0 0 0 / 65%));
+    border-radius: var(--yss-fpm-radius, 6px);
+
+    > [role="img"] {
+      font-size: 16px;
+    }
+
+    &:not(:disabled):hover {
+      color: var(--yss-fpm-icon-hover, rgb(0 0 0 / 88%));
+      background: var(--yss-fpm-icon-bg-hover, rgb(0 0 0 / 4%));
+    }
+
+    &:not(:disabled):active {
+      background: var(--yss-fpm-icon-bg-active, rgb(0 0 0 / 15%));
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--yss-fpm-focus, #91caff);
+      outline-offset: 1px;
+    }
+
+    &:disabled,
+    &:disabled:hover,
+    &:disabled:active {
+      color: var(--yss-fpm-icon-disabled, rgb(0 0 0 / 25%));
+      cursor: not-allowed;
+      background: transparent;
+    }
+
+    &[aria-pressed="true"] {
+      color: var(--yss-fpm-icon-hover, rgb(0 0 0 / 88%));
+    }
+  }
+
+  // 窄屏：计数只保留给读屏（标题下拉里已有位置信息），把宽度留给文件名
+  @media (max-width: 480px) {
+    &__header {
+      gap: 4px;
+    }
+
+    &__title {
+      gap: 2px;
+    }
+
+    &__tools,
+    &__nav {
+      gap: 0;
+    }
+
+    &__icon-btn&__icon-btn {
+      width: 28px;
+      min-width: 28px;
+      height: 28px;
+    }
+
+    &__divider {
+      margin-inline: 2px;
+    }
+
+    &__counter {
+      position: absolute;
+      width: 1px;
+      min-width: 0;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  &--fullscreen {
+    .yss-file-preview-modal__dialog {
+      top: 0;
+      margin: 0;
+      padding: 0;
+    }
+
+    .yss-file-preview-modal__content {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+    }
+  }
+}
+
+// 弹窗内浮层的挂载层（见 utils/popupLayer.ts）：铺满视口、不拦截鼠标，浮层自身照常响应
+.yss-file-preview-popup-layer {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+}
+
+// 文件类型图标
+.yss-file-preview-type-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+// 弹窗标题的文件切换下拉：颜色来自主题 Token（组件内联写入 --yss-fps-* 变量），这里的回退值仅用于未注入时
+.yss-file-preview-switcher {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  height: 32px;
+  padding-block: 0;
+  padding-inline: 6px 8px;
+  margin-inline-start: -6px;
+  font: inherit;
+  color: var(--yss-fps-text, var(--yss-file-preview-text));
+  text-align: start;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--yss-fps-radius-sm, 6px);
+  transition: background-color 0.2s;
+
+  &:hover,
+  &.is-open {
+    background-color: var(--yss-fps-hover, var(--yss-file-preview-bg-soft));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--yss-fps-focus, var(--yss-file-preview-primary));
+    outline-offset: 1px;
+  }
+
+  &__icon {
+    font-size: 16px;
+  }
+
+  &__chevron {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: var(--yss-fps-text-tertiary, var(--yss-file-preview-text-secondary));
+    transition: transform 0.2s;
+  }
+
+  &.is-open &__chevron {
+    transform: rotate(180deg);
+  }
+
+  // 文件名：中间省略、保留后缀
+  &__name {
+    display: inline-flex;
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  &__stem {
+    // 窄屏时至少保留一两个字，不会只剩后缀
+    min-width: min(1.5em, 100%);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__ext {
+    flex-shrink: 0;
+  }
+
+  &__panel {
+    display: flex;
+    flex-direction: column;
+    width: max-content;
+    min-width: 280px;
+    max-width: min(480px, calc(100vw - 24px));
+    padding: 4px;
+    color: var(--yss-fps-text, var(--yss-file-preview-text));
+    background-color: var(--yss-fps-bg, var(--yss-file-preview-bg));
+    border-radius: var(--yss-fps-radius, 8px);
+    box-shadow: var(--yss-fps-shadow, 0 6px 16px rgb(0 0 0 / 8%));
+  }
+
+  &__search {
+    padding: 4px 4px 6px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--yss-fps-split, var(--yss-file-preview-border));
+  }
+
+  &__list {
+    position: relative;
+    max-height: min(440px, 60vh);
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    list-style: none;
+    overscroll-behavior: contain;
+    outline: none;
+  }
+
+  &__option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    padding: 6px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: var(--yss-fps-radius-sm, 6px);
+
+    &.is-focused {
+      background-color: var(--yss-fps-item-hover, var(--yss-file-preview-bg-soft));
+    }
+
+    &.is-current {
+      font-weight: 500;
+      background-color: var(--yss-fps-item-active, var(--yss-file-preview-bg-soft));
+
+      &.is-focused {
+        background-color: var(--yss-fps-item-active-hover, var(--yss-file-preview-bg-soft));
+      }
+    }
+
+    &.is-muted .yss-file-preview-switcher__name {
+      color: var(--yss-fps-text-secondary, var(--yss-file-preview-text-secondary));
+    }
+
+    .yss-file-preview-switcher__name {
+      max-width: 100%;
+    }
+  }
+
+  &__list:focus-visible &__option.is-focused {
+    box-shadow: inset 0 0 0 1px var(--yss-fps-focus, var(--yss-file-preview-primary));
+  }
+
+  &__option-icon {
+    font-size: 18px;
+  }
+
+  &__option-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--yss-fps-text-tertiary, var(--yss-file-preview-text-secondary));
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__tag {
+    padding: 0 6px;
+    color: var(--yss-fps-warning, var(--yss-file-preview-warning));
+    background-color: var(--yss-fps-warning-bg, var(--yss-file-preview-bg-soft));
+    border-radius: 4px;
+  }
+
+  &__check {
+    flex-shrink: 0;
+    color: var(--yss-fps-primary, var(--yss-file-preview-primary));
+  }
+
+  &__empty {
+    padding: 16px;
+    font-size: 13px;
+    color: var(--yss-fps-text-tertiary, var(--yss-file-preview-text-secondary));
+    text-align: center;
+  }
+}
+
+// CSV 表格视图
+.yss-file-preview-csv {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+
+  &__bar {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--ant-text-color-secondary, rgb(0 0 0 / 45%));
+    border-bottom: 1px solid var(--ant-border-color-split, rgb(5 5 5 / 6%));
+  }
+
+  &__toggle,
+  &__more-btn {
+    padding: 1px 10px;
+    font-size: 12px;
+    color: var(--yss-color-primary-6, var(--ant-primary-color, #4676f6));
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid currentcolor;
+    border-radius: 4px;
+
+    &:focus-visible {
+      outline: 2px solid var(--yss-color-primary-6, var(--ant-primary-color, #4676f6));
+      outline-offset: 1px;
+    }
+  }
+
+  &__body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+
+    .yss-file-preview-text {
+      flex: 1;
+      min-height: 0;
+    }
+  }
+
+  &__scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  &__table {
+    min-width: 100%;
+    font-size: 13px;
+    line-height: 1.5;
+    border-spacing: 0;
+    border-collapse: separate;
+
+    th,
+    td {
+      max-width: 480px;
+      padding: 4px 10px;
+      overflow-wrap: break-word;
+      white-space: pre-wrap;
+      text-align: left;
+      vertical-align: top;
+      border-right: 1px solid var(--ant-border-color-split, rgb(5 5 5 / 6%));
+      border-bottom: 1px solid var(--ant-border-color-split, rgb(5 5 5 / 6%));
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      font-weight: 600;
+      white-space: nowrap;
+      background-color: var(--ant-background-color-light, #fafafa);
+    }
+
+    // 左上角行号表头同时吸顶、吸左，层级要高于其它表头（选择器优先级需高于 thead th）
+    thead .yss-file-preview-csv__index {
+      z-index: 3;
+    }
+
+    tbody tr:hover td {
+      background-color: var(--ant-item-hover-bg, rgb(0 0 0 / 2%));
+    }
+  }
+
+  // 行号列：不设 min-width（WebKit 不把单元格的 min-width 计入列宽，吸附后的单元格会盖住下一列），
+  // 用 width: 1% + nowrap 让列宽贴合内容
+  &__index {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    width: 1%;
+    padding-right: 12px !important;
+    padding-left: 12px !important;
+    font-weight: 400;
+    color: var(--ant-text-color-secondary, rgb(0 0 0 / 45%));
+    white-space: nowrap !important;
+    text-align: right !important;
+    background-color: var(--ant-background-color-light, #fafafa);
+    background-clip: padding-box;
+    box-sizing: border-box;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__num {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__empty {
+    padding: 24px;
+    color: var(--ant-text-color-secondary, rgb(0 0 0 / 45%));
+    text-align: center !important;
+  }
+
+  &__more {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: center;
+    padding: 8px;
+    border-top: 1px solid var(--ant-border-color-split, rgb(5 5 5 / 6%));
+  }
+}

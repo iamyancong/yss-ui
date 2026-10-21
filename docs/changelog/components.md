@@ -10,6 +10,46 @@ toc: content
 
 YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
+## v1.9.0
+
+`2026-10-21`
+
+### ✨ Features
+
+- **FilePreview 文件预览**：新增子路径入口 `@yss-ui/components/file-preview`，提供 `YFilePreview`（页面内嵌）、`YFilePreviewModal`（弹窗多文件切换，翻页按钮在标题栏不遮挡内容；键盘 ← → / Esc，焦点在 Excel 表格内时方向键留给表格；全屏时标题栏固定、内容铺满剩余高度，Esc 先退出全屏）和 `useFilePreview`（函数式调用，继承调用方 `appContext`）。支持 docx、xlsx、xls、pdf、txt、csv、md、图片（png / jpg / gif / webp / svg / bmp / ico）；pptx 为实验性可选能力，默认不启用（见下条）；根入口和 Lite 入口不导出，不使用的页面不会打包相关代码 (#57)。
+- **文件识别与边界处理**：按 `fileType`、后缀、MIME 识别类型并校验文件内容（区分 docx / xlsx / pptx 压缩包、旧版 xls、PDF 与图片文件头，SVG 按根元素识别），内容与类型不一致时拦截；默认 20MB 上限，读取前先检查大小（URL 来源先看 `Content-Length`）；空文件、缺少依赖、不支持的格式、网络与 HTTP 错误均有明确提示；doc / ppt 等旧版办公格式提示由后端转换为 PDF 预览 (#57)。
+- **图片预览**：不依赖第三方库，默认适应容器，底部工具栏支持缩放、1:1 / 适应切换、旋转、重置，`Ctrl` / `⌘` + 滚轮以指针为中心缩放，可拖动平移、双击切换，图片区域内支持 `+` `-` `0` `r` 快捷键；SVG 以 `<img>` 加载，不执行其中的脚本 (#57)。
+- **PPTX 预览（实验性，按需启用）**：新增子路径 `@yss-ui/components/file-preview/pptx`，导出 `registerPptxRenderer()`、`pptxRenderer`、`createPptxRenderer`，导入无副作用。渲染库 `@aiden0z/pptx-renderer`（Apache-2.0）不随组件库安装，需要预览 pptx 的项目自行 `pnpm add @aiden0z/pptx-renderer@1.4.0`，并在 `main.ts` 调用一次 `registerPptxRenderer()`；`@yss-ui/components/file-preview` 不引用它，不用 pptx 的项目无需安装、构建也不会解析它。未启用时 `.pptx` 显示「暂不支持」并提示启用方式。幻灯片按幻灯片尺寸等比缩放到容器宽度（无横向滚动，全屏或容器变化时重新缩放），页间距、阴影、页码、隐藏页标记，按需绘制（适合上百页），空文稿与损坏文件有明确提示；文字样式与母版继承、主题字体、表格样式、形状效果、图表、内嵌字体由库直接支持；图表按文件设置的字号显示（修正库把图例、标题、坐标轴、数据标签的单独字号当作 px 导致偏小 25%），分类轴标签放不下时依次折行、旋转 45°、隔几个显示，不再互相重叠；每个预览实例单独管理图表与图片资源，多个预览互不影响；外部链接媒体不自动加载；不支持动画与切换效果 (#57)。
+- **CSV 表格预览**：CSV 默认按表格显示，首行作为吸顶表头、可横向滚动，行号列按需开启（`csvRowNumber`，默认关闭），可切换为源文本（`csvMode`）；按 RFC 4180 解析引号、换行与 `""` 转义，兼容 CRLF / BOM，自动识别逗号、分号、Tab 分隔，不规则行自动补齐，大文件每次渲染 1000 行 (#57)。
+- **PDF 预览**：使用浏览器内置查看器，`YFilePreviewModal` 标题栏不再重复显示下载按钮（查看器工具栏自带下载）；`showDownload=false` 时追加 `#toolbar=0&navpanes=0` 尽量隐藏内置工具栏（Chromium 内核生效，不是下载防护）(#57)。
+- **FilePreview 业务扩展**：`source` 支持懒加载函数 `FileSourceLoader`（显示时才请求，切换 / 关闭时中止，弹窗内缓存结果）；新增 `customDownload`（权限、留痕、签名 URL，不调用 `defaultDownload()` 即取消）；`YFilePreviewModal` 新增 `#actions` 插槽、转发 `loaded / error / unsupported`（带 `FilePreviewContext`），`files` 变化时自动收敛下标并触发 `update:index / change`、清空时自动关闭，`change` 返回原对象；`useFilePreview` 新增 `onChange / onLoaded / onError / onClose` 与 `slots`，`open / openList` 返回 `FilePreviewController`（`update`、`goTo`、`afterClose` 等），返回的 `visible / fileList / currentIndex` 改为只读 (#57)。
+- **弹窗标题文件切换与翻页**：`YFilePreviewModal` 多个文件时标题显示为无边框文件切换下拉（类型图标、保留后缀的省略文件名、大小、当前文件打勾，不支持 / 需转换的格式会标出；10 个及以上可搜索，上百个文件可滚动并定位到当前文件），支持 ↑ ↓ / PageUp / PageDown / Home / End / Enter，Esc 只收起下拉，不与弹窗的 ← → / Esc 冲突；窄屏与全屏可用，内置 zh-CN、zh-TW、en-US 文案与读屏标签。新增 `fileSwitcher`（默认 `true`，设置 `title` 时显示普通标题）与 `loop`（默认 `false`）属性，`useFilePreview` 同名选项，`FilePreviewItem` 新增可选 `fileSize`。翻页按钮到首尾时真正禁用（`disabled` / `aria-disabled`、主题禁用色、不可点光标，方向键无反应），可用时用正文色与填充色悬停背景，悬停提示目标文件名；`loop` 开启时首尾相接，`FilePreviewController.next / prev` 同样遵循 (#57)。
+- **函数式预览继承调用方上下文**：`useFilePreview` 打开的弹窗以调用方组件的 `provide` 链渲染，继承外层 `a-config-provider` 的主题（Token、明暗算法）、`prefixCls`、`componentSize`、`direction`、antd 语言包，`YConfigProvider` 的组件库语言包，以及 `app.provide` / 祖先组件 `provide` 的值，`slots` 里的组件同样能 `inject`；多个调用方各自独立，调用方卸载时弹窗关闭并销毁；在 `setup` 之外调用时开发环境给出提示 (#57)。
+- **标题栏图标按钮与浮层定位**：`YFilePreviewModal` 标题栏的翻页、全屏、下载、关闭统一为 32px 图标按钮（同一组颜色 Token、悬停填充背景、焦点环、悬停提示，窄屏 28px），关闭按钮前有分隔线，`#actions` 插槽与它们同一中线；不再使用 Modal 自带的关闭按钮。标题栏提示与文件切换下拉挂在弹窗之上的浮层挂载层（跟随 `getContainer`，按视口定位），修复全屏或页面滚动后提示显示在屏幕外的问题；新增文案 `close` (#57)。
+- **PPTX 图片显示**：浏览器不能直接显示的图片不再出现裂图。TIFF（无压缩 / LZW / Deflate / PackBits / JPEG 压缩，黑白、灰度、调色板、RGB、CMYK）由组件内置解码转成 PNG 显示，不增加依赖；内嵌位图的 EMF 显示其中位图；矢量 EMF / WMF 默认显示「图片格式暂不支持（EMF）」占位，可通过新选项 `loadMetafile` 按需加载 rtf.js（MIT，可选，业务项目自行安装）转成 SVG；扩展名与内容不符时按真实格式显示；缺失、外链、超过 1 亿像素、损坏或浏览器解码失败的图片显示带说明文字的占位（「图片缺失」「外部链接图片未加载」「图片过大，未显示」「图片无法显示」），作为替代文字供读屏使用，随语言包切换。新增 `PptxRendererOptions.loadMetafile`、`zipLimits`、`maxImagePixels` 与类型 `PptxZipLimits`、`MetafileLoader`，新增文案 `pptxImageUnsupported`、`pptxImageMissing`、`pptxImageExternal`、`pptxImageTooLarge`、`pptxImageBroken`、`pptxTooLarge` (#57)。
+- **PPTX 大文件**：解压上限按文件大小放宽（单个条目 64MB ~ 256MB，解压后合计为文件大小的 8 倍、256MB ~ 1GB），50MB 以上、内嵌视频的文稿可以打开；超出上限时提示「文件内容超出预览上限，请下载后查看」，不再显示为「文件已损坏」(#57)。
+- **自定义 prefixCls**：弹窗样式不再写死 `.ant-modal-*`、`.ant-btn` 等 antd 类名，改为通过 Modal 的 `modalRender` 给内容、标题栏、主体加上组件自己的类名；`a-config-provider` 设置 `prefix-cls` 后，标题栏、满高内容区、全屏、翻页按钮的布局与默认前缀一致 (#57)。
+- **Excel 显示与 WPS / Excel 一致**：修复 @vue-office/excel 把公式结果的日期显示成「…GMT+0800 (中国标准时间)」、日期格式里的文字结果显示为「Invalid Date」、百分比与小数位格式不生效、结果为 0 的单元格显示为空、合并单元格重影、字号 / 列宽 / 行高整体偏小等问题。单元格文字按文件保存的值与数字格式显示：内置格式 0–49（随语言切换）与中文日期格式、自定义格式（日期时间、`[h]:mm`、百分比、千分位、货币、负数红色、括号、文本、分数、科学计数、条件分段、`yyyy"年"m"月"d"日"`、`上午/下午`）、1904 日期系统；错误值、布尔值、富文本、超链接文字原样显示；隐藏的行 / 列 / 工作表、冻结窗格、主题颜色与 tint、未设置对齐时数字右对齐、打开时显示文件保存时的当前工作表；旧版 xls（BIFF8）读取记录中的格式与公式结果。公式不重新计算：没有保存计算结果、文件要求打开时重算或不是 Excel 保存的文件，在表格上方提示预览显示的是保存的结果。新增可选依赖 `numfmt@3.2.6`（MIT，按需加载约 21KB gzip，未安装时用简化实现），新增文案 `excelFormulaMissing`、`excelRecalcOnLoad`，自定义渲染器的 `RenderContext` 新增可选字段 `locale` (#57)。
+- **docx 显示修正**：TIFF / EMF / WMF 图片显示带格式名的同尺寸占位，不再出现裂图（新增文案 `docxImageUnsupported`）；Symbol / Wingdings 字体的项目符号换成 Unicode 符号，macOS 与手机上不再显示方框 (#57)。
+- **文本编码**：`textEncoding: 'auto'` 识别没有 BOM、以西文为主的 UTF-16 文本 (#57)。
+- **依赖声明修正**：`rtf.js` 只作为开发依赖（用于测试 pptx 的 `loadMetafile`），不再出现在组件库的 `optionalDependencies` 里，安装组件库时不会自动安装 (#57)。
+- **默认下载修正**：预览成功后直接保存已读取的内容；跨域 URL 先取回为 Blob 再保存，失败时在新标签页打开（浏览器会忽略跨域链接的 `download` 属性）(#57)。
+- **大文本与编码**：超过 2MB 的文本分段加载并流式解码，分段处中文不乱码；`textEncoding: 'auto'` 按 BOM 和前 64KB 内容识别 UTF-8 / GBK (#57)。
+- **自定义渲染器**：新增 `registerPreviewRenderer` / `unregisterPreviewRenderer`，渲染器通过 `create()` 返回独立实例并接收取消信号，可选实现 `resize()` 响应预览区域尺寸变化（内置 Excel 渲染器借此在全屏切换后重绘表格），可覆盖内置格式或接入新格式 (#57)。
+- **国际化**：新增 `filePreview` 命名空间与 `YssFilePreviewLocale` 类型，内置 zh-CN、zh-TW、en-US 文案 (#57)。
+
+### 🔧 Build
+
+- `optionalDependencies` 与 `devDependencies` 新增 `docx-preview@^0.3.4`、`@vue-office/excel@1.7.14`（锁定版本）、`vue-demi@^0.14.10`，与 ECharts、Monaco 的可选依赖方式一致；使用 `--no-optional` 安装时，预览 docx / Excel 会提示缺少依赖并给出安装命令 (#57)。
+- `@aiden0z/pptx-renderer` 声明为可选 peer 依赖（`peerDependencies` `~1.4.0` + `peerDependenciesMeta.optional`，`devDependencies` 锁定 1.4.0 并已验证），默认安装树不包含它；它依赖的 echarts 6、jszip 默认安装树已有，额外安装约 6MB；仅 `file-preview/pptx` 子路径的产物引用它，并在预览 pptx 时按需加载（异步分包 gzip 约 400KB）(#57)。
+- `consumption.json` 新增 `optionalFeatures`，描述 pptx 的启用条件、步骤与禁止事项，供 MCP 与 AI 工具读取 (#57)。
+
+### 📝 Documentation
+
+- 新增 FilePreview 文档页：完整 API、识别规则、边界情况、依赖与许可证说明、旧格式与后端转换，演示文件改为仓库内通用示例 (#57)。
+
+---
+
 ## v1.8.0
 
 `2026-10-12`

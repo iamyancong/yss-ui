@@ -31,6 +31,16 @@
       "import": "./dist/root/echarts.mjs",
       "require": "./dist/root/echarts.cjs"
     },
+    "./file-preview": {
+      "types": "./dist/file-preview/index.d.ts",
+      "import": "./dist/root/file-preview.mjs",
+      "require": "./dist/root/file-preview.cjs"
+    },
+    "./file-preview/pptx": {
+      "types": "./dist/file-preview/pptx/index.d.ts",
+      "import": "./dist/root/file-preview/pptx.mjs",
+      "require": "./dist/root/file-preview/pptx.cjs"
+    },
     "./table": {
       "types": "./dist/table/index.d.ts",
       "import": "./dist/root/table.mjs",
@@ -110,50 +120,64 @@
     "@univerjs/preset-sheets-data-validation": "0.25.0",
     "@univerjs/preset-sheets-drawing": "0.25.0",
     "@univerjs/preset-sheets-filter": "0.25.0",
+    "@vue-office/excel": "1.7.14",
     "diff": "^8.0.3",
+    "docx-preview": "^0.3.4",
     "echarts": "^6.0.0",
     "monaco-editor": "0.54.0",
     "monaco-editor-nls": "^3.1.0",
-    "prettier": "^3.8.3",
-    "prettier-plugin-nginx": "^1.0.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "rxjs": "^7.8.1",
-    "sql-formatter": "^15.7.2"
-  },
-  "peerDependencies": {
-    "dayjs": ">=1.11.0",
-    "vue": ">=3.3.0",
-    "ant-design-vue": "^4.0.7",
-    "vite": "^5.4.10 || ^6.0.0"
-  },
-  "devDependencies": {
-    "@univerjs/presets": "0.25.0",
-    "@univerjs/preset-sheets-core": "0.25.0",
-    "@univerjs/preset-sheets-data-validation": "0.25.0",
-    "@univerjs/preset-sheets-drawing": "0.25.0",
-    "@univerjs/preset-sheets-filter": "0.25.0",
-    "@vitejs/plugin-vue": "^5.0.5",
-    "ant-design-vue": "^4.0.7",
-    "diff": "^8.0.3",
-    "echarts": "^6.0.0",
-    "monaco-editor": "0.54.0",
-    "monaco-editor-nls": "^3.1.0",
+    "numfmt": "3.2.6",
     "prettier": "^3.8.3",
     "prettier-plugin-nginx": "^1.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "rxjs": "^7.8.1",
     "sql-formatter": "^15.7.2",
+    "vue-demi": "^0.14.10"
+  },
+  "peerDependencies": {
+    "dayjs": ">=1.11.0",
+    "vue": ">=3.3.0",
+    "ant-design-vue": "^4.0.7",
+    "vite": "^5.4.10 || ^6.0.0",
+    "@aiden0z/pptx-renderer": "~1.4.0"
+  },
+  "devDependencies": {
+    "@aiden0z/pptx-renderer": "1.4.0",
+    "@univerjs/presets": "0.25.0",
+    "@univerjs/preset-sheets-core": "0.25.0",
+    "@univerjs/preset-sheets-data-validation": "0.25.0",
+    "@univerjs/preset-sheets-drawing": "0.25.0",
+    "@univerjs/preset-sheets-filter": "0.25.0",
+    "@vitejs/plugin-vue": "^5.0.5",
+    "@vue-office/excel": "1.7.14",
+    "ant-design-vue": "^4.0.7",
+    "diff": "^8.0.3",
+    "docx-preview": "^0.3.4",
+    "echarts": "^6.0.0",
+    "monaco-editor": "0.54.0",
+    "monaco-editor-nls": "^3.1.0",
+    "numfmt": "3.2.6",
+    "prettier": "^3.8.3",
+    "prettier-plugin-nginx": "^1.0.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "rtf.js": "3.0.9",
+    "rxjs": "^7.8.1",
+    "sql-formatter": "^15.7.2",
     "vite": "^5.4.10",
     "vite-plugin-dts": "^3.9.1",
-    "vue": "^3.3.8"
+    "vue": "^3.3.8",
+    "vue-demi": "^0.14.10"
   },
   "yssUi": {
     "treeShakableRoot": true
   },
   "peerDependenciesMeta": {
     "vite": {
+      "optional": true
+    },
+    "@aiden0z/pptx-renderer": {
       "optional": true
     }
   }

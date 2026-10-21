@@ -10,6 +10,7 @@ import monthCalendar from './zh-CN/monthCalendar';
 import monaco from './zh-CN/monaco';
 import splitPane from './zh-CN/splitPane';
 import sheet from './zh-CN/sheet';
+import filePreview from './zh-CN/filePreview';
 
 const zhCN: YssLocale = {
   name: 'zh-CN',
@@ -24,6 +25,7 @@ const zhCN: YssLocale = {
   monaco,
   splitPane,
   sheet,
+  filePreview,
 };
 
 export default zhCN;

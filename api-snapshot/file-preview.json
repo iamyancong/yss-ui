@@ -1,0 +1,223 @@
+{
+  "name": "file-preview",
+  "propsCount": 22,
+  "props": {
+    "source": {
+      "name": "source",
+      "type": "any",
+      "tsType": "FileSource",
+      "required": true,
+      "isCore": true
+    },
+    "fileName": {
+      "name": "fileName",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "fileType": {
+      "name": "fileType",
+      "type": "any",
+      "tsType": "FilePreviewFileType",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "maxSize": {
+      "name": "maxSize",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "DEFAULT_MAX_FILE_SIZE",
+      "isCore": true
+    },
+    "textEncoding": {
+      "name": "textEncoding",
+      "type": "any",
+      "tsType": "TextEncoding",
+      "required": false,
+      "default": "\"auto\"",
+      "isCore": true
+    },
+    "csvMode": {
+      "name": "csvMode",
+      "type": "any",
+      "tsType": "CsvMode",
+      "required": false,
+      "default": "\"table\"",
+      "isCore": true
+    },
+    "csvRowNumber": {
+      "name": "csvRowNumber",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "false",
+      "isCore": true
+    },
+    "height": {
+      "name": "height",
+      "type": "any",
+      "tsType": "string | number",
+      "required": false,
+      "default": "\"100%\"",
+      "isCore": true
+    },
+    "showDownload": {
+      "name": "showDownload",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "customDownload": {
+      "name": "customDownload",
+      "type": "any",
+      "tsType": "FilePreviewCustomDownload",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "key": {
+      "name": "key",
+      "type": "any",
+      "tsType": "PropertyKey",
+      "required": false,
+      "isCore": false
+    },
+    "ref": {
+      "name": "ref",
+      "type": "any",
+      "tsType": "VNodeRef",
+      "required": false,
+      "isCore": false
+    },
+    "ref_for": {
+      "name": "ref_for",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "isCore": false
+    },
+    "ref_key": {
+      "name": "ref_key",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeMount": {
+      "name": "onVue:beforeMount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:mounted": {
+      "name": "onVue:mounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUpdate": {
+      "name": "onVue:beforeUpdate",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:updated": {
+      "name": "onVue:updated",
+      "type": "array",
+      "tsType": "VNodeUpdateHook | VNodeUpdateHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:beforeUnmount": {
+      "name": "onVue:beforeUnmount",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "onVue:unmounted": {
+      "name": "onVue:unmounted",
+      "type": "array",
+      "tsType": "VNodeMountHook | VNodeMountHook[]",
+      "required": false,
+      "isCore": false
+    },
+    "class": {
+      "name": "class",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    },
+    "style": {
+      "name": "style",
+      "type": "any",
+      "tsType": "unknown",
+      "required": true,
+      "isCore": false
+    }
+  },
+  "emits": [
+    {
+      "name": "error",
+      "type": "[error: Error]"
+    },
+    {
+      "name": "loaded",
+      "type": "[payload: FilePreviewLoadedPayload]"
+    },
+    {
+      "name": "unsupported",
+      "type": "[type: string]"
+    }
+  ],
+  "slots": [
+    {
+      "name": "toolbar",
+      "type": "{ fileName: string; fileType: FilePreviewFileType | null; status: FilePreviewStatus; download: () => Promise<void>; reload: () => Promise<void>; }"
+    },
+    {
+      "name": "loading",
+      "type": "{}"
+    },
+    {
+      "name": "unsupported",
+      "type": "{ type: string; download: () => Promise<void>; }"
+    },
+    {
+      "name": "error",
+      "type": "{ error: Error | null; retry: () => Promise<void>; download: () => Promise<void>; }"
+    }
+  ],
+  "exposed": [
+    {
+      "name": "reload",
+      "type": "() => Promise<void>"
+    },
+    {
+      "name": "getFileName",
+      "type": "() => string"
+    },
+    {
+      "name": "getFileType",
+      "type": "() => FilePreviewFileType | null"
+    },
+    {
+      "name": "getStatus",
+      "type": "() => FilePreviewStatus"
+    },
+    {
+      "name": "download",
+      "type": "() => Promise<void>"
+    }
+  ]
+}

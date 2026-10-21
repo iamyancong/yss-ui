@@ -10,6 +10,7 @@ import monthCalendar from './en-US/monthCalendar';
 import monaco from './en-US/monaco';
 import splitPane from './en-US/splitPane';
 import sheet from './en-US/sheet';
+import filePreview from './en-US/filePreview';
 
 const enUS: YssLocale = {
   name: 'en-US',
@@ -24,6 +25,7 @@ const enUS: YssLocale = {
   monaco,
   splitPane,
   sheet,
+  filePreview,
 };
 
 export default enUS;
