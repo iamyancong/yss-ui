@@ -1,6 +1,6 @@
 {
   "name": "@yss-ui/skills",
-  "version": "1.9.4",
+  "version": "1.10.0",
   "description": "Centralized AI Skills for YSS Micro-Applications",
   "private": false,
   "scripts": {
