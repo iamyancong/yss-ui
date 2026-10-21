@@ -16,6 +16,7 @@
 | `YssFormily` | 表单兼容导出 | 仅用于维护历史代码；新代码统一使用 `YFormily`。 |
 | `YConditionBuilder` | 条件构建器、规则配置 | 常用于数据质量、筛选条件配置。 |
 | `YFileImport` | 文件导入 | Formily schema 内也可用 `YFileImport`。 |
+| `YFilePreview` / `YFilePreviewModal` / `useFilePreview` | 文件预览（docx、xlsx、xls、pdf、txt、csv、md、常见图片；pptx 为实验性 opt-in，默认不启用） | 只从子路径 `@yss-ui/components/file-preview` 导入；仅当用户要预览 `.pptx` 时才 `pnpm add @aiden0z/pptx-renderer@1.4.0` 并在 `main.ts` 调用一次 `registerPptxRenderer()`（从 `@yss-ui/components/file-preview/pptx` 导入，不要直接导入 `@aiden0z/pptx-renderer`）；旧版 `.ppt` / `.doc` 由后端转 PDF，`fileType: 'pdf'`；附件列表、上传前预览优先用 `useFilePreview().openList()`；它返回 `FilePreviewController`（`update` 删除当前文件、`await afterClose` 刷新列表）；标题栏业务按钮用 `slots.actions`（参数 `FilePreviewContext`），下载权限 / 留痕用 `customDownload`；多文件标题自带文件切换下拉（`fileSwitcher`，传 `fileSize` 显示大小），循环翻页用 `loop: true`；`useFilePreview()` 在 `setup` 中调用，弹窗继承调用位置的主题、语言与 provide。 |
 | `YMonaco` | 代码编辑器 | SQL、JSON、脚本编辑。 |
 | `YMonacoDiff` | 代码 Diff | 变更对比场景。 |
 | `YCron` | Cron 表达式编辑 | 定时任务配置。 |

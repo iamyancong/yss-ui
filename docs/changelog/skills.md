@@ -10,6 +10,25 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.10.0
+
+`2026-10-21`
+
+> 本版本只修正 Skill 文案，没有新增能力。版本号为次版本，是因为与组件库同批发布 (#57)。
+
+### 🐛 Bug Fixes
+
+- **文件预览选型**：`component-selection-imports` 与组件速查表补充 `YFilePreview`、`YFilePreviewModal`、`useFilePreview`，明确只能从 `@yss-ui/components/file-preview` 子路径导入；`file-export-download` 将「仅预览不保存」的场景指向文件预览组件；`yss-frontend-dev` 路由表补充文件预览；`i18n-locale-management` 补充文件预览的语言适配边界 (#57)。
+- **文件预览扩展用法**：`component-selection-imports`、组件速查表、`file-export-download` 补充懒加载来源 `FileSourceLoader`、`customDownload`、`slots.actions` 与 `FilePreviewController.update()` 的用法，鉴权文件不再要求先手动下载成 Blob (#57)。
+- **文件预览格式**：上述 Skill 补充图片的支持范围，以及 doc / ppt 由后端转 PDF 后以 `fileType: 'pdf'` 预览的写法 (#57)。
+- **文件预览切换与翻页**：`component-selection-imports`、组件速查表、`file-export-download` 说明多文件弹窗标题自带文件切换下拉（`fileSwitcher`，设置 `title` 时为普通标题），URL / 懒加载来源可传 `fileSize`，循环翻页用 `loop: true`，避免再手写文件列表下拉 (#57)。
+- **函数式预览上下文**：`component-selection-imports`、组件速查表、`file-export-download` 说明 `useFilePreview()` 需在 `setup` 中调用，弹窗继承调用位置的 `ConfigProvider` 主题 / 语言与 `provide` 的值，不必为暗色主题或国际化改用组件写法 (#57)。
+- **PPTX 按需启用**：`component-selection-imports` 新增「文件预览 PPTX（实验性 opt-in）」规则：只有用户明确需要预览 `.pptx` 时才 `pnpm add @aiden0z/pptx-renderer@1.4.0`，并在 `main.ts` 调用一次 `@yss-ui/components/file-preview/pptx` 的 `registerPptxRenderer()`；禁止直接导入 `@aiden0z/pptx-renderer`、禁止从其他入口导入或在页面里重复注册；`.ppt` / `.doc` 走后端转 PDF。组件速查表与 `file-export-download` 同步改为同样的启用方式 (#57)。
+- **Excel 预览与公式结果**：`file-export-download` 说明预览中公式显示为空 / 提示没有保存计算结果时，由后端导出时写入计算结果（xlsxwriter 传 `value`，openpyxl 改写值或用 LibreOffice 重算），不要换预览库或在前端计算公式 (#57)。
+- **PPTX 图片**：`component-selection-imports` 的「文件预览 PPTX」规则补充图片处理：TIFF 与缺失 / 外链等由组件处理，矢量 EMF / WMF 默认显示占位，只有用户明确需要时才安装 rtf.js 并通过 `loadMetafile` 只导入 EMFJS / WMFJS 分包；禁止自行解压 pptx 转换图片或导入 rtf.js 包入口 (#57)。
+
+---
+
 ## v1.9.4
 
 `2026-10-16`

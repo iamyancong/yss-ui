@@ -46,7 +46,7 @@ description: 开发前端页面、新增或修改前端页面、列表页、表�
 | **业务表单**（新增/编辑/查看/步骤向导） | `../page-form-module/SKILL.md` | `../yss-formily/SKILL.md`<br>`../formily-foundation/SKILL.md`<br>`../formily-step-flow/SKILL.md` |
 | **树结构 / 左树右表**（组织架构、分类树） | `../ytree-usage/SKILL.md` | `../use-tree-height/SKILL.md` |
 | **类 Excel 电子表格**（工作簿、复杂 Sheet） | `../ysheet-usage/SKILL.md` | — |
-| **文件导入 / 报表导出下载** | `../yfile-import-usage/SKILL.md`<br>`../file-export-download/SKILL.md` | — |
+| **文件导入 / 文件预览 / 报表导出下载** | `../yfile-import-usage/SKILL.md`<br>`../file-export-download/SKILL.md` | `../component-selection-imports/SKILL.md`（文件预览组件导入） |
 | **接口对接 / 数据轮询 / 状态同步** | `../api-integration/SKILL.md` | `../use-polling-task/SKILL.md`<br>`../use-url-state/SKILL.md` |
 | **主题 Token / 样式规范** | `../theme-token-usage/SKILL.md` | — |
 | **未命中上述特定部件**（如大屏、仪表盘等） | `../yss-ui-business-page-generation/SKILL.md` | `../theme-token-usage/SKILL.md` |

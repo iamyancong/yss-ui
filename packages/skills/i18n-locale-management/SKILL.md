@@ -55,7 +55,7 @@ YConfigProvider 只提供组件词典；不替代 Ant Design Vue ConfigProvider�
 
 YFormily 自动切换内置校验词典并刷新已有错误，业务自定义校验应在执行时翻译。VXE 和 Formily 校验器是引擎单例，同一引擎不保证多种语言并存。微应用同步到统一门户语言。
 
-YSheet 核心支持三语原生切换，extraLocales 必须补齐使用的扩展插件词典。YMonaco 自有按钮三语，当前 Monaco ESM 内核菜单保持英文；旧 nls 参数已废弃。图表标题、系列名和业务数据由应用生成，引擎 locale 按 YEcharts 文档配置。遇到未覆盖的引擎能力，明确限制和隔离/升级方案。
+YSheet 核心支持三语原生切换，extraLocales 必须补齐使用的扩展插件词典。YMonaco 自有按钮三语，当前 Monaco ESM 内核菜单保持英文；旧 nls 参数已废弃。图表标题、系列名和业务数据由应用生成，引擎 locale 按 YEcharts 文档配置。YFilePreview 的标题、状态提示和按钮三语切换（命名空间 filePreview）；docx/Excel 文件内容不翻译，Excel 工作表标签等由第三方渲染。遇到未覆盖的引擎能力，明确限制和隔离/升级方案。
 
 ## 标准代码骨架
 

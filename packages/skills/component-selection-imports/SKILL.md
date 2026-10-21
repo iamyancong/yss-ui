@@ -32,9 +32,29 @@ description: 指导 YSS UI 业务页面、CRUD、列表页、表单页和组件�
 - 业务层禁止导入 `@formily/antdv` 或 `@formily/antd*` UI 组件；使用 `YFormily` 提供的 Schema 与组件边界。
 - 微前端子应用同样默认使用根入口具名导入；Vite 6 新模板继续采用官方插件，无插件消费的样式能力按下方版本契约判断。`lite` 是可选兼容入口，旧项目保留已验证的样式策略。
 - 对于 `YMonaco`、`YEcharts`、`YSheet` 等重型依赖组件，微应用可继续从 `@yss-ui/components` 正常消费（已异步化），也可直接从官方子路径 `@yss-ui/components/monaco`、`@yss-ui/components/echarts`、`@yss-ui/components/sheet` 导入，避免未使用的重型依赖及其全量 CSS 被打包到业务页面中。
+- 文件预览使用 `YFilePreview`（页面内嵌）、`YFilePreviewModal`（弹窗多文件）或 `useFilePreview`（函数式），只从子路径 `@yss-ui/components/file-preview` 导入，根入口和 `lite` 入口不导出；该子路径自 1.9.0 起提供，旧版本先核对 exports。默认支持 docx、xlsx、xls、pdf、txt、csv、md 和常见图片；pptx 是实验性 opt-in 能力，按下方「文件预览 PPTX（实验性 opt-in）」处理。不要再手写 iframe、`docx-preview`、`@vue-office/excel` 或 `@aiden0z/pptx-renderer` 预览。鉴权或按需取数用 `source: FileSourceLoader`（`({ signal, file }) => Promise<Blob | string>`），下载拦截用 `customDownload`，标题栏操作用 `#actions` 插槽或 `slots.actions`；`open / openList` 返回 `FilePreviewController`，增删文件用 `controller.update()`，不要直接改 hook 返回的只读状态。多文件弹窗的标题默认就是文件切换下拉（`fileSwitcher`，默认 `true`；设置 `title` 会改为普通标题），不要自己再做文件列表下拉；URL / 懒加载来源要在下拉里显示大小时传 `fileSize`；需要首尾循环翻页时传 `loop: true`（默认首尾禁用）。`useFilePreview()` 必须在组件 `setup` 中调用：弹窗继承调用位置的 `ConfigProvider` 主题 / 语言、`YConfigProvider` 与 `provide` 的值（含 slots 内的 inject），不要为了暗色主题或国际化改写成组件形式。
 - 禁止因文档暂时不可达就把猜测的 `Y*` 组件改成 Ant Design Vue “先落地”。只能复用当前仓库已证明可用的导入，或明确报告待确认项。
 - 接口错误提示由 `mutator.ts` 的响应拦截器统一处理。API Hook 不得在 `success === false` 分支或 `catch` 内重复调用 `message.error`；`message` 只用于非 API 错误的本地交互反馈或成功提示。
 
+
+### 文件预览 PPTX（实验性 opt-in）
+
+- 只有用户明确要求预览 `.pptx` 时才启用；其他情况不要安装 `@aiden0z/pptx-renderer`，也不要添加下面的注册代码。
+- 启用只做两步，且只做一次：在业务项目执行 `pnpm add @aiden0z/pptx-renderer@1.4.0`；在应用入口 `main.ts` 调用 `registerPptxRenderer()`：
+
+  ```ts
+  // main.ts
+  import { registerPptxRenderer } from '@yss-ui/components/file-preview/pptx';
+
+  registerPptxRenderer();
+  ```
+
+- `registerPptxRenderer` 只从子路径 `@yss-ui/components/file-preview/pptx` 导入，该子路径自 1.9.0 起提供，旧版本先核对 exports。导入本身没有副作用，不调用就不生效。
+- 禁止在业务代码里直接 `import '@aiden0z/pptx-renderer'` 或使用它的 `PptxViewer` / `renderSlide`；禁止从 `@yss-ui/components`、`@yss-ui/components/lite` 或 `@yss-ui/components/file-preview` 导入 pptx 相关 API；禁止在每个页面、组件里重复注册。
+- 未注册时 `.pptx` 显示「暂不支持预览」，提示安装 @aiden0z/pptx-renderer 并调用 `registerPptxRenderer()`；注册了但没装依赖时显示「缺少预览依赖」（`MissingDependencyError`）。看到这两种提示时按上面两步修复，不要改用别的预览库。
+- 启用前告知用户：效果是实验性的（不支持动画与切换效果，未内嵌的字体取决于系统，少数复杂效果与图表细节与 PowerPoint 有差异，外部链接的图片 / 视频不加载）；@aiden0z/pptx-renderer 为 Apache-2.0 开源，额外安装约 6MB，按需加载分包 gzip 约 400KB。还原度要求高时改由后端转 PDF。
+- pptx 里的图片由组件处理：TIFF 自动转 PNG 显示，缺失、外链、过大、损坏的图片显示带说明的占位；矢量 EMF / WMF 默认显示「图片格式暂不支持（EMF）」占位。只有用户明确需要显示这类图时，才在业务项目 `pnpm add rtf.js@3.0.9`，并把注册改为 `registerPptxRenderer({ loadMetafile: format => (format === 'emf' ? import('rtf.js/dist/EMFJS.bundle.min.js') : import('rtf.js/dist/WMFJS.bundle.min.js')) })`（TypeScript 项目补 `declare module 'rtf.js/dist/*';`），并告知复杂 EMF 可能显示不完整。不要自己解压 pptx 转换图片，不要导入 `rtf.js` 包入口（会带上约 2MB 的 RTF 解析代码）。
+- 旧版 `.ppt`、`.doc`（以及 rtf、wps）不属于 pptx 能力：由后端转换为 PDF，前端用 `source: FileSourceLoader` 返回转换结果，并设置 `fileType: 'pdf'`，例如 `{ fileName: row.name, fileType: 'pdf', source: ({ signal }) => fetch('/api/files/' + row.id + '/preview?format=pdf', { signal }).then(res => res.blob()) }`。
 
 ### 统一消费与构建契约
 
