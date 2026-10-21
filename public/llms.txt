@@ -32,6 +32,7 @@ YSS UI 是基于 Vue 3、Ant Design Vue 与 VXE-Table 的企业级中后台组�
 - SplitPane 分割面板: https://iamyancong.github.io/yss-ui/components/split-pane
 - Tree 树形控件: https://iamyancong.github.io/yss-ui/components/tree
 - MonthCalendar 月日历: https://iamyancong.github.io/yss-ui/components/month-calendar
+- FilePreview 文件预览: https://iamyancong.github.io/yss-ui/components/file-preview
 
 ### 表单组件
 
