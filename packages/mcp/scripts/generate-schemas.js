@@ -23,6 +23,14 @@ const COMPONENTS_SRC = path.join(ROOT_DIR, 'packages/components/src');
 /** TSConfig 路径。 */
 const TSCONFIG_PATH = path.join(ROOT_DIR, 'tsconfig.json');
 
+/**
+ * 同一目录下的额外公开组件（默认只解析目录的入口 Vue 文件）。
+ * 键为 schema 名称，值为相对 packages/components/src 的 Vue 文件路径。
+ */
+const EXTRA_COMPONENT_FILES = {
+  'file-preview-modal': 'file-preview/FilePreviewModal.vue',
+};
+
 /** 输出路径。 */
 const OUTPUT_SCHEMAS_PATH = path.join(__dirname, '../data/schemas.json');
 
@@ -52,14 +60,16 @@ function inferJsonType(tsType) {
  *
  * @param {object} checker component-meta checker 实例
  * @param {string} compName 组件目录名
+ * @param {string} [entryFile] 指定 Vue 文件（相对组件源码目录），用于同目录下的额外组件
  * @returns {object|null} 组件 schema
  */
-function extractComponentSchema(checker, compName) {
-  const compDir = path.join(COMPONENTS_SRC, compName);
+function extractComponentSchema(checker, compName, entryFile) {
+  const compDir = entryFile ? path.dirname(path.join(COMPONENTS_SRC, entryFile)) : path.join(COMPONENTS_SRC, compName);
   if (!fs.existsSync(compDir) || !fs.statSync(compDir).isDirectory()) return null;
 
   // 寻找入口 Vue 文件
-  let vueFile = path.join(compDir, 'index.vue');
+  let vueFile = entryFile ? path.join(COMPONENTS_SRC, entryFile) : path.join(compDir, 'index.vue');
+  if (entryFile && !fs.existsSync(vueFile)) return null;
   if (!fs.existsSync(vueFile)) {
     const vueFiles = fs.readdirSync(compDir).filter(f => f.endsWith('.vue'));
     if (vueFiles.length === 0) return null;
@@ -160,6 +170,16 @@ function generateSchemas() {
     }
   }
 
+  for (const [name, file] of Object.entries(EXTRA_COMPONENT_FILES)) {
+    const schema = extractComponentSchema(checker, name, file);
+    if (schema) {
+      schemas[name] = schema;
+      console.log(
+        `  -> [${name}] Props: ${schema.propsCount}, Emits: ${schema.emits.length}, Slots: ${schema.slots.length}`
+      );
+    }
+  }
+
   fs.mkdirSync(path.dirname(OUTPUT_SCHEMAS_PATH), { recursive: true });
   fs.writeFileSync(OUTPUT_SCHEMAS_PATH, JSON.stringify(schemas, null, 2), 'utf8');
 
@@ -173,4 +193,4 @@ if (require.main === module) {
   generateSchemas();
 }
 
-module.exports = { generateSchemas };
+module.exports = { generateSchemas, EXTRA_COMPONENT_FILES };

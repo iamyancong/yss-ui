@@ -163,6 +163,34 @@ const consumptionNotice = store =>
   `> 索引组件版本：${store.index.componentsVersion || '未知'}。业务默认单包、根入口具名导入与局部注册；子路径可选。文档站 Demo 样式不等于业务配置。新插件能力请用 get_consumption_contract 核对目标安装版本及 exports。\n\n`;
 
 /**
+ * 组件相关的可选（opt-in）能力说明，来自消费契约 optionalFeatures。
+ * 例如 FilePreview 的实验性 pptx：默认不启用，需要业务项目安装可选 peer 并显式注册。
+ *
+ * @param {DocStore} store 文档索引仓库
+ * @param {string[]} ids 组件 id / schema 名
+ * @returns {string} markdown 段落，没有相关能力时为空字符串
+ */
+const optionalFeatureNotes = (store, ids) => {
+  const features = (store.index.consumptionContract?.optionalFeatures || []).filter(feature =>
+    (feature.components || []).some(id => ids.includes(id))
+  );
+  if (features.length === 0) return '';
+  const blocks = features.map(feature =>
+    [
+      `### ${feature.id}（${feature.status === 'experimental' ? '实验性，' : ''}默认不启用，自 ${feature.introducedIn} 起）`,
+      '',
+      `- 何时启用：${feature.when}`,
+      `- 子路径：\`${feature.subpath}\`，导出 ${feature.exports.map(name => `\`${name}\``).join('、')}`,
+      ...feature.steps.map((step, i) => `- 第 ${i + 1} 步：${step}`),
+      ...feature.doNot.map(rule => `- 禁止：${rule}`),
+      `- 表现：${feature.behavior}`,
+      `- 注意：${feature.caveats}`,
+    ].join('\n')
+  );
+  return `\n\n---\n## 可选能力（opt-in）\n\n${blocks.join('\n\n')}`;
+};
+
+/**
  * 执行工具调用。
  *
  * @param {DocStore} store 文档索引仓库
@@ -226,17 +254,18 @@ function handleToolCall(store, name, args = {}) {
       const demoList = entry.demos.length
         ? `\n\n---\n可用 Demo（用 get_demo 获取源码）:\n${entry.demos.map(demo => `- ${demo.id}${demo.title ? `: ${demo.title}` : ''}`).join('\n')}`
         : '';
+      const optional = optionalFeatureNotes(store, [entry.id]);
       if ((args.section || 'api') === 'full') {
-        return consumptionNotice(store) + `# ${entry.title}\n\n${entry.doc}${demoList}`;
+        return consumptionNotice(store) + `# ${entry.title}\n\n${entry.doc}${optional}${demoList}`;
       }
       const api = DocStore.extractSection(entry.doc, 'API');
       if (!api) {
         return (
           consumptionNotice(store) +
-          `# ${entry.title}\n\n（该文档没有独立 API 章节，返回完整文档）\n\n${entry.doc}${demoList}`
+          `# ${entry.title}\n\n（该文档没有独立 API 章节，返回完整文档）\n\n${entry.doc}${optional}${demoList}`
         );
       }
-      return consumptionNotice(store) + `# ${entry.title}\n\n${api}${demoList}`;
+      return consumptionNotice(store) + `# ${entry.title}\n\n${api}${optional}${demoList}`;
     }
 
     case 'get_demo': {
@@ -435,7 +464,7 @@ function handleToolCall(store, name, args = {}) {
         }
       }
 
-      return lines.join('\n');
+      return lines.join('\n') + optionalFeatureNotes(store, [schema.name]);
     }
 
     case 'get_test_coverage': {

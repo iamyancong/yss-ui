@@ -154,6 +154,20 @@ test('get_component_schema 核心属性与全量属性查询', () => {
   assert.ok(notFound.includes('未找到组件'), '未收录组件应友好提示');
 });
 
+test('getComponentSchema 优先精确匹配同前缀组件', () => {
+  const localStore = new DocStore({
+    ...MOCK_INDEX,
+    entries: [],
+    schemas: {
+      'file-preview-modal': { name: 'file-preview-modal', props: {}, emits: [], slots: [] },
+      'file-preview': { name: 'file-preview', props: {}, emits: [], slots: [] },
+    },
+  });
+  assert.equal(localStore.getComponentSchema('YFilePreview').name, 'file-preview');
+  assert.equal(localStore.getComponentSchema('FilePreviewModal').name, 'file-preview-modal');
+  assert.equal(localStore.getComponentSchema('preview').name, 'file-preview-modal');
+});
+
 test('get_test_coverage 大盘与单组件查询', () => {
   // 1. 大盘概览
   const overview = handleToolCall(store, 'get_test_coverage');
@@ -266,7 +280,10 @@ test('带脚本的 Skill 在 get_skill 前置输出安装指引，且仅脚手�
   const microappResult = handleToolCall(store, 'get_skill', { name: 'yss-create-microapp' });
   assert.ok(microappResult.includes('⚠️ **前置提示**'), 'yss-create-microapp 应包含前置提示');
   assert.ok(microappResult.includes('npx @yss-ui/create'), 'yss-create-microapp 应推荐优先使用 CLI 方式');
-  assert.ok(microappResult.includes('`scripts/create.mjs`'), '脚本路径应为 scripts/create.mjs，不得出现 scripts/scripts');
+  assert.ok(
+    microappResult.includes('`scripts/create.mjs`'),
+    '脚本路径应为 scripts/create.mjs，不得出现 scripts/scripts'
+  );
   assert.ok(!microappResult.includes('scripts/scripts/create.mjs'), '不得出现重复的 scripts/scripts/ 前缀');
   assert.ok(microappResult.includes('npx -y @yss-ui/skills-cli sync'), '应提示脚本方式使用 skills-cli 安装');
   assert.ok(microappResult.includes('禁止自行编写替代脚本'), '应包含严禁自行编写替代脚本的警告');
@@ -301,3 +318,34 @@ test('search_docs 命中带脚本 Skill 时在来源标注「（需本地安装 
   assert.equal(tableHit.source, 'skill: ytable-usage');
 });
 
+test('FilePreview 的文档、Schema 与消费契约都说明 pptx 子路径的启用方式', () => {
+  const real = fs.existsSync(INDEX_PATH) ? new DocStore(INDEX_PATH) : null;
+  if (!real) return;
+  const contract = real.index.consumptionContract;
+  assert.ok(contract.subpaths.includes('./file-preview/pptx'), '消费契约缺少 file-preview/pptx 子路径');
+  const feature = contract.optionalFeatures.find(item => item.id === 'file-preview-pptx');
+  assert.equal(feature.subpath, '@yss-ui/components/file-preview/pptx');
+  assert.equal(feature.peerDependency.name, '@aiden0z/pptx-renderer');
+  assert.equal(feature.peerDependency.range, '~1.4.0');
+  assert.ok(contract.agentRules.some(rule => rule.includes('registerPptxRenderer()')));
+
+  for (const output of [
+    handleToolCall(real, 'get_component_docs', { name: 'FilePreview' }),
+    handleToolCall(real, 'get_component_docs', { name: 'YFilePreview', section: 'full' }),
+    handleToolCall(real, 'get_component_schema', { name: 'YFilePreview' }),
+    handleToolCall(real, 'get_component_schema', { name: 'YFilePreviewModal' }),
+  ]) {
+    assert.match(output, /@yss-ui\/components\/file-preview\/pptx/);
+    assert.match(output, /registerPptxRenderer\(\)/);
+    assert.match(output, /pnpm add @aiden0z\/pptx-renderer@1\.4\.0/);
+    assert.match(output, /直接导入 @aiden0z\/pptx-renderer/);
+    assert.doesNotMatch(output, /pptx-preview/);
+  }
+  // 其他组件不附带 pptx 说明
+  assert.doesNotMatch(handleToolCall(real, 'get_component_docs', { name: 'YTable' }), /registerPptxRenderer/);
+
+  const skill = handleToolCall(real, 'get_skill', { name: 'component-selection-imports' });
+  assert.match(skill, /文件预览 PPTX（实验性 opt-in）/);
+  assert.match(skill, /registerPptxRenderer\(\)/);
+  assert.match(handleToolCall(real, 'search_docs', { query: 'registerPptxRenderer' }), /pptx/i);
+});

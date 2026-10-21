@@ -10,6 +10,26 @@ toc: content
 
 YSS MCP 文档服务（`@yss-ui/mcp`）的版本更新记录。
 
+## v0.8.0
+
+`2026-10-21`
+
+### ✨ Features
+
+- **可选能力说明**：`get_component_docs` 与 `get_component_schema` 查询 FilePreview / FilePreviewModal 时，附带消费契约 `optionalFeatures` 中的实验性 pptx 启用方式（子路径 `@yss-ui/components/file-preview/pptx`、`pnpm add @aiden0z/pptx-renderer@1.4.0`、在 `main.ts` 调用一次 `registerPptxRenderer()`、禁止事项与限制）；`get_consumption_contract` 的 `subpaths` 包含 `./file-preview/pptx` (#57)。
+
+### 🐛 Bug Fixes
+
+- **同目录多组件 Schema**：`generate-schemas` 支持登记同一目录下的额外公开组件，新增 `file-preview-modal`（`YFilePreviewModal`），`get_component_schema` 与 API 快照门禁都能覆盖到 (#57)。
+- **Schema 查询优先精确匹配**：`get_component_schema` 先按名称精确匹配，再做模糊匹配，避免 `FilePreview` 命中 `file-preview-modal` (#57)。
+- **FilePreviewModal Schema**：`get_component_schema('FilePreviewModal')` 包含新增的 `fileSwitcher`（默认 `true`）与 `loop`（默认 `false`）属性，`FilePreviewItem` 的 `fileSize` 随类型说明同步 (#57)。
+- **FilePreview 文档索引**：`get_component_docs('FilePreview')` 返回的用法说明包含 `useFilePreview` 继承调用方上下文的规则与标题栏按钮说明，语言包类型新增 `close` (#57)。
+- **FilePreview PPTX 图片与前缀**：`get_component_docs('FilePreview')` 返回的用法说明包含 pptx 图片处理（TIFF 转 PNG、EMF / WMF 占位与 `loadMetafile`、`zipLimits`、`maxImagePixels`）与自定义 `prefixCls` 的说明，语言包类型新增 `pptxImage*`、`pptxTooLarge` (#57)。
+- **FilePreview Excel 显示**：`get_component_docs('FilePreview')` 返回的用法说明包含 Excel 显示规则（按保存的值与数字格式显示、不重新计算公式及提示、`numfmt` 可选依赖）与 docx 图片占位说明，语言包类型新增 `excelFormulaMissing`、`excelRecalcOnLoad`、`docxImageUnsupported` (#57)。
+- **索引同步**：重建并发布文档索引（组件 API / Demo / Skills / 代码生成规则）。
+
+---
+
 ## v0.7.2
 
 `2026-10-16`

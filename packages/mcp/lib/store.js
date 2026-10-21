@@ -112,17 +112,17 @@ class DocStore {
    */
   getComponentSchema(name) {
     if (!this.index.schemas) return null;
+    const clean = normalizeName(name).replace(/^y/, '');
+    const schemaEntries = Object.entries(this.index.schemas);
+    // 先按 schema 名精确匹配，避免同目录的 YFilePreviewModal 被文档条目 file-preview 抢先命中
+    const exact = schemaEntries.find(([key]) => normalizeName(key) === clean);
+    if (exact) return exact[1];
     const entry = this.resolveEntry(name);
     if (entry && this.index.schemas[entry.id]) {
       return this.index.schemas[entry.id];
     }
-    const clean = normalizeName(name).replace(/^y/, '');
-    for (const [key, schema] of Object.entries(this.index.schemas)) {
-      if (normalizeName(key) === clean || normalizeName(key).includes(clean)) {
-        return schema;
-      }
-    }
-    return null;
+    const fuzzy = schemaEntries.find(([key]) => normalizeName(key).includes(clean));
+    return fuzzy ? fuzzy[1] : null;
   }
 
   /**

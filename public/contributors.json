@@ -171,6 +171,15 @@
       "url": "https://github.com/iamyancong"
     }
   ],
+  "/components/file-preview": [
+    {
+      "name": "iamyancong",
+      "email": "wangyancong@ysstech.com",
+      "commits": 1,
+      "avatar": "https://github.com/iamyancong.png?size=64",
+      "url": "https://github.com/iamyancong"
+    }
+  ],
   "/components/formily": [
     {
       "name": "iamyancong",
@@ -184,7 +193,7 @@
     {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
-      "commits": 1,
+      "commits": 2,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
     }
