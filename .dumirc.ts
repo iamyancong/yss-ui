@@ -95,7 +95,8 @@ export default defineConfig({
             { title: 'ConfigProvider 全局配置', link: '/components/config-provider' },
             { title: 'SplitPane 分割面板', link: '/components/split-pane' },
             { title: 'Tree 树形控件', link: '/components/tree' },
-            { title: 'MonthCalendar 月日历', link: '/components/month-calendar', frontmatter: { badge: 'v1.5.2' } },
+            { title: 'MonthCalendar 月日历', link: '/components/month-calendar' },
+            { title: 'FilePreview 文件预览', link: '/components/file-preview', frontmatter: { badge: 'v1.9.0' } },
           ],
         },
         {
@@ -531,6 +532,11 @@ export default defineConfig({
   alias: {
     '@yss-ui/components/locale': path.resolve(__dirname, 'packages/components/src/locale'),
     '@yss-ui/components$': path.resolve(__dirname, 'packages/components/src/docs-entry.ts'),
+    '@yss-ui/components/file-preview/pptx': path.resolve(
+      __dirname,
+      'packages/components/src/file-preview/pptx/index.ts'
+    ),
+    '@yss-ui/components/file-preview$': path.resolve(__dirname, 'packages/components/src/file-preview/index.ts'),
     '@yss-ui/components/sheet': path.resolve(__dirname, 'packages/components/src/sheet/docs-exports.ts'),
     '@yss-ui/components/lite': path.resolve(__dirname, 'packages/components/src/lite.ts'),
     '@yss-ui/utils': path.resolve(__dirname, 'packages/utils/src'),
