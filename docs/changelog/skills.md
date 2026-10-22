@@ -10,6 +10,16 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.10.1
+
+`2026-10-22`
+
+### ✨ Features
+
+- **Excel 预览对象**：`component-selection-imports`、组件速查表、`file-export-download` 说明 xlsx 里的图表、图片、形状、批注、超链接、条件格式和迷你图由 FilePreview 叠加显示；echarts 未安装时图表显示占位，不要引入公式计算库。曲面图 / 地图图表 / 无位图 EMF / 公式类条件格式仍可能占位或不生效。`i18n-locale-management` 补充 Excel 图表 / 图片占位文案走 `filePreview` 语言包。
+
+---
+
 ## v1.10.0
 
 `2026-10-21`
