@@ -10,6 +10,16 @@ toc: content
 
 YSS MCP 文档服务（`@yss-ui/mcp`）的版本更新记录。
 
+## v0.8.1
+
+`2026-10-22`
+
+### ✨ Features
+
+- **FilePreview Excel 对象**：`get_component_docs('FilePreview')` 返回的用法说明包含 Excel 图表、图片、形状、批注、超链接、条件格式和迷你图的叠加层支持情况（瀑布 / 树状 / 旭日 / 直方图 / 箱线 / 漏斗 / 股票图可绘制；曲面图、地图图表、无位图 EMF、threadedComments、公式类条件格式等限制），以及 echarts 按需加载、不重新计算公式。
+
+---
+
 ## v0.8.0
 
 `2026-10-21`
