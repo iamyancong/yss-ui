@@ -23,6 +23,8 @@ const state = vi.hoisted(() => ({
   shown: [] as string[],
   clicked: [] as string[],
   received: null as MockOptions | null,
+  src: null as unknown,
+  onSwitchSheet: null as ((index: number) => void) | null,
 }));
 
 const fakeWorkbook = (): ExcelJsWorkbook => {
@@ -51,11 +53,17 @@ const fakeWorkbook = (): ExcelJsWorkbook => {
 
 vi.mock('@vue-office/excel', () => ({
   default: defineComponent({
-    props: { src: null, options: { type: Object as PropType<MockOptions>, default: () => ({}) } },
+    props: {
+      src: null,
+      options: { type: Object as PropType<MockOptions>, default: () => ({}) },
+      onSwitchSheet: { type: Function, default: undefined },
+    },
     emits: ['rendered'],
     setup(props, { emit }) {
       onMounted(() => {
         state.received = props.options;
+        state.src = props.src;
+        state.onSwitchSheet = (props.onSwitchSheet as ((index: number) => void) | undefined) ?? null;
         const wb = props.options.beforeTransformData?.(fakeWorkbook()) ?? fakeWorkbook();
         const input: XsSheet[] = (wb.worksheets ?? []).map(ws => ({
           name: ws.name,
@@ -100,7 +108,7 @@ describe('excel 渲染器的显示修正', () => {
   beforeEach(() => {
     container = document.createElement('div');
     document.body.appendChild(container);
-    Object.assign(state, { names: [], removed: [], shown: [], clicked: [], received: null });
+    Object.assign(state, { names: [], removed: [], shown: [], clicked: [], received: null, src: null, onSwitchSheet: null });
   });
   afterEach(() => container.remove());
 
@@ -136,6 +144,17 @@ describe('excel 渲染器的显示修正', () => {
     const instance = excelRenderer.create();
     await instance.render(container, fixture('xlsx-recalc.xlsx'), context());
     expect(container.querySelector('.yss-file-preview-excel__notice')?.textContent).toBe('excelRecalcOnLoad');
+    instance.destroy?.();
+  });
+
+  it('有绘图的 xlsx 交给 vue-office 的是去掉绘图的副本，并接上切换工作表', async () => {
+    state.names = ['Pictures', 'Notes & links', 'Formulas'];
+    const data = fixture('xlsx-objects.xlsx');
+    const instance = excelRenderer.create();
+    await instance.render(container, data, context());
+    expect(state.src).toBeInstanceOf(ArrayBuffer);
+    expect(state.src).not.toBe(data);
+    expect(typeof state.onSwitchSheet).toBe('function');
     instance.destroy?.();
   });
 

@@ -10,6 +10,27 @@ toc: content
 
 YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
+## v1.9.1
+
+`2026-10-22`
+
+### ✨ Features
+
+- **FilePreview Excel 对象叠加层**：xlsx 预览在表格上方叠加显示图表、图片、形状、文本框、OLE 对象、批注、超链接、条件格式（色阶 / 数据条 / 图标集 / 发生日期等）和迷你图，按 twoCell / oneCell / absolute 锚点定位，跟随滚动与冻结窗格。图表用 echarts 按需动态加载（与 YEcharts 共用 optionalDependency，未安装时显示占位）；不引入公式计算引擎，单元格仍显示文件里保存的计算结果。无位图的 EMF / WMF、外链或缺失图片、threadedComments 回复、公式类条件格式（expression）显示占位或不生效。新增文案 `excelChartUnsupported`、`excelChartNeedsEcharts`、`excelChartError`、`excelEmbeddedObject`、`excelObjectsLimited`、`excelLinkTip`。
+- **FilePreview Excel 图表类型**：瀑布、树状、旭日、直方图、箱线、漏斗（Office 2016 chartex）以及股票图按文件缓存数据绘制；线性 / 移动平均趋势线画成虚线。曲面图、3D 曲面、地图图表仍显示「图表类型暂不支持预览」。
+
+### 🐛 Bug Fixes
+
+- **FilePreview Excel 行高**：没有保存行高、且换行文字在隐藏列上时，不再按 1px 列宽估算把该行撑到 Excel 行高上限；隐藏行 / 列按文件写入 x-spreadsheet 的 `hide`。
+- **FilePreview Excel 图表外框**：只在文件写了可见线条时给图表对象加边框，不额外画默认框。
+- **FilePreview Excel 隐藏行**：按文件收起，但单元格内容仍写入；把鼠标移到隐藏行下方的行号上，单击展开条可临时展开看到原文（只读，不写回文件）。之前会把隐藏行的格子跳过，展开后是空的。
+
+### 📝 Documentation
+
+- FilePreview 文档补充 Excel 对象支持情况表，并增加合成 xlsx 演示（图表、图片与形状）。
+
+---
+
 ## v1.9.0
 
 `2026-10-21`

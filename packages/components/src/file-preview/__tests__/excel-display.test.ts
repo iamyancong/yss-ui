@@ -223,6 +223,81 @@ describe('写入 x-spreadsheet 数据', () => {
     expect(columnWidthPx(9.140625, 7)).toBe(64);
     expect(defaultColumnPx(8, 7)).toBe(64);
   });
+
+  it('隐藏列上的换行不撑高未写行高的行，隐藏行列写入 hide', async () => {
+    const sheet = createSheetModel('s');
+    sheet.colWidths.set(0, 20);
+    sheet.hiddenCols.add(1);
+    sheet.hiddenRows.add(2);
+    setCell(sheet, 0, 0, { t: 's', v: '可见', fmt: 'General' });
+    setCell(sheet, 0, 1, { t: 's', v: 'IMA中约定的投资收益率用于说明隐藏列换行', fmt: 'General' });
+    setCell(sheet, 2, 0, { t: 's', v: 'EWN81 + FCW43', fmt: 'General' });
+    const target: XsSheet = {
+      name: 's',
+      styles: [{ textwrap: true }, { textwrap: true }],
+      rows: {
+        0: {
+          cells: {
+            0: { text: '可见', style: 0 },
+            1: { text: 'IMA中约定的投资收益率用于说明隐藏列换行', style: 1 },
+          },
+        },
+        len: 3,
+      },
+      cols: { 0: { width: 80 }, 1: { width: 80 }, len: 2 },
+    };
+    const formatter = await loadCellFormatter();
+    applySheetModel(
+      target,
+      sheet,
+      {
+        date1904: false,
+        activeTab: 0,
+        fullCalcOnLoad: false,
+        sheets: [sheet],
+        themeColors: [],
+        defaultFont: { name: 'Calibri', sz: 11 },
+      },
+      { formatter, mdw: 7, measure: text => text.length * 12 }
+    );
+    const rows = target.rows as Record<string, { height?: number; hide?: boolean; cells?: Record<string, { text?: unknown }> }>;
+    const cols = target.cols as Record<string, { width?: number; hide?: boolean }>;
+    expect(rows[0].height).toBe(20);
+    expect(cols[1].hide).toBe(true);
+    expect(cols[1].width).toBeGreaterThan(1);
+    expect(rows[2].hide).toBe(true);
+    expect(rows[2].height).toBe(20);
+    expect(rows[2].cells?.[0]?.text).toBe('EWN81 + FCW43');
+  });
+
+  it('可见列换行仍按文字估算行高', async () => {
+    const sheet = createSheetModel('s');
+    sheet.colWidths.set(0, 9.140625);
+    setCell(sheet, 0, 0, { t: 's', v: '一行\n二行\n三行\n四行', fmt: 'General' });
+    const target: XsSheet = {
+      name: 's',
+      styles: [{ textwrap: true }],
+      rows: { 0: { cells: { 0: { text: '一行\n二行\n三行\n四行', style: 0 } } }, len: 1 },
+      cols: { 0: { width: 64 }, len: 1 },
+    };
+    const formatter = await loadCellFormatter();
+    applySheetModel(
+      target,
+      sheet,
+      {
+        date1904: false,
+        activeTab: 0,
+        fullCalcOnLoad: false,
+        sheets: [sheet],
+        themeColors: [],
+        defaultFont: { name: 'Calibri', sz: 11 },
+      },
+      { formatter, mdw: 7, measure: text => text.length * 8 }
+    );
+    const rows = target.rows as Record<string, { height?: number }>;
+    expect(rows[0].height).toBeGreaterThan(40);
+    expect(rows[0].height).toBeLessThan(120);
+  });
 });
 
 describe('exceljs 回退', () => {

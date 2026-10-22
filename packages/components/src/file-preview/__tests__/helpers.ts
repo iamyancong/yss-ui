@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { vi } from 'vitest';
 
 /** 统计 createObjectURL / revokeObjectURL，返回仍未释放的 URL 集合 */
@@ -27,6 +29,12 @@ export function trackObjectUrls() {
 }
 
 export const textBuffer = (text: string) => new TextEncoder().encode(text).buffer as ArrayBuffer;
+
+/** 读取 file-preview 测试夹具为独立的 ArrayBuffer */
+export const loadFixture = (name: string): ArrayBuffer => {
+  const buf = readFileSync(resolve(__dirname, 'fixtures', name));
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+};
 
 /** 最小可识别的 docx / xlsx / pdf 字节 */
 export const docxBuffer = () => textBuffer('PK\u0003\u0004..word/document.xml');

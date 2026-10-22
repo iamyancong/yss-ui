@@ -24,7 +24,8 @@
     "未知版本不推断插件能力；禁止同时启用旧产物解析插件与官方插件。",
     "路由和重弹窗按功能懒加载；不把 YSS/Formily/VXE 合并为全量 vendor。",
     "文档站 Demo 的样式导入只用于文档环境，业务样式保持 scoped。",
-    "FilePreview 的 pptx 是实验性 opt-in：仅当用户需要预览 .pptx 时才执行 pnpm add @aiden0z/pptx-renderer@1.4.0，并在 main.ts 调用一次 @yss-ui/components/file-preview/pptx 的 registerPptxRenderer()；不直接导入 @aiden0z/pptx-renderer，不在其他入口或页面里注册；.ppt / .doc 由后端转 PDF 后以 fileType: 'pdf' 预览。"
+    "FilePreview 的 pptx 是实验性 opt-in：仅当用户需要预览 .pptx 时才执行 pnpm add @aiden0z/pptx-renderer@1.4.0，并在 main.ts 调用一次 @yss-ui/components/file-preview/pptx 的 registerPptxRenderer()；不直接导入 @aiden0z/pptx-renderer，不在其他入口或页面里注册；.ppt / .doc 由后端转 PDF 后以 fileType: 'pdf' 预览。",
+    "FilePreview 预览 xlsx 时图表、图片、形状、批注等叠在表格上方；图表按需动态加载 echarts（组件库 optionalDependencies，与 YEcharts 共用），未安装时显示占位。不要为此引入公式计算引擎或换用别的表格预览库。"
   ],
   "optionalFeatures": [
     {

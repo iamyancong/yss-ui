@@ -20,9 +20,12 @@
  *
  * 只能被 pptx 子路径使用。
  */
-import { classifyEmf, convertMetafile, isEmf, isWmf, type MetafileLoader } from './metafile';
+import { classifyEmf, convertMetafile, type MetafileLoader } from './metafile';
+import { DEFAULT_MAX_IMAGE_PIXELS, detectImageFormat, imageDimensions, NATIVE_IMAGE_FORMATS as NATIVE, type ImageFormat } from '../shared/image-format';
+
+export { DEFAULT_MAX_IMAGE_PIXELS, detectImageFormat, imageDimensions, type ImageFormat };
 import { placeholderSvg, type MediaIssue, type MediaPlaceholder } from './placeholder';
-import { decodeTiff, isTiff, TiffTooLargeError, type DecodedTiff } from './tiff';
+import { decodeTiff, TiffTooLargeError, type DecodedTiff } from './tiff';
 
 /** parseZip 结果中用到的部分 */
 export interface PptxZipFiles {
@@ -32,22 +35,6 @@ export interface PptxZipFiles {
   slideMasters?: Map<string, string>;
   [key: string]: unknown;
 }
-
-export type ImageFormat =
-  | 'png'
-  | 'jpeg'
-  | 'gif'
-  | 'bmp'
-  | 'webp'
-  | 'svg'
-  | 'ico'
-  | 'tiff'
-  | 'emf'
-  | 'wmf'
-  | 'unknown';
-
-/** 浏览器 <img> 能直接显示的格式 */
-const NATIVE: ReadonlySet<ImageFormat> = new Set(['png', 'jpeg', 'gif', 'bmp', 'webp', 'svg', 'ico']);
 
 /** 库按扩展名推断的格式（与 @aiden0z/pptx-renderer 的扩展名 → MIME 表一致） */
 const EXTENSION_FORMAT: Record<string, ImageFormat> = {
@@ -68,67 +55,6 @@ const IMAGE_REL = /\/relationships\/image$/;
 const IMAGE_REL_TYPE = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image';
 const EMPTY_RELS =
   '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
-
-/** 默认像素上限：1 亿像素（约 12000 × 8300），再大浏览器解码会占用数百 MB 内存 */
-export const DEFAULT_MAX_IMAGE_PIXELS = 100_000_000;
-
-const textHead = (bytes: Uint8Array, length = 2048) => {
-  let s = '';
-  const end = Math.min(bytes.length, length);
-  for (let i = 0; i < end; i += 1) s += String.fromCharCode(bytes[i]);
-  return s;
-};
-
-/** 按文件头判断图片格式（不看扩展名） */
-export const detectImageFormat = (bytes: Uint8Array): ImageFormat => {
-  const b = bytes;
-  if (b.length < 4) return 'unknown';
-  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'png';
-  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'jpeg';
-  if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38) return 'gif';
-  if (b[0] === 0x42 && b[1] === 0x4d && b.length > 26) return 'bmp';
-  if (b.length > 12 && textHead(b, 4) === 'RIFF' && textHead(b.subarray(8), 4) === 'WEBP') return 'webp';
-  if (isTiff(b)) return 'tiff';
-  if (isEmf(b)) return 'emf';
-  if (isWmf(b)) return 'wmf';
-  if (b[0] === 0 && b[1] === 0 && b[2] === 1 && b[3] === 0) return 'ico';
-  const head = textHead(b).replace(/^\uFEFF|^\xEF\xBB\xBF/, '').trimStart();
-  if (/^(?:<\?xml|<!--|<!DOCTYPE\s+svg|<svg)/i.test(head) && /<svg[\s>]/i.test(head)) return 'svg';
-  return 'unknown';
-};
-
-/** 读取常见格式的像素尺寸（只读文件头），读不到返回 null */
-export const imageDimensions = (bytes: Uint8Array, format: ImageFormat): { width: number; height: number } | null => {
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  try {
-    if (format === 'png' && bytes.length >= 24) return { width: view.getUint32(16), height: view.getUint32(20) };
-    if (format === 'gif' && bytes.length >= 10)
-      return { width: view.getUint16(6, true), height: view.getUint16(8, true) };
-    if (format === 'bmp' && bytes.length >= 26)
-      return { width: Math.abs(view.getInt32(18, true)), height: Math.abs(view.getInt32(22, true)) };
-    if (format === 'jpeg') {
-      let i = 2;
-      while (i + 9 < bytes.length) {
-        if (bytes[i] !== 0xff) {
-          i += 1;
-          continue;
-        }
-        const marker = bytes[i + 1];
-        // SOF0~SOF15（不含 DHT C4、JPG C8、DAC CC）
-        if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc)
-          return { height: view.getUint16(i + 5), width: view.getUint16(i + 7) };
-        if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
-          i += 2;
-          continue;
-        }
-        i += 2 + view.getUint16(i + 2);
-      }
-    }
-  } catch {
-    // 文件头不完整
-  }
-  return null;
-};
 
 const dirname = (path: string) => path.slice(0, Math.max(0, path.lastIndexOf('/')));
 

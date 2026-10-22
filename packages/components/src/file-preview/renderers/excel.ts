@@ -25,11 +25,20 @@ function isOleCompound(data: ArrayBuffer): boolean {
 }
 
 const loadFixup = () => import('../excel/index');
+const loadOverlay = () => import('../excel/overlay-entry');
 
 export const excelRenderer: PreviewRenderer = {
   types: ['xlsx', 'xls'],
   create() {
     let host: HTMLElement | null = null;
+    let overlay: {
+      setSheet(i: number): void;
+      destroy(): void;
+      scrollToCell(r: number, c: number): void;
+      reloadSheet(): void;
+    } | null = null;
+    let pendingSheet = 0;
+    let destroyed = false;
     return {
       async render(container, data, context) {
         const xls = isOleCompound(data);
@@ -53,7 +62,7 @@ export const excelRenderer: PreviewRenderer = {
         await new Promise<void>((resolve, reject) => {
           context.signal.addEventListener('abort', () => resolve(), { once: true });
           const vnode = createVNode(VueOfficeExcel, {
-            src: data,
+            src: fixup?.source ?? data,
             // 老版 .xls（OLE 复合文档）需要打开 xls 解析；内容其实是 xlsx 的 .xls 按 xlsx 解析
             options: {
               minColLength: 20,
@@ -67,6 +76,11 @@ export const excelRenderer: PreviewRenderer = {
             },
             style: { width: '100%', height: '100%' },
             onRendered: () => resolve(),
+            // 切换工作表：叠加层（图表、图片、批注…）随之切换
+            onSwitchSheet: (index: number) => {
+              pendingSheet = index;
+              overlay?.setSheet(index);
+            },
             onError: (err: unknown) =>
               reject(err instanceof Error ? err : new Error(String(err ?? 'Excel render failed'))),
           });
@@ -97,6 +111,55 @@ export const excelRenderer: PreviewRenderer = {
           window.dispatchEvent(new Event('resize'));
         }
 
+        // 图表、图片、形状、批注、超链接、数据条、迷你图：叠加层按需加载，没有这些内容的表格不加载
+        const visibleSheets = fixup.sheets ?? [];
+        if (visibleSheets.length && model.sheets.some(s => s.extras || s.cf?.bars.length || s.cf?.icons.length)) {
+          try {
+            const mod = await loadOverlay();
+            if (!context.signal.aborted && !destroyed) {
+              const clickTab = (name: string) =>
+                Array.from(target.querySelectorAll<HTMLElement>('.x-spreadsheet-menu > li'))
+                  .find(li => li.textContent?.trim() === name)
+                  ?.click();
+              const created = mod.createExcelOverlay({
+                root: target,
+                model,
+                sheets: visibleSheets,
+                t: context.t,
+                formatter: fixup.formatter,
+                navigate: (sheet, row, col) => {
+                  const index = visibleSheets.findIndex(s => s.name === sheet);
+                  if (index < 0) return;
+                  if (index !== pendingSheet) clickTab(sheet);
+                  // 切换工作表在 x-spreadsheet 里是异步的，稍后再滚动
+                  setTimeout(() => overlay?.scrollToCell(row, col), 60);
+                },
+              });
+              if (created) {
+                overlay = created;
+                overlay.setSheet(pendingSheet);
+              }
+            }
+          } catch {
+            // 叠加层加载失败时只显示单元格
+          }
+        }
+
+        // x-spreadsheet 展开隐藏行是双击行号上的条；WPS 单击即可，这里把单击转成双击
+        const onUnhide = (e: MouseEvent) => {
+          const t = e.target as HTMLElement | null;
+          const resizer = t?.parentElement;
+          if (
+            !t?.classList.contains('x-spreadsheet-resizer-hover') ||
+            !resizer?.classList.contains('x-spreadsheet-resizer')
+          )
+            return;
+          if (t !== resizer.firstElementChild) return;
+          t.dispatchEvent(new MouseEvent('dblclick', { bubbles: false }));
+          requestAnimationFrame(() => overlay?.reloadSheet());
+        };
+        target.addEventListener('click', onUnhide);
+
         // 打开时显示文件保存时的当前工作表
         const active = model.sheets[model.activeTab];
         if (model.activeTab > 0 && active && active.state === 'visible') {
@@ -112,6 +175,9 @@ export const excelRenderer: PreviewRenderer = {
         if (host?.isConnected) window.dispatchEvent(new Event('resize'));
       },
       destroy() {
+        destroyed = true;
+        overlay?.destroy();
+        overlay = null;
         if (host) {
           const sheetHost = host.querySelector<HTMLElement>('.yss-file-preview-excel__sheet');
           if (sheetHost) vueRender(null, sheetHost);

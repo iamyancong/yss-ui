@@ -11,6 +11,10 @@
  * 修正只读取图表 XML 与 ECharts 实例，不修改库，失败时保持库的原始效果。
  */
 
+import { measureText } from '../shared/measure';
+
+export { measureText };
+
 /** ECharts 实例（只声明用到的部分） */
 export interface ChartLike {
   getDom(): HTMLElement;
@@ -145,28 +149,6 @@ export function parseChartFonts(xml: string): ChartFontSizes {
     groupRe.lastIndex = group.end;
   }
   return result;
-}
-
-let measureCtx: CanvasRenderingContext2D | null | undefined;
-
-/** 文字宽度（px）。没有 canvas 时按字符估算：中日韩等全角字符 1em，其余 0.55em */
-export function measureText(text: string, fontSize: number, fontFamily = 'sans-serif'): number {
-  if (measureCtx === undefined) {
-    try {
-      measureCtx = typeof document !== 'undefined' ? document.createElement('canvas').getContext('2d') : null;
-    } catch {
-      measureCtx = null;
-    }
-  }
-  if (measureCtx && typeof measureCtx.measureText === 'function') {
-    measureCtx.font = `${fontSize}px ${fontFamily}`;
-    const w = measureCtx.measureText(text).width;
-    if (Number.isFinite(w) && w > 0) return w;
-  }
-  let units = 0;
-  for (const ch of text)
-    units += /[\u1100-\u11ff\u2e80-\ua4cf\uac00-\ud7af\uf900-\ufaff\ufe30-\ufe4f\uff00-\uffef]/.test(ch) ? 1 : 0.55;
-  return units * fontSize;
 }
 
 const asArray = <T>(v: T | T[] | undefined): T[] => (Array.isArray(v) ? v : v === undefined || v === null ? [] : [v]);

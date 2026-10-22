@@ -252,6 +252,18 @@ export interface YssFilePreviewLocale {
   excelFormulaMissing: string;
   /** 表格打开时会被 Excel 重新计算（文件要求重算，或不是 Excel 保存的），预览显示的是保存的结果 */
   excelRecalcOnLoad: string;
+  /** 表格：图表类型暂不支持预览（如瀑布图、旭日图、曲面图），显示在图表占位卡片上 */
+  excelChartUnsupported: string;
+  /** 表格：没有安装 echarts，图表显示为占位卡片 */
+  excelChartNeedsEcharts: string;
+  /** 表格：图表数据无法读取 */
+  excelChartError: string;
+  /** 表格：嵌入的对象（OLE，如嵌入的工作簿、文档），参数 type 为对象类型 */
+  excelEmbeddedObject: string;
+  /** 表格：工作表里的图表、图片太多，只显示前 {count} 个 */
+  excelObjectsLimited: string;
+  /** 表格：单元格超链接的提示，参数 target 为链接地址或位置 */
+  excelLinkTip: string;
   /** 图片：预览区域的无障碍名称 */
   imageViewer: string;
   /** 图片：工具栏的无障碍名称 */

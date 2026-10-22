@@ -6,6 +6,10 @@
  * 老版 xls 只能从 @vue-office/excel 转换后的 exceljs 工作簿里读取（见 ./exceljs.ts），信息少一些。
  */
 
+import type { CfResult } from './cf';
+import type { ThemeInfo } from './dml';
+import type { SheetExtras } from './drawing';
+
 /** 单元格原始值类型：数字（含日期序列号）、文本、布尔、错误值、空 */
 export type RawCellType = 'n' | 's' | 'b' | 'e' | 'z';
 
@@ -49,6 +53,17 @@ export interface SheetModel {
   missingFormulas: number;
   /** 公式单元格数 */
   formulaCells: number;
+  /** 绘图对象、批注、超链接、迷你图等（只有 xlsx 有，见 ./drawing.ts） */
+  extras?: SheetExtras;
+  /** 条件格式的计算结果（见 ./cf.ts） */
+  cf?: CfResult;
+}
+
+/** 读取 xlsx 里图片等二进制部件 */
+export interface WorkbookAssets {
+  bytes(path: string): Promise<Uint8Array | null>;
+  /** 条目解压后的大小（字节），不存在时为 undefined */
+  size(path: string): number | undefined;
 }
 
 export interface WorkbookModel {
@@ -65,6 +80,10 @@ export interface WorkbookModel {
   themeColors: string[];
   /** 默认字体（Normal 样式），用于换算列宽 */
   defaultFont: { name?: string; sz: number };
+  /** 主题（颜色与字体），图表与形状使用 */
+  theme?: ThemeInfo;
+  /** 读取图片等二进制部件 */
+  assets?: WorkbookAssets;
 }
 
 export const createSheetModel = (name: string, state: SheetModel['state'] = 'visible'): SheetModel => ({

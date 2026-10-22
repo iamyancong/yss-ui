@@ -10,6 +10,7 @@
  * - 主题颜色用固定调色板，不读文件的主题；未设置水平对齐时数字也靠左；
  * - 不支持冻结窗格、下划线 / 删除线。
  */
+import type { CfStyle } from './cf';
 import type { CellFormatter, FormattedCell } from './format';
 import { columnName, type RawCell, type SheetModel, type WorkbookModel } from './model';
 
@@ -22,7 +23,15 @@ export interface XsStyle {
   textwrap?: boolean;
   underline?: boolean;
   strike?: boolean;
-  font?: { name?: string; size?: number; bold?: boolean; italic?: boolean; color?: unknown; underline?: unknown; strike?: unknown };
+  font?: {
+    name?: string;
+    size?: number;
+    bold?: boolean;
+    italic?: boolean;
+    color?: unknown;
+    underline?: unknown;
+    strike?: unknown;
+  };
   fill?: { type?: string; pattern?: string; fgColor?: XsColorRef };
   [key: string]: unknown;
 }
@@ -40,11 +49,23 @@ export interface XsCell {
   merge?: [number, number];
 }
 
+export interface XsRow {
+  cells?: Record<string, XsCell>;
+  height?: number;
+  /** x-spreadsheet 用 hide 跳过绘制；展开时仍用 height */
+  hide?: boolean;
+}
+
+export interface XsCol {
+  width?: number;
+  hide?: boolean;
+}
+
 export interface XsSheet {
   name: string;
   styles: XsStyle[];
-  rows: Record<string, { cells?: Record<string, XsCell>; height?: number } | number> & { len?: number };
-  cols: Record<string, { width?: number } | number> & { len?: number };
+  rows: Record<string, XsRow | number> & { len?: number };
+  cols: Record<string, XsCol | number> & { len?: number };
   merges?: string[];
   freeze?: string;
   [key: string]: unknown;
@@ -56,7 +77,7 @@ const XS_FONT_PT = [7.5, 8, 9, 10, 10.5, 11, 12, 14, 15, 16, 18, 22, 24, 26, 36,
 /** 让 x-spreadsheet 按 pt 正确显示字号 */
 export function xsFontSize(pt: number): number {
   if (XS_FONT_PT.includes(pt)) return pt;
-  const px = Math.round((pt * 4) / 3 * 100) / 100;
+  const px = Math.round(((pt * 4) / 3) * 100) / 100;
   return XS_FONT_PT.includes(px) ? px + 0.001 : px;
 }
 
@@ -126,12 +147,19 @@ export interface ApplyOptions {
 }
 
 const MAX_AUTO_ROW_PX = 409 * (4 / 3);
+/** 换行列宽低于此值时不再按 1px 估算行数（隐藏列 colPx=0 会变成几千行） */
+const MIN_WRAP_WIDTH_PX = 8;
 
 /** 修正一个工作表；返回实际处理的单元格数 */
-export function applySheetModel(target: XsSheet, sheet: SheetModel, model: WorkbookModel, options: ApplyOptions): number {
+export function applySheetModel(
+  target: XsSheet,
+  sheet: SheetModel,
+  model: WorkbookModel,
+  options: ApplyOptions
+): number {
   const { formatter } = options;
   const mdw = options.mdw ?? 7;
-  const rows = target.rows as Record<string, { cells?: Record<string, XsCell>; height?: number }> & { len?: number };
+  const rows = target.rows as Record<string, XsRow> & { len?: number };
   const styles = target.styles ?? (target.styles = []);
   const defaultSz = model.defaultFont.sz || 11;
   let count = 0;
@@ -162,7 +190,6 @@ export function applySheetModel(target: XsSheet, sheet: SheetModel, model: Workb
   const wrapped: Array<{ r: number; c: number; text: string; px: number; font?: string; bold?: boolean }> = [];
 
   for (const [r, cells] of sheet.cells) {
-    if (sheet.hiddenRows.has(r)) continue;
     let row = rows[r];
     if (!row || typeof row !== 'object') row = rows[r] = { cells: {} };
     const xsCells = row.cells ?? (row.cells = {});
@@ -183,27 +210,53 @@ export function applySheetModel(target: XsSheet, sheet: SheetModel, model: Workb
       fixStyle(style, raw, out, model.themeColors);
       const sz = raw.sz ?? defaultSz;
       rowMaxFont.set(r, Math.max(rowMaxFont.get(r) ?? 0, sz));
-      if (style.textwrap && out.text && options.measure) {
+      // 隐藏列上的换行 Excel / WPS 不参与自动行高；按 0 宽估算会把该行撑到上限
+      if (style.textwrap && out.text && options.measure && !sheet.hiddenCols.has(c)) {
         wrapped.push({ r, c, text: out.text, px: (sz * 4) / 3, font: style.font?.name, bold: !!style.font?.bold });
       }
     }
   }
 
+  // 条件格式：按单元格复制一份样式再覆盖（样式是多个单元格共用的）
+  if (sheet.cf?.styles.size) {
+    const derived = new Map<string, number>();
+    for (const [key, cf] of sheet.cf.styles) {
+      const [r, c] = key.split(',').map(Number);
+      let row = rows[r];
+      if (!row || typeof row !== 'object') row = rows[r] = { cells: {} };
+      const cells = row.cells ?? (row.cells = {});
+      const cell = cells[c] ?? (cells[c] = {});
+      const baseIndex = typeof cell.style === 'number' && styles[cell.style] ? cell.style : -1;
+      const id = `${baseIndex}|${cf.bg ?? ''}|${cf.color ?? ''}|${cf.bold ?? ''}|${cf.italic ?? ''}|${cf.strike ?? ''}|${cf.underline ?? ''}`;
+      let index = derived.get(id);
+      if (index === undefined) {
+        styles.push(withConditionalStyle(baseIndex >= 0 ? styles[baseIndex] : {}, cf));
+        index = styles.length - 1;
+        derived.set(id, index);
+      }
+      cell.style = index;
+    }
+  }
+
   // 列宽：按 Excel 的换算（列宽字符数 × 数字宽度 + 边距）
-  const cols = target.cols as Record<string, { width?: number }> & { len?: number };
+  const cols = target.cols as Record<string, XsCol> & { len?: number };
   let maxCol = (cols.len ?? 0) - 1;
   for (const cells of sheet.cells.values()) for (const c of cells.keys()) maxCol = Math.max(maxCol, c);
+  // 图表、图片在已用区域之外时扩大表格范围，保证能滚动到
+  const extent = objectExtent(sheet);
+  maxCol = Math.min(16383, Math.max(maxCol, extent.col + 1));
   const defaultPx = sheet.defaultColWidth
     ? columnWidthPx(sheet.defaultColWidth, mdw)
     : defaultColumnPx(sheet.baseColWidth ?? 8, mdw);
   const colPx: number[] = [];
   for (let c = 0; c <= maxCol; c++) {
     const hidden = sheet.hiddenCols.has(c);
-    const px = hidden ? 0.1 : (sheet.colWidths.has(c) ? columnWidthPx(sheet.colWidths.get(c)!, mdw) : defaultPx);
+    const px = sheet.colWidths.has(c) ? columnWidthPx(sheet.colWidths.get(c)!, mdw) : defaultPx;
     colPx[c] = hidden ? 0 : px;
-    const entry = cols[c];
-    if (entry && typeof entry === 'object') entry.width = px;
-    else cols[c] = { width: px };
+    const entry = cols[c] && typeof cols[c] === 'object' ? cols[c] : (cols[c] = {});
+    entry.width = px;
+    if (hidden) entry.hide = true;
+    else delete entry.hide;
   }
   cols.len = Math.max(cols.len ?? 0, maxCol + 1);
 
@@ -212,9 +265,9 @@ export function applySheetModel(target: XsSheet, sheet: SheetModel, model: Workb
   for (const w of wrapped) {
     if (sheet.rowHeights.has(w.r)) continue;
     const merged = sheet.merges.find(m => m.r0 === w.r && m.c0 === w.c);
-    let width = 0;
-    for (let c = w.c; c <= (merged ? merged.c1 : w.c); c++) width += colPx[c] ?? 0;
-    const lineWidth = Math.max(1, width - 4);
+    const width = wrapContentWidth(sheet, colPx, w.c, merged ? merged.c1 : w.c);
+    const lineWidth = width - 4;
+    if (lineWidth < MIN_WRAP_WIDTH_PX) continue;
     const lines = w.text
       .split(/\r?\n/)
       .reduce((n, part) => n + Math.max(1, Math.ceil(options.measure!(part, w.px, w.font, w.bold) / lineWidth)), 0);
@@ -223,14 +276,13 @@ export function applySheetModel(target: XsSheet, sheet: SheetModel, model: Workb
   const defaultRowPt = sheet.defaultRowHeight ?? Math.max(15, Math.round(defaultSz * 1.36 * 4) / 4);
   let lastRow = -1;
   for (const r of sheet.cells.keys()) if (r > lastRow) lastRow = r;
+  lastRow = Math.min(1048575, Math.max(lastRow, extent.row + 1));
   const len = Math.max(rows.len ?? 0, lastRow + 1);
   for (let r = 0; r < len; r++) {
     let row = rows[r];
     if (!row || typeof row !== 'object') row = rows[r] = { cells: {} };
-    if (sheet.hiddenRows.has(r)) {
-      row.height = 0.1;
-      continue;
-    }
+    if (sheet.hiddenRows.has(r)) row.hide = true;
+    else delete row.hide;
     const stored = sheet.rowHeights.get(r);
     if (stored !== undefined) {
       row.height = stored === 0 ? 0.1 : pointsToPx(stored);
@@ -248,6 +300,52 @@ export function applySheetModel(target: XsSheet, sheet: SheetModel, model: Workb
   return count;
 }
 
+function withConditionalStyle(base: XsStyle, cf: CfStyle): XsStyle {
+  const out: XsStyle = { ...base };
+  if (cf.bg) out.bgcolor = cf.bg;
+  if (cf.color) out.color = cf.color;
+  if (cf.bold !== undefined || cf.italic !== undefined)
+    out.font = {
+      ...(base.font ?? {}),
+      ...(cf.bold !== undefined ? { bold: cf.bold } : {}),
+      ...(cf.italic !== undefined ? { italic: cf.italic } : {}),
+    };
+  if (cf.strike !== undefined) out.strike = cf.strike;
+  if (cf.underline !== undefined) out.underline = cf.underline;
+  return out;
+}
+
+/** 自动行高用的可见列宽之和；隐藏列不计入 */
+function wrapContentWidth(sheet: SheetModel, colPx: number[], c0: number, c1: number): number {
+  let width = 0;
+  for (let c = c0; c <= c1; c++) {
+    if (sheet.hiddenCols.has(c)) continue;
+    width += colPx[c] ?? 0;
+  }
+  return width;
+}
+
+/** 绘图对象覆盖到的最远行列（单元格锚点按 to；其他按 from 加尺寸粗略估算） */
+function objectExtent(sheet: SheetModel): { row: number; col: number } {
+  let row = -1;
+  let col = -1;
+  for (const o of sheet.extras?.objects ?? []) {
+    const a = o.anchor;
+    if (a.to) {
+      row = Math.max(row, a.to.row);
+      col = Math.max(col, a.to.col);
+    } else if (a.from && a.ext) {
+      row = Math.max(row, a.from.row + Math.ceil(a.ext.cy / 9525 / 20));
+      col = Math.max(col, a.from.col + Math.ceil(a.ext.cx / 9525 / 64));
+    } else if (a.pos && a.ext) {
+      row = Math.max(row, Math.ceil((a.pos.y + a.ext.cy) / 9525 / 20));
+      col = Math.max(col, Math.ceil((a.pos.x + a.ext.cx) / 9525 / 64));
+    }
+  }
+  for (const s of sheet.extras?.sparklines ?? []) for (const it of s.items) row = Math.max(row, it.row);
+  return { row: Math.min(row, 1048575), col: Math.min(col, 16383) };
+}
+
 function fixStyle(style: XsStyle, raw: RawCell, out: FormattedCell, theme: string[]) {
   // 未设置水平对齐时按 Excel：数字靠右，布尔与错误值居中，文字靠左
   if (!style.align || style.align === 'general') {
@@ -256,7 +354,8 @@ function fixStyle(style: XsStyle, raw: RawCell, out: FormattedCell, theme: strin
     else delete style.align;
   } else if (style.align === 'centerContinuous' || style.align === 'distributed') style.align = 'center';
   else if (style.align === 'fill' || style.align === 'justify') style.align = 'left';
-  if (style.valign === 'center' || style.valign === 'distributed' || style.valign === 'justify') style.valign = 'middle';
+  if (style.valign === 'center' || style.valign === 'distributed' || style.valign === 'justify')
+    style.valign = 'middle';
 
   const font = style.font;
   if (font) {

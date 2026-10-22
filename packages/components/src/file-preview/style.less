@@ -102,6 +102,7 @@
 }
 
 .yss-file-preview-excel {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -121,6 +122,185 @@
     line-height: 20px;
     background-color: #fffbe6;
     border-bottom: 1px solid #ffe58f;
+
+    &--objects {
+      position: absolute;
+      right: 16px;
+      bottom: 52px;
+      z-index: 20;
+      border: 1px solid #ffe58f;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+  }
+
+  // 叠加层：图表、图片、形状、批注标记等（表格画布之上，按冻结窗格分块裁剪）
+  // 颜色取自文件本身（与 Excel / WPS 一致），不随暗色主题变化
+  &__layer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  &__pane {
+    position: absolute;
+    overflow: hidden;
+  }
+
+  &__plane {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    transform-origin: 0 0;
+  }
+
+  &__object {
+    position: absolute;
+    box-sizing: border-box;
+    overflow: hidden;
+    color: #000;
+    font-size: 14.67px;
+    line-height: 1.2;
+
+    &--chart {
+      pointer-events: auto;
+      background: #fff;
+    }
+
+    &--shape {
+      overflow: visible;
+    }
+
+    &--group {
+      overflow: visible;
+    }
+  }
+
+  &__chart {
+    width: 100%;
+    height: 100%;
+  }
+
+  &__img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    user-select: none;
+  }
+
+  &__shape-bg {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+  }
+
+  &__shape-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  &__placeholder {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    padding: 8px;
+    overflow: hidden;
+    color: rgb(0 0 0 / 45%);
+    font-size: 12px;
+    text-align: center;
+    background: #fafafa;
+    border: 1px dashed #d9d9d9;
+
+    &--compact {
+      gap: 0;
+      padding: 2px;
+      font-size: 11px;
+    }
+  }
+
+  &__placeholder-title {
+    max-width: 100%;
+    overflow: hidden;
+    color: rgb(0 0 0 / 75%);
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__placeholder-hint {
+    max-width: 100%;
+  }
+
+  &__comment-mark {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-top: 7px solid #d00;
+    border-left: 7px solid transparent;
+  }
+
+  &__cf-icon {
+    position: absolute;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  &__databar {
+    position: absolute;
+    background: linear-gradient(to right, var(--bar-color), rgb(255 255 255 / 60%));
+    opacity: 0.75;
+    mix-blend-mode: multiply;
+  }
+
+  &__sparkline {
+    position: absolute;
+    overflow: visible;
+  }
+
+  &__comment {
+    position: absolute;
+    z-index: 30;
+    display: none;
+    box-sizing: border-box;
+    max-width: 280px;
+    max-height: 240px;
+    padding: 6px 8px;
+    overflow: auto;
+    color: #000;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: #ffffe1;
+    border: 1px solid #a0a0a0;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 15%);
+    pointer-events: none;
+  }
+
+  &__comment-author {
+    font-weight: 600;
   }
 }
 

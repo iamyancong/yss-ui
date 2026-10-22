@@ -62,6 +62,8 @@ export default defineConfig({
           if (id.startsWith(`${root}file-preview/pptx/`)) return;
           /** Excel 显示修正只在打开表格时按需加载，留在自己的异步 chunk */
           if (id.startsWith(`${root}file-preview/excel/`)) return;
+          /** pptx 子路径与 Excel 渲染器共用的图片解码、文字测量，按引用方自动分块，不进入主 chunk */
+          if (id.startsWith(`${root}file-preview/shared/`)) return;
           const component = id.slice(root.length).split('/')[0];
           if (!component || component.includes('.') || component === 'locale' || component === 'sheet') return;
           return `components/${component}`;
