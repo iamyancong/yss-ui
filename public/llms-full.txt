@@ -8,6 +8,7 @@
 - 路由和重弹窗按功能懒加载；不把 YSS/Formily/VXE 合并为全量 vendor。
 - 文档站 Demo 的样式导入只用于文档环境，业务样式保持 scoped。
 - FilePreview 的 pptx 是实验性 opt-in：仅当用户需要预览 .pptx 时才执行 pnpm add @aiden0z/pptx-renderer@1.4.0，并在 main.ts 调用一次 @yss-ui/components/file-preview/pptx 的 registerPptxRenderer()；不直接导入 @aiden0z/pptx-renderer，不在其他入口或页面里注册；.ppt / .doc 由后端转 PDF 后以 fileType: 'pdf' 预览。
+- FilePreview 预览 xlsx 时图表、图片、形状、批注等叠在表格上方；图表按需动态加载 echarts（组件库 optionalDependencies，与 YEcharts 共用），未安装时显示占位。不要为此引入公式计算引擎或换用别的表格预览库。
 
 插件最低版本：1.7.0
 ## 🤖 LLM Code Generation Guidelines (AI 代码生成规范)
@@ -1073,7 +1074,7 @@ import { YFilePreview, YFilePreviewModal, useFilePreview } from '@yss-ui/compone
 | 格式 | 渲染方式 | 依赖 |
 | --- | --- | --- |
 | `docx` | [docx-preview](https://github.com/VolodymyrBaydalka/docxjs) 转成 HTML | `docx-preview` |
-| `xlsx` / `xls` | [@vue-office/excel](https://github.com/501351981/vue-office) 渲染表格，可切换工作表；单元格文字按文件里保存的值和数字格式显示，见 [Excel 显示说明](#excel-显示说明) | `@vue-office/excel`、`vue-demi`、`numfmt` |
+| `xlsx` / `xls` | [@vue-office/excel](https://github.com/501351981/vue-office) 渲染表格，可切换工作表；单元格文字按文件里保存的值和数字格式显示；图表、图片、形状、批注等叠在表格上方，见 [Excel 显示说明](#excel-显示说明) | `@vue-office/excel`、`vue-demi`、`numfmt`；图表按需加载 `echarts` |
 | `pdf` | 浏览器自带的 PDF 查看器（iframe），查看器工具栏自带下载、打印、缩放 | 无 |
 | `csv` | 表格显示：首行作为表头（滚动时吸顶），可横向滚动，行号列按需开启（`csvRowNumber`）；可随时切换为源文本 | 无 |
 | `txt` / `md` | 纯文本显示 | 无 |
@@ -1106,6 +1107,8 @@ pnpm add docx-preview@^0.3.4 @vue-office/excel@1.7.14 vue-demi@^0.14.10 numfmt@3
 ```
 
 `numfmt` 用于按 Excel 规则显示数字格式（打开表格时按需加载，约 21KB gzip）；没有安装时表格照常显示，日期、百分比、小数位等常用格式改用简化实现，少数复杂格式可能与 Excel 不同。
+
+Excel 图表按需加载已有的 `echarts`（组件库 `optionalDependencies`，一般会随安装带上，与 YEcharts 共用）。没有安装时表格照常显示，图表位置显示「安装 echarts 后可显示图表」。图表相关代码只在打开含图表的工作表时加载，不预览 Excel 图表的页面不会打进主包。使用 `--no-optional` 且需要显示图表时，再执行 `pnpm add echarts@^6.0.0`。
 
 缺少依赖时不会报错白屏，组件会显示「缺少预览依赖」和对应的安装命令，并触发 `error` 事件（错误类型为 `MissingDependencyError`）。PDF、文本与图片预览不需要任何依赖。
 
@@ -1171,7 +1174,7 @@ PPTX 是**实验性**能力，默认不启用：不使用 pptx 的项目不需�
 
 - **数字格式**：内置格式编号 0–49（随语言切换，如中文的 `yyyy/m/d`、`¥#,##0.00`）与 27–36 / 50–58 的中文日期格式，自定义格式的日期时间、`[h]:mm`、百分比、小数位、千分位、货币、负数红色、括号、`@` 文本、分数、科学计数、条件分段（`[>=100]`）、`yyyy"年"m"月"d"日"`、`上午/下午` 与 1904 日期系统；
 - **单元格值**：公式显示文件里保存的计算结果，错误值（`#DIV/0!`、`#N/A` 等）、布尔值、富文本、超链接文字原样显示；
-- **布局**：合并单元格（不再重影）、隐藏的行 / 列 / 工作表、冻结窗格、按 Excel 换算的列宽与行高、字号、对齐（未设置时数字右对齐）、主题颜色与 tint、下划线 / 删除线；打开时显示文件保存时的当前工作表；
+- **布局**：合并单元格（不再重影）、隐藏的行 / 列 / 工作表、冻结窗格、按 Excel 换算的列宽与行高（隐藏列上的换行不撑高行）、字号、对齐（未设置时数字右对齐）、主题颜色与 tint、下划线 / 删除线；打开时显示文件保存时的当前工作表；
 - **xls**：读取旧版 Excel（BIFF8，Excel 97–2003）记录里的格式与公式结果。更早的 BIFF5 文件按 @vue-office/excel 原样显示。
 
 **公式不会重新计算**。预览显示文件里保存的结果，以下情况会在表格上方给出提示：
@@ -1181,9 +1184,23 @@ PPTX 是**实验性**能力，默认不启用：不使用 pptx 的项目不需�
 | 没有保存结果 | 公式没有保存计算结果（openpyxl、部分导出工具只写公式）时显示「N 个公式单元格没有保存计算结果……」，这些单元格显示为空 |
 | 打开时会重算 | 文件要求打开时重算（如 xlsxwriter 默认），或不是 Excel 保存的（没有计算引擎版本，如 LibreOffice）时显示「Excel / WPS 打开此文件时会重新计算公式，预览显示的是文件里保存的结果，个别单元格可能不同」 |
 
-需要预览与 Excel 完全一致时，由生成文件的一方写入计算结果：xlsxwriter 的 `write_formula(..., value=结果)`，或生成后用 LibreOffice 重新计算并保存（`soffice --headless --convert-to xlsx`）。不同表格软件对个别公式的结果本身就可能不同（例如引用空单元格再与 `""` 比较），保存的结果取决于最后保存它的软件。
+需要预览与 Excel 完全一致时，由生成文件的一方写入计算结果：xlsxwriter 的 `write_formula(..., value=结果)`，或生成后用 LibreOffice 重新计算并保存（`soffice --headless --convert-to xlsx`）。不同表格软件对个别公式的结果本身就可能不同（例如引用空单元格再与 `""` 比较），保存的结果取决于最后保存它的软件。**不引入公式计算引擎**，也不要为此换用别的表格预览库。
 
-暂不支持：条件格式、数据条与图标集、迷你图、图表与图片、批注、富文本中的分段样式（按整格样式显示）、可点击的超链接、数字放不下时显示 `####`、`[DBNum1]` 等中文大写数字格式（按普通数字显示）、按工作表隐藏网格线。
+工作表里的图表、图片、形状、批注、超链接、条件格式和迷你图画在表格上方的叠加层，按单元格锚点定位，跟随滚动和冻结窗格。没有这些内容的表格不会加载叠加层。
+
+| 能力 | 预览表现 |
+| --- | --- |
+| 图表 | 柱形 / 条形（簇状、堆积、百分比堆积）、折线、面积、饼图、圆环、散点、气泡、雷达、组合图、股票图、瀑布图、树状图、旭日图、直方图、箱线图、漏斗图用 echarts 绘制。3D 柱 / 线 / 饼 / 面积按 2D 显示。文件里写了图表边框则按文件显示，没有则不加框。线性 / 移动平均趋势线按虚线画出。没装 echarts 时显示「安装 echarts 后可显示图表」。曲面图、3D 曲面、地图图表显示「图表类型暂不支持预览」。损坏或截断的图表 XML 显示「图表无法显示」。同一工作表同时可见的图表大约最多 24 个，滚出视野的会释放 |
+| 图片 | 内嵌 PNG / JPG 等直接显示；TIFF 转成 PNG；EMF 里带位图则抽出位图，没有位图的 EMF / WMF 显示占位；外链图片不加载，显示占位；缺失或过大的图片显示占位，不出现裂图。关闭预览时释放 Blob URL |
+| 形状 | 常见预设几何、连接线、文本框；其他形状按矩形画。不支持渐变和阴影 |
+| 批注 | 旧版批注显示单元格右上角红三角，悬停看正文。threadedComments 的回复不显示 |
+| 超链接 | `http` / `https` / `mailto` 点击后在新窗口打开（`noopener`）；工作簿内位置（如 `Sheet1!A1`）可跳转。`javascript:` 等不安全协议会忽略 |
+| 条件格式 | 突出显示单元格（cellIs）、文本包含 / 开头 / 结尾、空值 / 错误值、前 N 项、高于 / 低于平均值、重复 / 唯一值、色阶、数据条、图标集、发生日期（today / thisMonth 等）。不支持公式规则（expression），这类规则按没有条件格式显示 |
+| 迷你图 | 折线、柱形 |
+| OLE 嵌入对象 | 有 PNG / JPG 或带位图的 EMF 预览图则显示，否则显示「嵌入对象（progId）」占位 |
+| 工作表 | 标签颜色、冻结窗格、隐藏行列（按文件收起，与 Excel 打开时一致；单元格内容仍保留。把鼠标移到隐藏行下方的行号上，单击可临时展开，不写回文件。锚点下的隐藏行 / 列按 0 宽度计算）、三种锚点（单元格、单单元格、绝对位置）。对象超出已用区域时会扩大表格行列数 |
+
+仍不支持：富文本中的分段样式（按整格样式显示）、数字放不下时显示 `####`、`[DBNum1]` 等中文大写数字格式（按普通数字显示）、按工作表隐藏网格线、误差线、透视表 / 切片器 / 筛选下拉、条件格式公式规则、曲面图与地图图表。
 
 ## 代码演示
 
@@ -1192,6 +1209,12 @@ PPTX 是**实验性**能力，默认不启用：不使用 pptx 的项目不需�
 切换不同格式查看效果（image 为图片；pptx 为实验性支持，本示例已调用 `registerPptxRenderer()` 启用），也可以把同一个文件放到弹窗里打开。
 
 <code src="./demos/file-preview/basic.vue"></code>
+
+### Excel 图表、图片与形状
+
+用合成的 xlsx（无业务数据）查看叠加层：图表（柱形、折线、饼图、散点、雷达、组合图、多级分类、负值、日期轴；瀑布 / 树状 / 旭日 / 直方图 / 箱线 / 漏斗 / 股票图在文件里有这类图时同样绘制）、图片与三种锚点、形状、批注、超链接、条件格式和迷你图。没有安装 echarts 时图表位置显示占位。
+
+<code src="./demos/file-preview/excel-objects.vue"></code>
 
 ### 弹窗多文件预览
 
@@ -1537,6 +1560,8 @@ rtf.js 的转换对简单的矢量图（矩形、椭圆、多边形、文字）�
 | 快速切换文件 | 上一个文件的加载和渲染会被取消，不会覆盖新文件 |
 | 组件卸载 / 弹窗关闭 | 取消进行中的加载，释放 Blob URL，清理渲染出的 DOM |
 | Excel 公式结果 | 公式没有保存计算结果、或 Excel 打开时会重算时，表格上方显示提示，单元格按文件里保存的结果显示，见 [Excel 显示说明](#excel-显示说明) |
+| Excel 图表 / 图片 / 形状 | 叠在表格上方按锚点定位；没装 echarts、曲面图 / 地图图表、损坏的图表 XML、缺失或外链图片、没有位图的 EMF 显示占位，见 [Excel 显示说明](#excel-显示说明) |
+| Excel 批注 / 超链接 / 条件格式 | 旧版批注红三角可悬停；只打开 http / https / mailto；公式类条件格式（expression）不生效 |
 | docx 特殊图片 | TIFF / EMF / WMF 浏览器无法显示，按原尺寸显示带格式名的占位（悬停与读屏为「图片格式暂不支持预览（EMF）」），不出现裂图 |
 | docx 符号字体 | Symbol / Wingdings 字体的项目符号换成对应的 Unicode 符号（•、▪、➢、✓ 等），没有这些字体的系统（macOS、手机）不再显示方框 |
 | 图片损坏 | 浏览器无法解码时显示「文件解析失败」与原因，可重试或下载 |
@@ -1587,13 +1612,6 @@ openList(rows.map(toPdfPreview), index);
 ## 国际化
 
 文案跟随 `YConfigProvider` 的 `locale` 或 `setGlobalLocale` 设置的语言，内置 `zh-CN`、`zh-TW`、`en-US`，命名空间为 `filePreview`（类型 `YssFilePreviewLocale`）。自定义文案时展开内置语言包再覆盖 `filePreview` 字段，详见 [ConfigProvider](/components/config-provider)。
-
-## 后续计划
-
-以下能力计划在第二阶段提供（见 [#57](https://github.com/iamyancong/yss-ui/issues/57)）：
-
-- 在新标签页中打开预览；
-- 基于 pdf.js 的 PDF 渲染（目前使用浏览器自带查看器，不同浏览器外观略有差异，部分移动端浏览器可能无法内嵌显示）。
 
 ---
 
@@ -6342,7 +6360,7 @@ box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color, #3371ff) 15%, tran
 - 业务层禁止导入 `@formily/antdv` 或 `@formily/antd*` UI 组件；使用 `YFormily` 提供的 Schema 与组件边界。
 - 微前端子应用同样默认使用根入口具名导入；Vite 6 新模板继续采用官方插件，无插件消费的样式能力按下方版本契约判断。`lite` 是可选兼容入口，旧项目保留已验证的样式策略。
 - 对于 `YMonaco`、`YEcharts`、`YSheet` 等重型依赖组件，微应用可继续从 `@yss-ui/components` 正常消费（已异步化），也可直接从官方子路径 `@yss-ui/components/monaco`、`@yss-ui/components/echarts`、`@yss-ui/components/sheet` 导入，避免未使用的重型依赖及其全量 CSS 被打包到业务页面中。
-- 文件预览使用 `YFilePreview`（页面内嵌）、`YFilePreviewModal`（弹窗多文件）或 `useFilePreview`（函数式），只从子路径 `@yss-ui/components/file-preview` 导入，根入口和 `lite` 入口不导出；该子路径自 1.9.0 起提供，旧版本先核对 exports。默认支持 docx、xlsx、xls、pdf、txt、csv、md 和常见图片；pptx 是实验性 opt-in 能力，按下方「文件预览 PPTX（实验性 opt-in）」处理。不要再手写 iframe、`docx-preview`、`@vue-office/excel` 或 `@aiden0z/pptx-renderer` 预览。鉴权或按需取数用 `source: FileSourceLoader`（`({ signal, file }) => Promise<Blob | string>`），下载拦截用 `customDownload`，标题栏操作用 `#actions` 插槽或 `slots.actions`；`open / openList` 返回 `FilePreviewController`，增删文件用 `controller.update()`，不要直接改 hook 返回的只读状态。多文件弹窗的标题默认就是文件切换下拉（`fileSwitcher`，默认 `true`；设置 `title` 会改为普通标题），不要自己再做文件列表下拉；URL / 懒加载来源要在下拉里显示大小时传 `fileSize`；需要首尾循环翻页时传 `loop: true`（默认首尾禁用）。`useFilePreview()` 必须在组件 `setup` 中调用：弹窗继承调用位置的 `ConfigProvider` 主题 / 语言、`YConfigProvider` 与 `provide` 的值（含 slots 内的 inject），不要为了暗色主题或国际化改写成组件形式。
+- 文件预览使用 `YFilePreview`（页面内嵌）、`YFilePreviewModal`（弹窗多文件）或 `useFilePreview`（函数式），只从子路径 `@yss-ui/components/file-preview` 导入，根入口和 `lite` 入口不导出；该子路径自 1.9.0 起提供，旧版本先核对 exports。默认支持 docx、xlsx、xls、pdf、txt、csv、md 和常见图片；xlsx 里的图表、图片、形状、批注、超链接、条件格式和迷你图由组件叠在表格上方显示（echarts 未安装时图表显示占位，不要为此引入公式计算库或换用别的表格预览）；pptx 是实验性 opt-in 能力，按下方「文件预览 PPTX（实验性 opt-in）」处理。不要再手写 iframe、`docx-preview`、`@vue-office/excel` 或 `@aiden0z/pptx-renderer` 预览。鉴权或按需取数用 `source: FileSourceLoader`（`({ signal, file }) => Promise<Blob | string>`），下载拦截用 `customDownload`，标题栏操作用 `#actions` 插槽或 `slots.actions`；`open / openList` 返回 `FilePreviewController`，增删文件用 `controller.update()`，不要直接改 hook 返回的只读状态。多文件弹窗的标题默认就是文件切换下拉（`fileSwitcher`，默认 `true`；设置 `title` 会改为普通标题），不要自己再做文件列表下拉；URL / 懒加载来源要在下拉里显示大小时传 `fileSize`；需要首尾循环翻页时传 `loop: true`（默认首尾禁用）。`useFilePreview()` 必须在组件 `setup` 中调用：弹窗继承调用位置的 `ConfigProvider` 主题 / 语言、`YConfigProvider` 与 `provide` 的值（含 slots 内的 inject），不要为了暗色主题或国际化改写成组件形式。
 - 禁止因文档暂时不可达就把猜测的 `Y*` 组件改成 Ant Design Vue “先落地”。只能复用当前仓库已证明可用的导入，或明确报告待确认项。
 - 接口错误提示由 `mutator.ts` 的响应拦截器统一处理。API Hook 不得在 `success === false` 分支或 `catch` 内重复调用 `message.error`；`message` 只用于非 API 错误的本地交互反馈或成功提示。
 
@@ -8055,7 +8073,7 @@ await pageQualityRule(query, { signal: controller.signal, timeout: 120000 });
 
 - 仅上传文件，不包含模板下载或导出流程。
 - 下载公开静态 URL 且无需鉴权、请求参数和响应头文件名时，使用 `downloadFileFromUrl(url, fileName?)`。
-- 浏览器只需要预览文件、不触发保存：docx、xlsx、xls、pdf、txt、csv、md、常见图片（png、jpg、gif、webp、svg、bmp、ico）使用 `@yss-ui/components/file-preview` 的 `YFilePreview` / `useFilePreview`（鉴权接口按本 Skill 的请求方式写成懒加载函数 `source: ({ signal }) => request(...)`，显示时才请求；下载权限 / 留痕用 `customDownload`，在其中调用 `ctx.defaultDownload()`）；附件列表里的图片与其他文件一起交给 `useFilePreview().openList()`（在 `setup` 中调用，弹窗继承页面的主题与语言；标题自带文件切换下拉，URL 来源可传 `fileSize` 显示大小），纯图片相册仍可用 Ant Design Vue `Image`。doc / ppt 等旧格式浏览器无法解析，由后端转成 PDF 后用懒加载函数返回，并设置 `fileType: 'pdf'`。`.pptx` 默认不预览（实验性 opt-in）：只有用户明确需要时才 `pnpm add @aiden0z/pptx-renderer@1.4.0`，并在 `main.ts` 调用一次 `@yss-ui/components/file-preview/pptx` 的 `registerPptxRenderer()`，详见 `../component-selection-imports/SKILL.md`。预览 Excel 时公式单元格显示为空、或表格上方提示「没有保存计算结果」，是生成文件时只写了公式：后端导出用 xlsxwriter 时给 `write_formula` 传计算结果，用 openpyxl 时改写值或生成后用 LibreOffice 重算保存；不要为此换用别的表格预览库或在前端自己计算公式。
+- 浏览器只需要预览文件、不触发保存：docx、xlsx、xls、pdf、txt、csv、md、常见图片（png、jpg、gif、webp、svg、bmp、ico）使用 `@yss-ui/components/file-preview` 的 `YFilePreview` / `useFilePreview`（鉴权接口按本 Skill 的请求方式写成懒加载函数 `source: ({ signal }) => request(...)`，显示时才请求；下载权限 / 留痕用 `customDownload`，在其中调用 `ctx.defaultDownload()`）；附件列表里的图片与其他文件一起交给 `useFilePreview().openList()`（在 `setup` 中调用，弹窗继承页面的主题与语言；标题自带文件切换下拉，URL 来源可传 `fileSize` 显示大小），纯图片相册仍可用 Ant Design Vue `Image`。doc / ppt 等旧格式浏览器无法解析，由后端转成 PDF 后用懒加载函数返回，并设置 `fileType: 'pdf'`。`.pptx` 默认不预览（实验性 opt-in）：只有用户明确需要时才 `pnpm add @aiden0z/pptx-renderer@1.4.0`，并在 `main.ts` 调用一次 `@yss-ui/components/file-preview/pptx` 的 `registerPptxRenderer()`，详见 `../component-selection-imports/SKILL.md`。预览 Excel 时公式单元格显示为空、或表格上方提示「没有保存计算结果」，是生成文件时只写了公式：后端导出用 xlsxwriter 时给 `write_formula` 传计算结果，用 openpyxl 时改写值或生成后用 LibreOffice 重算保存；不要为此换用别的表格预览库或在前端自己计算公式。xlsx 里的图表、图片、形状、批注、超链接、条件格式和迷你图由组件叠加显示；echarts 未安装时图表显示占位，曲面图 / 地图图表 / 无位图 EMF / 公式类条件格式会显示占位或不生效，详见 FilePreview 文档的 Excel 显示说明。
 
 ## 必读依据
 
@@ -9551,7 +9569,7 @@ YConfigProvider 只提供组件词典；不替代 Ant Design Vue ConfigProvider�
 
 YFormily 自动切换内置校验词典并刷新已有错误，业务自定义校验应在执行时翻译。VXE 和 Formily 校验器是引擎单例，同一引擎不保证多种语言并存。微应用同步到统一门户语言。
 
-YSheet 核心支持三语原生切换，extraLocales 必须补齐使用的扩展插件词典。YMonaco 自有按钮三语，当前 Monaco ESM 内核菜单保持英文；旧 nls 参数已废弃。图表标题、系列名和业务数据由应用生成，引擎 locale 按 YEcharts 文档配置。YFilePreview 的标题、状态提示和按钮三语切换（命名空间 filePreview）；docx/Excel 文件内容不翻译，Excel 工作表标签等由第三方渲染。遇到未覆盖的引擎能力，明确限制和隔离/升级方案。
+YSheet 核心支持三语原生切换，extraLocales 必须补齐使用的扩展插件词典。YMonaco 自有按钮三语，当前 Monaco ESM 内核菜单保持英文；旧 nls 参数已废弃。图表标题、系列名和业务数据由应用生成，引擎 locale 按 YEcharts 文档配置。YFilePreview 的标题、状态提示、按钮和 Excel 图表 / 图片占位文案三语切换（命名空间 filePreview）；docx/Excel 文件内容不翻译，Excel 工作表标签由第三方渲染。遇到未覆盖的引擎能力，明确限制和隔离/升级方案。
 
 ## 标准代码骨架
 
