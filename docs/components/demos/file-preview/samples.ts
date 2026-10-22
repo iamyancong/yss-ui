@@ -32,3 +32,9 @@ export const sampleFiles = {
 
 /** 弹窗多文件演示额外用到的 JPG 图片 */
 export const sampleJpg = { source: sampleUrl('sample.jpg'), fileName: 'sample.jpg' };
+
+/** Excel 图表 / 图片 / 形状演示用的合成文件（无业务数据） */
+export const excelObjectSamples = {
+  charts: { source: sampleUrl('xlsx-charts.xlsx'), fileName: 'xlsx-charts.xlsx' },
+  objects: { source: sampleUrl('xlsx-objects.xlsx'), fileName: 'xlsx-objects.xlsx' },
+};
