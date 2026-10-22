@@ -139,3 +139,30 @@ test('tgz 不可用时阻断检查', async () => {
   );
   assert.equal(requests, 2);
 });
+
+test('checkDependencyArtifact 透传重试与超时配置', async () => {
+  let attempts = 0;
+  const fetchImpl = async () => {
+    attempts += 1;
+    if (attempts < 2) {
+      return new Response('', { status: 503 });
+    }
+    return new Response(
+      JSON.stringify({
+        dist: { tarball: 'http://nexus.example/vxe-table-4.19.10.tgz' },
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  };
+
+  const result = await checkDependencyArtifact({
+    name: 'vxe-table',
+    version: '4.19.10',
+    registry: 'http://nexus.example/npm-group/',
+    fetchImpl,
+    maxAttempts: 3,
+    retryDelayMs: 0,
+  });
+  assert.equal(result.tarball, 'http://nexus.example/npm-group/vxe-table-4.19.10.tgz');
+  assert.equal(attempts, 3); // 2 attempts for metadata (1 retry) + 1 for tarball
+});

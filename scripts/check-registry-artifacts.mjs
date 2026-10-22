@@ -11,11 +11,11 @@ const DEFAULT_PACKAGE_JSON = path.resolve('packages/components/package.json');
 /** 默认项目级 npmrc 路径。 */
 const DEFAULT_NPMRC = path.resolve('.npmrc');
 /** 单次 Registry 请求超时时间。 */
-const DEFAULT_TIMEOUT_MS = 15_000;
+const DEFAULT_TIMEOUT_MS = Number(process.env.REGISTRY_CHECK_TIMEOUT_MS) || 30_000;
 /** Registry 短暂故障的最大尝试次数。 */
-const DEFAULT_MAX_ATTEMPTS = 3;
+const DEFAULT_MAX_ATTEMPTS = Number(process.env.REGISTRY_CHECK_MAX_ATTEMPTS) || 5;
 /** Registry 重试的基础退避时间。 */
-const DEFAULT_RETRY_DELAY_MS = 300;
+const DEFAULT_RETRY_DELAY_MS = Number(process.env.REGISTRY_CHECK_RETRY_DELAY_MS) || 1_000;
 
 /**
  * 判断依赖声明是否为精确语义化版本。
@@ -163,10 +163,20 @@ export const fetchWithRetry = async (url, options, fetchImpl, retryOptions = {})
  *
  * @param {string} url - 请求地址
  * @param {typeof fetch} fetchImpl - fetch 实现
+ * @param {{ timeoutMs?: number, maxAttempts?: number, retryDelayMs?: number }} [retryOptions] - 重试参数
  * @returns {Promise<Record<string, any>>} JSON 响应
  */
-const fetchJson = async (url, fetchImpl) => {
-  const response = await fetchWithRetry(url, {}, fetchImpl);
+const fetchJson = async (url, fetchImpl, retryOptions) => {
+  const response = await fetchWithRetry(
+    url,
+    {
+      headers: {
+        Accept: 'application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*',
+      },
+    },
+    fetchImpl,
+    retryOptions
+  );
   if (!response.ok) {
     throw new Error(`元数据请求失败 ${response.status}: ${url}`);
   }
@@ -176,14 +186,15 @@ const fetchJson = async (url, fetchImpl) => {
 /**
  * 校验单个依赖的 Registry 元数据与 tgz 是否均可访问。
  *
- * @param {{ name: string, version: string, registry: string, fetchImpl?: typeof fetch }} input - 检查参数
+ * @param {{ name: string, version: string, registry: string, fetchImpl?: typeof fetch, timeoutMs?: number, maxAttempts?: number, retryDelayMs?: number }} input - 检查参数
  * @returns {Promise<{name: string, version: string, tarball: string}>} 已验证制品信息
  */
 export const checkDependencyArtifact = async input => {
-  const { name, version, registry, fetchImpl = fetch } = input;
+  const { name, version, registry, fetchImpl = fetch, timeoutMs, maxAttempts, retryDelayMs } = input;
+  const retryOptions = { timeoutMs, maxAttempts, retryDelayMs };
   const metadataPath = `${encodeURIComponent(name)}/${encodeURIComponent(version)}`;
   const metadataUrl = new URL(metadataPath, normalizeRegistry(registry)).toString();
-  const metadata = await fetchJson(metadataUrl, fetchImpl);
+  const metadata = await fetchJson(metadataUrl, fetchImpl, retryOptions);
   const rawTarball = metadata.dist?.tarball;
   if (!rawTarball) {
     throw new Error(`${name}@${version} 的 Registry 元数据中缺少 dist.tarball`);
@@ -196,7 +207,8 @@ export const checkDependencyArtifact = async input => {
       headers: { Range: 'bytes=0-0' },
       redirect: 'follow',
     },
-    fetchImpl
+    fetchImpl,
+    retryOptions
   );
   if (!response.ok) {
     throw new Error(`${name}@${version} tgz 请求失败 ${response.status}: ${tarball}`);
@@ -208,7 +220,7 @@ export const checkDependencyArtifact = async input => {
 /**
  * 执行组件包第三方运行时制品预检。
  *
- * @param {{ packageJsonPath?: string, registry?: string, npmrcPath?: string, fetchImpl?: typeof fetch }} [options] - 检查配置
+ * @param {{ packageJsonPath?: string, registry?: string, npmrcPath?: string, fetchImpl?: typeof fetch, timeoutMs?: number, maxAttempts?: number, retryDelayMs?: number }} [options] - 检查配置
  * @returns {Promise<Array<{name: string, version: string, tarball: string}>>} 检查结果
  */
 export const checkRegistryArtifacts = async (options = {}) => {
@@ -216,7 +228,14 @@ export const checkRegistryArtifacts = async (options = {}) => {
   const plan = resolveArtifactPlan(options.packageJsonPath);
   const results = [];
   for (const dependency of plan) {
-    const result = await checkDependencyArtifact({ ...dependency, registry, fetchImpl: options.fetchImpl });
+    const result = await checkDependencyArtifact({
+      ...dependency,
+      registry,
+      fetchImpl: options.fetchImpl,
+      timeoutMs: options.timeoutMs,
+      maxAttempts: options.maxAttempts,
+      retryDelayMs: options.retryDelayMs,
+    });
     results.push(result);
   }
   return results;
@@ -226,13 +245,15 @@ export const checkRegistryArtifacts = async (options = {}) => {
  * 解析命令行参数。
  *
  * @param {string[]} argv - 命令行参数
- * @returns {{ packageJsonPath?: string, registry?: string }} 检查配置
+ * @returns {{ packageJsonPath?: string, registry?: string, timeoutMs?: number, maxAttempts?: number }} 检查配置
  */
 const parseArgs = argv => {
   const options = {};
   for (const argument of argv.slice(2)) {
     if (argument.startsWith('--package-json=')) options.packageJsonPath = path.resolve(argument.slice(15));
     if (argument.startsWith('--registry=')) options.registry = argument.slice(11);
+    if (argument.startsWith('--timeout-ms=')) options.timeoutMs = Number(argument.slice(13));
+    if (argument.startsWith('--max-attempts=')) options.maxAttempts = Number(argument.slice(15));
   }
   return options;
 };
