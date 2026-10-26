@@ -1,6 +1,6 @@
 {
   "name": "@yss-ui/hooks",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "YSS UI Hooks 包",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
