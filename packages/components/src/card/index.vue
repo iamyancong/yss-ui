@@ -1,48 +1,5 @@
-<template>
-  <ACard v-bind="cardProps" :class="cardClasses" :style="cardStyles">
-    <template v-if="$slots.title" #title>
-      <slot name="title" />
-    </template>
-    <template v-if="$slots.extra" #extra>
-      <slot name="extra" />
-    </template>
-    <template v-if="$slots.cover" #cover>
-      <slot name="cover" />
-    </template>
-    <template v-if="$slots.actions" #actions>
-      <slot name="actions" />
-    </template>
-    <template v-if="$slots.tabBarExtraContent" #tabBarExtraContent>
-      <slot name="tabBarExtraContent" />
-    </template>
-
-    <!-- Meta 区域：若提供任一 Meta 相关内容则渲染在内容顶部 -->
-    <template
-      v-if="
-        $slots.meta || $slots['meta-title'] || $slots['meta-description'] || $slots['meta-avatar'] || hasMetaContent
-      "
-    >
-      <slot v-if="$slots.meta" name="meta" />
-      <ACardMeta v-else :title="props.metaTitle" :description="props.metaDescription">
-        <template v-if="$slots['meta-avatar']" #avatar>
-          <slot name="meta-avatar" />
-        </template>
-        <template v-if="$slots['meta-title']" #title>
-          <slot name="meta-title" />
-        </template>
-        <template v-if="$slots['meta-description']" #description>
-          <slot name="meta-description" />
-        </template>
-      </ACardMeta>
-    </template>
-
-    <slot />
-  </ACard>
-</template>
-
 <script setup lang="ts">
-import { computed, useAttrs } from 'vue';
-import type { CSSProperties } from 'vue';
+import { computed, useAttrs, type CSSProperties, type VNode } from 'vue';
 import { Card as ACard } from 'ant-design-vue';
 import type { YCardProps } from './types';
 
@@ -61,6 +18,35 @@ const props = withDefaults(defineProps<YCardProps>(), {
 
 const attrs = useAttrs();
 const ACardMeta = ACard.Meta;
+
+/**
+ * 同步卡片内部结构语义类名（兼容自定义 ConfigProvider prefixCls）
+ */
+const syncCardClasses = (vnode: VNode) => {
+  const root = vnode.el;
+  if (!(root instanceof HTMLElement)) return;
+  const children = Array.from(root.children).filter(
+    (child): child is HTMLElement => child instanceof HTMLElement
+  );
+  const candidates = Array.from(root.classList).filter(
+    cls => cls !== 'y-card' && cls.endsWith('-card')
+  );
+  const cardPrefix =
+    candidates.find(cls =>
+      children.some(
+        child => child.classList.contains(`${cls}-head`) || child.classList.contains(`${cls}-body`)
+      )
+    ) ?? candidates[0];
+  if (!cardPrefix) return;
+
+  for (const child of children) {
+    if (child.classList.contains(`${cardPrefix}-head`)) {
+      child.classList.add('y-card__head');
+    } else if (child.classList.contains(`${cardPrefix}-body`)) {
+      child.classList.add('y-card__body');
+    }
+  }
+};
 
 /**
  * 合并 bodyStyle 与便捷的 padding
@@ -139,6 +125,7 @@ const cardStyles = computed<CSSProperties>(() => {
  * 需要透传给 ACard 的最终属性集合
  * @description 过滤掉自定义的 props，只传递 Ant Design Card 支持的属性
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const cardProps = computed<Record<string, any>>(() => {
   const {
     padding: _padding,
@@ -148,6 +135,7 @@ const cardProps = computed<Record<string, any>>(() => {
     metaTitle: _metaTitle,
     metaDescription: _metaDescription,
     ...rest
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } = props as any;
 
   // 过滤掉 attrs 中的 class 和 style，避免重复应用
@@ -171,12 +159,58 @@ const hasMetaContent = computed<boolean>(() => {
 });
 </script>
 
+<template>
+  <ACard
+    v-bind="cardProps"
+    :class="cardClasses"
+    :style="cardStyles"
+    @vue:mounted="syncCardClasses"
+    @vue:updated="syncCardClasses"
+  >
+    <template v-if="$slots.title" #title>
+      <slot name="title" />
+    </template>
+    <template v-if="$slots.extra" #extra>
+      <slot name="extra" />
+    </template>
+    <template v-if="$slots.cover" #cover>
+      <slot name="cover" />
+    </template>
+    <template v-if="$slots.actions" #actions>
+      <slot name="actions" />
+    </template>
+    <template v-if="$slots.tabBarExtraContent" #tabBarExtraContent>
+      <slot name="tabBarExtraContent" />
+    </template>
+
+    <!-- Meta 区域：若提供任一 Meta 相关内容则渲染在内容顶部 -->
+    <template
+      v-if="
+        $slots.meta ||
+        $slots['meta-title'] ||
+        $slots['meta-description'] ||
+        $slots['meta-avatar'] ||
+        hasMetaContent
+      "
+    >
+      <slot v-if="$slots.meta" name="meta" />
+      <ACardMeta v-else :title="props.metaTitle" :description="props.metaDescription">
+        <template v-if="$slots['meta-avatar']" #avatar>
+          <slot name="meta-avatar" />
+        </template>
+        <template v-if="$slots['meta-title']" #title>
+          <slot name="meta-title" />
+        </template>
+        <template v-if="$slots['meta-description']" #description>
+          <slot name="meta-description" />
+        </template>
+      </ACardMeta>
+    </template>
+
+    <slot />
+  </ACard>
+</template>
+
 <style scoped lang="less">
-.y-card {
-  :deep(.ant-card-body) {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-}
+@import url('./style.less');
 </style>

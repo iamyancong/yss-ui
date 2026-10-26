@@ -220,6 +220,7 @@ const copyExpression = async () => {
                 :max="currentDimensionConfig?.max"
                 :disabled="disabled || currentState.mode !== 'interval'"
                 size="small"
+                class="y-cron__input-number"
                 @update:value="(v: unknown) => updateInterval('intervalStep', v as number | null)"
               />
               <span class="control-text">{{ currentDimensionConfig?.label }} {{ controls?.from }}</span>
@@ -229,6 +230,7 @@ const copyExpression = async () => {
                 :max="currentDimensionConfig?.max"
                 :disabled="disabled || currentState.mode !== 'interval'"
                 size="small"
+                class="y-cron__input-number"
                 @update:value="(v: unknown) => updateInterval('intervalStart', v as number | null)"
               />
               <span class="control-text">{{ currentDimensionConfig?.label }}{{ controls?.start }}</span>
@@ -249,6 +251,7 @@ const copyExpression = async () => {
                 :placeholder="controls?.selectPlaceholder"
                 style="min-width: 200px"
                 size="small"
+                class="y-cron__select"
                 @update:value="updateSpecific"
               >
                 <SelectOption v-for="opt in currentOptions" :key="opt.value" :value="opt.value">
@@ -271,6 +274,7 @@ const copyExpression = async () => {
                 :max="currentDimensionConfig?.max"
                 :disabled="disabled || currentState.mode !== 'range'"
                 size="small"
+                class="y-cron__input-number"
                 @update:value="(v: unknown) => updateRange('rangeStart', v as number | null)"
               />
               <span class="control-text">{{ controls?.to }}</span>
@@ -280,6 +284,7 @@ const copyExpression = async () => {
                 :max="currentDimensionConfig?.max"
                 :disabled="disabled || currentState.mode !== 'range'"
                 size="small"
+                class="y-cron__input-number"
                 @update:value="(v: unknown) => updateRange('rangeEnd', v as number | null)"
               />
               <span class="control-text">{{ currentDimensionConfig?.label }}</span>
@@ -310,6 +315,7 @@ const copyExpression = async () => {
                 :max="7"
                 :disabled="disabled || dayMode !== 'weekInterval'"
                 size="small"
+                class="y-cron__input-number"
                 @update:value="(v: unknown) => v !== null && (cronState.day.weekIntervalStep = v as number)"
               />
               <span class="control-text">{{ controls?.week }} {{ controls?.from }}</span>
@@ -318,6 +324,7 @@ const copyExpression = async () => {
                 :disabled="disabled || dayMode !== 'weekInterval'"
                 style="width: 100px"
                 size="small"
+                class="y-cron__select"
                 @update:value="(v: unknown) => (cronState.day.weekIntervalStart = v as number)"
               >
                 <SelectOption v-for="opt in resolvedWeekOptions" :key="opt.num" :value="opt.num">
@@ -341,6 +348,7 @@ const copyExpression = async () => {
                 :max="31"
                 :disabled="disabled || dayMode !== 'dayInterval'"
                 size="small"
+                class="y-cron__input-number"
                 @update:value="(v: unknown) => v !== null && (cronState.day.intervalStep = v as number)"
               />
               <span class="control-text">{{ controls?.day }} {{ controls?.from }}</span>
@@ -350,6 +358,7 @@ const copyExpression = async () => {
                 :max="31"
                 :disabled="disabled || dayMode !== 'dayInterval'"
                 size="small"
+                class="y-cron__input-number"
                 @update:value="(v: unknown) => v !== null && (cronState.day.intervalStart = v as number)"
               />
               <span class="control-text">{{ controls?.dayStartSuffix }}</span>
@@ -370,6 +379,7 @@ const copyExpression = async () => {
                 :placeholder="controls?.selectPlaceholder"
                 style="min-width: 200px"
                 size="small"
+                class="y-cron__select"
                 @update:value="(v: unknown) => (cronState.day.weekSpecificValues = v as string[])"
               >
                 <SelectOption v-for="opt in resolvedWeekOptions" :key="opt.value" :value="opt.value">
@@ -393,6 +403,7 @@ const copyExpression = async () => {
                 :placeholder="controls?.selectPlaceholder"
                 style="min-width: 200px"
                 size="small"
+                class="y-cron__select"
                 @update:value="(v: unknown) => (cronState.day.specificValues = v as number[])"
               >
                 <SelectOption v-for="i in 31" :key="i" :value="i"> {{ i }}{{ controls?.daySuffix }} </SelectOption>
@@ -428,6 +439,7 @@ const copyExpression = async () => {
                 :disabled="disabled || dayMode !== 'lastWeekOfMonth'"
                 style="width: 100px"
                 size="small"
+                class="y-cron__select"
                 @update:value="(v: unknown) => (cronState.day.lastWeekOfMonth = v as number)"
               >
                 <SelectOption v-for="opt in resolvedWeekOptions" :key="opt.num" :value="opt.num">
@@ -450,6 +462,7 @@ const copyExpression = async () => {
                 :max="31"
                 :disabled="disabled || dayMode !== 'beforeEnd'"
                 size="small"
+                class="y-cron__input-number"
                 @update:value="(v: unknown) => v !== null && (cronState.day.daysBeforeEnd = v as number)"
               />
               <span class="control-text">{{ controls?.day }}</span>
@@ -469,6 +482,7 @@ const copyExpression = async () => {
                 :max="31"
                 :disabled="disabled || dayMode !== 'nearestWeekday'"
                 size="small"
+                class="y-cron__input-number"
                 @update:value="(v: unknown) => v !== null && (cronState.day.nearestWeekday = v as number)"
               />
               <span class="control-text">{{ controls?.nearestWeekdaySuffix }}</span>
@@ -488,6 +502,7 @@ const copyExpression = async () => {
                 :max="5"
                 :disabled="disabled || dayMode !== 'nthWeekday'"
                 size="small"
+                class="y-cron__input-number"
                 @update:value="(v: unknown) => v !== null && (cronState.day.nthWeekday.nth = v as number)"
               />
               <span class="control-text">{{ controls?.nthWeekdayUnit }}</span>
@@ -496,6 +511,7 @@ const copyExpression = async () => {
                 :disabled="disabled || dayMode !== 'nthWeekday'"
                 style="width: 100px"
                 size="small"
+                class="y-cron__select"
                 @update:value="(v: unknown) => (cronState.day.nthWeekday.day = v as number)"
               >
                 <SelectOption v-for="opt in resolvedWeekOptions" :key="opt.num" :value="opt.num">

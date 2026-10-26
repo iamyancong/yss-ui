@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { VNode } from 'vue';
 import { AutoComplete as AAutoComplete, Button as AButton, Select as ASelect } from 'ant-design-vue';
 import type { ConditionBuilderContext } from '../hooks/useConditionBuilderContext';
 
@@ -11,10 +12,35 @@ const props = defineProps<{
   canAddChildGroup: boolean;
   ctx: ConditionBuilderContext;
 }>();
+
+/**
+ * 同步叶子节点内输入控件边框盒类名（兼容自定义 ConfigProvider prefixCls）
+ */
+const syncLeafControlClasses = (vnode: VNode) => {
+  const root = vnode.el;
+  if (!(root instanceof HTMLElement)) return;
+  const controls = root.querySelectorAll<HTMLElement>('.field-select, .operator-select, .value-input');
+  controls.forEach(control => {
+    const selectorChild = Array.from(control.children).find(
+      (child): child is HTMLElement =>
+        child instanceof HTMLElement &&
+        Array.from(child.classList).some(cls => cls.endsWith('-select-selector'))
+    );
+    if (selectorChild) {
+      selectorChild.classList.add('y-condition-builder__control-box');
+    } else {
+      control.classList.add('y-condition-builder__control-box');
+    }
+  });
+};
 </script>
 
 <template>
-  <div class="simple-condition">
+  <div
+    class="simple-condition"
+    @vue:mounted="syncLeafControlClasses"
+    @vue:updated="syncLeafControlClasses"
+  >
     <!-- 字段选择 (下拉选择模式) -->
     <ASelect
       v-if="props.ctx.props.fieldMode === 'select'"

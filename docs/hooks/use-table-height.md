@@ -61,7 +61,7 @@ const { tableHeight, isReady, recalculateHeight } = useTableHeight(tableAreaRef,
 | options      | 配置选项                                                             | `UseTableHeightOptions`                               | -      |
 
 > [!TIP]
-> 当 `ref` 绑定到 `YCard` 或 `AntCard` 组件时，Hook 会自动获取其内部的 `.ant-card-body` 元素进行高度计算，无需额外配置。
+> 当 `ref` 绑定到 `YCard` 或 `AntCard` 组件时，Hook 会自动获取其内部的 `.y-card__body`（或当前 `ConfigProvider` 前缀对应的 `card-body`）元素进行高度计算，无需额外配置。注意：`ConfigProvider` 的 `prefixCls` 仅在 `setup` 初始化时读取一次，运行中动态切换 `prefixCls` 不会跟着重新解析。
 
 ### UseTableHeightOptions
 

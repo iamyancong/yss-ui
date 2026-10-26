@@ -263,7 +263,12 @@
       </vxe-column>
     </vxe-table>
 
-    <div v-if="pageable" class="y-table-pagination">
+    <div
+      v-if="pageable"
+      class="y-table-pagination"
+      @vue:mounted="syncPaginationClasses"
+      @vue:updated="syncPaginationClasses"
+    >
       <Pagination ref="paginationRef" v-bind="resolvedPagination" :total="computedTotal" @change="handleAntdChange" />
     </div>
   </div>
@@ -277,6 +282,7 @@ import { computed, nextTick, onMounted, ref, watch, useAttrs, useSlots } from 'v
 import type { VxeTablePropTypes } from 'vxe-table';
 import { VxeColgroup, VxeColumn, VxeTable, VxeToolbar } from 'vxe-table';
 import ActionColumn from './ActionColumn.vue';
+import { syncPaginationClasses } from './utils/syncPaginationClasses';
 import { useActionColumn, useColumnProps, useNormalizedColumns } from './hooks/useColumns';
 import { useTableEvents } from './hooks/useEvents';
 import { useTableSelection } from './hooks/useTableSelection';

@@ -33,7 +33,7 @@
 
 // Spin 容器样式
 .@{prefix}__spin {
-  .ant-spin-container {
+  .@{prefix}__spin-container {
     min-height: inherit;
   }
 }
@@ -89,39 +89,39 @@
 }
 
 .@{prefix}__title:hover .@{prefix}__more,
-.@{prefix} .ant-tree-node-content-wrapper:hover .@{prefix}__more {
+.@{prefix} .@{prefix}__node-content:hover .@{prefix}__more {
   display: inline-flex;
 }
 
-.@{prefix} .ant-tree-title {
+.@{prefix} .@{prefix}__node-title {
   display: block;
   width: 100%;
 }
 
-.@{prefix} .ant-tree-node-content-wrapper {
+.@{prefix} .@{prefix}__node-content {
   display: inline-flex;
   align-items: center;
   width: calc(100% - 48px);
 }
 
-.@{prefix} .ant-tree-node-content-wrapper:hover {
+.@{prefix} .@{prefix}__node-content:hover {
   background-color: var(--y-tree-node-hover-bg);
 }
 
-.@{prefix} .ant-tree-node-content-wrapper.ant-tree-node-selected {
+.@{prefix} .@{prefix}__node-content.@{prefix}__node-selected {
   background-color: var(--y-tree-node-selected-bg);
   color: var(--y-tree-node-selected-color);
 }
 
-.@{prefix} .ant-tree-node-content-wrapper.ant-tree-node-selected:hover {
+.@{prefix} .@{prefix}__node-content.@{prefix}__node-selected:hover {
   background-color: var(--y-tree-node-selected-hover-bg);
 }
 
-.@{prefix} .ant-tree-node-content-wrapper.ant-tree-node-selected:hover .@{prefix}__more {
+.@{prefix} .@{prefix}__node-content.@{prefix}__node-selected:hover .@{prefix}__more {
   color: var(--y-tree-more-color-hover);
 }
 
-.@{prefix} .ant-tree-node-content-wrapper.ant-tree-node-selected .@{prefix}__text {
+.@{prefix} .@{prefix}__node-content.@{prefix}__node-selected .@{prefix}__text {
   color: var(--y-tree-node-selected-color);
 }
 
@@ -139,15 +139,15 @@
   --y-tree-more-color: rgb(255 255 255 / 56%);
   --y-tree-more-color-hover: #fff;
 
-  .ant-tree {
+  .@{prefix}__tree {
     background: transparent;
     color: var(--demo-text-primary, rgb(255 255 255 / 85%));
 
-    .ant-tree-node-content-wrapper {
+    .@{prefix}__node-content {
       color: var(--demo-text-primary, rgb(255 255 255 / 85%));
     }
 
-    .ant-tree-switcher {
+    .@{prefix}__switcher {
       color: var(--demo-text-secondary, rgb(255 255 255 / 65%));
     }
   }

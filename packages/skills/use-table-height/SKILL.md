@@ -27,7 +27,7 @@ description: 指导 YTable、YEditTable、左树右表、分页列表、工具�
 ## 硬约束（禁止/必须）
 
 - 使用真实签名 `useTableHeight(tableAreaRef, options)` 和真实返回值 `tableHeight/isReady/recalculateHeight`。
-- `tableAreaRef` 支持原生 DOM 或 Vue 组件实例（如 `YCard`）。绑定 DOM 时使用表格的直接父容器；绑定 Card 时 Hook 会尝试获取 `.ant-card-body`。
+- `tableAreaRef` 支持原生 DOM 或 Vue 组件实例（如 `YCard`）。绑定 DOM 时使用表格的直接父容器；绑定 Card 时 Hook 会自动定位内部的 `.y-card__body`（或当前前缀的 `card-body`）。
 - 稳定布局使用“外层可计算高度 + flex column，表格区 `flex: 1; min-height: 0; overflow: hidden`”。禁止用大常量高度替代 Hook。
 - YTable 开启 `pageable` 时设置 `withPagination: true`；开启 `toolbarConfig.custom` 或工具栏插槽时设置 `withToolbar: true`；YEditTable 显示 `addable` 按钮时设置 `withAddButton: true`。
 - 默认偏移常量分别是分页 48px、工具栏 48px、添加按钮 40px；只在实际样式不同时使用 `paginationHeight/toolbarHeight/addButtonHeight` 覆盖。

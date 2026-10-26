@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, type VNode } from 'vue';
 import { Calendar as ACalendar, Spin as ASpin } from 'ant-design-vue';
 import zhCN from 'ant-design-vue/es/calendar/locale/zh_CN';
 import zhTW from 'ant-design-vue/es/calendar/locale/zh_TW';
@@ -55,11 +55,48 @@ const isFocusable = (date: Dayjs): boolean => {
   const context = props.getCellContext(date);
   return context.isSelected || (!props.selectedValue && date.isSame(props.displayMonth.startOf('month'), 'day'));
 };
+
+const PANEL_SUFFIX_MAP: ReadonlyArray<readonly [string, string]> = [
+  ['-spin-container', 'y-month-calendar__spin-container'],
+  ['-picker-calendar', 'y-month-calendar__calendar'],
+  ['-picker-panel-container', 'y-month-calendar__panel-container'],
+  ['-picker-panel', 'y-month-calendar__panel'],
+  ['-picker-date-panel', 'y-month-calendar__date-panel'],
+  ['-picker-body', 'y-month-calendar__picker-body'],
+  ['-picker-content', 'y-month-calendar__picker-content'],
+  ['-picker-cell', 'y-month-calendar__picker-cell'],
+  ['-picker-cell-inner', 'y-month-calendar__picker-cell-inner'],
+  ['-picker-calendar-date', 'y-month-calendar__calendar-date'],
+  ['-picker-calendar-date-content', 'y-month-calendar__calendar-date-content'],
+  ['-picker-calendar-date-value', 'y-month-calendar__calendar-date-value'],
+];
+
+/**
+ * 同步日历面板内部结构类名（兼容自定义 ConfigProvider prefixCls）
+ */
+const syncPanelClasses = (vnode: VNode): void => {
+  const root = vnode.el;
+  if (!(root instanceof HTMLElement)) return;
+  const spinEl = root.querySelector<HTMLElement>('.y-month-calendar__spin');
+  if (!spinEl) return;
+  const nestedClass = Array.from(spinEl.classList).find(cls => cls.endsWith('-spin-nested-loading'));
+  const prefix = nestedClass ? nestedClass.slice(0, -'-spin-nested-loading'.length) : 'ant';
+
+  for (const [suffix, semanticClass] of PANEL_SUFFIX_MAP) {
+    spinEl.querySelectorAll<HTMLElement>(`.${prefix}${suffix}`).forEach(el => {
+      el.classList.add(semanticClass);
+    });
+  }
+};
 </script>
 
 <template>
   <div class="y-month-calendar__body-scroll">
-    <div class="y-month-calendar__body">
+    <div
+      class="y-month-calendar__body"
+      @vue:mounted="syncPanelClasses"
+      @vue:updated="syncPanelClasses"
+    >
       <div class="y-month-calendar__weekdays">
         <div v-for="(label, index) in resolvedWeekdays" :key="index">
           <slot name="weekday" :index="index" :label="label">{{ label }}</slot>

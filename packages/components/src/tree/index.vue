@@ -1,5 +1,10 @@
 <template>
-  <div class="y-tree">
+  <div
+    ref="rootElRef"
+    class="y-tree"
+    @vue:mounted="syncTreeVNodeClasses"
+    @vue:updated="syncTreeVNodeClasses"
+  >
     <div v-if="hasHeader" class="y-tree__header">
       <slot name="header-left" />
       <slot name="search">
@@ -85,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useSlots, useAttrs } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, useSlots, useAttrs, type VNode } from 'vue';
 import type { PropType } from 'vue';
 import {
   Tree as ATree,
@@ -131,6 +136,140 @@ const filteredAttrs = computed(() => {
 });
 
 const treeRef = ref<InstanceType<typeof ATree> | null>(null);
+const rootElRef = ref<HTMLElement | null>(null);
+
+/**
+ * 同步树组件内部结构语义类名（兼容自定义 ConfigProvider prefixCls）
+ */
+const syncTreeElementClasses = (root: HTMLElement | null | undefined): void => {
+  if (!root) return;
+  const spinEl = root.querySelector<HTMLElement>('.y-tree__spin');
+  if (spinEl) {
+    const nestedClass = Array.from(spinEl.classList).find(cls => cls.endsWith('-spin-nested-loading'));
+    const spinPrefix = nestedClass ? nestedClass.slice(0, -'-spin-nested-loading'.length) : 'ant';
+    spinEl.querySelectorAll<HTMLElement>(`.${spinPrefix}-spin-container`).forEach(el => {
+      if (!el.classList.contains('y-tree__spin-container')) {
+        el.classList.add('y-tree__spin-container');
+      }
+    });
+  }
+
+  const bodyEl = root.querySelector<HTMLElement>('.y-tree__body');
+  if (!bodyEl) return;
+  const isTreePrefixWithSubNodes = (el: HTMLElement, cls: string): boolean =>
+    Boolean(el.querySelector(`.${cls}-list, .${cls}-treenode, .${cls}-node-content-wrapper`));
+
+  const treeDivs = Array.from(bodyEl.querySelectorAll<HTMLElement>('div')).filter(el =>
+    Array.from(el.classList).some(
+      cls => cls !== 'y-tree' && cls !== 'y-tree__tree' && cls.endsWith('-tree')
+    )
+  );
+  const treeRoot =
+    treeDivs.find(el =>
+      Array.from(el.classList).some(
+        cls =>
+          cls !== 'y-tree' &&
+          cls !== 'y-tree__tree' &&
+          cls.endsWith('-tree') &&
+          isTreePrefixWithSubNodes(el, cls)
+      )
+    ) ?? treeDivs[0];
+  if (!treeRoot) return;
+  const treeCandidates = Array.from(treeRoot.classList).filter(
+    cls => cls !== 'y-tree' && cls !== 'y-tree__tree' && cls.endsWith('-tree')
+  );
+  const treePrefix =
+    treeCandidates.find(cls => isTreePrefixWithSubNodes(treeRoot, cls)) ?? treeCandidates[0];
+  if (!treePrefix) return;
+
+  if (!treeRoot.classList.contains('y-tree__tree')) {
+    treeRoot.classList.add('y-tree__tree');
+  }
+  treeRoot.querySelectorAll<HTMLElement>(`.${treePrefix}-title`).forEach(el => {
+    if (!el.classList.contains('y-tree__node-title')) {
+      el.classList.add('y-tree__node-title');
+    }
+  });
+  treeRoot.querySelectorAll<HTMLElement>(`.${treePrefix}-switcher`).forEach(el => {
+    if (!el.classList.contains('y-tree__switcher')) {
+      el.classList.add('y-tree__switcher');
+    }
+  });
+  treeRoot.querySelectorAll<HTMLElement>(`.${treePrefix}-node-content-wrapper`).forEach(el => {
+    if (!el.classList.contains('y-tree__node-content')) {
+      el.classList.add('y-tree__node-content');
+    }
+    const isSelected = el.classList.contains(`${treePrefix}-node-selected`);
+    if (isSelected && !el.classList.contains('y-tree__node-selected')) {
+      el.classList.add('y-tree__node-selected');
+    } else if (!isSelected && el.classList.contains('y-tree__node-selected')) {
+      el.classList.remove('y-tree__node-selected');
+    }
+  });
+};
+
+const syncTreeVNodeClasses = (vnode: VNode): void => {
+  if (vnode.el instanceof HTMLElement) {
+    syncTreeElementClasses(vnode.el);
+  }
+};
+
+let treeObserver: MutationObserver | null = null;
+let treeSyncRafId: number | null = null;
+
+const scheduleTreeClassSync = (): void => {
+  if (treeSyncRafId !== null) return;
+  if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+    treeSyncRafId = window.requestAnimationFrame(() => {
+      treeSyncRafId = null;
+      syncTreeElementClasses(rootElRef.value);
+    });
+  } else {
+    syncTreeElementClasses(rootElRef.value);
+  }
+};
+
+onMounted(() => {
+  if (rootElRef.value && typeof MutationObserver !== 'undefined') {
+    syncTreeElementClasses(rootElRef.value);
+    treeObserver = new MutationObserver(mutations => {
+      const hasRelevantMutation = mutations.some(m => {
+        if (m.type === 'childList') {
+          return m.addedNodes.length > 0;
+        }
+        if (m.type === 'attributes' && m.target instanceof HTMLElement) {
+          const classes = Array.from(m.target.classList);
+          const isContentWrapper = classes.some(c => c.endsWith('-node-content-wrapper'));
+          if (!isContentWrapper) return false;
+          const isAntSelected = classes.some(
+            c => c !== 'y-tree__node-selected' && c.endsWith('-node-selected')
+          );
+          const isYSelected = m.target.classList.contains('y-tree__node-selected');
+          return !m.target.classList.contains('y-tree__node-content') || isAntSelected !== isYSelected;
+        }
+        return false;
+      });
+      if (hasRelevantMutation) {
+        scheduleTreeClassSync();
+      }
+    });
+    treeObserver.observe(rootElRef.value, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+  }
+});
+
+onBeforeUnmount(() => {
+  if (treeSyncRafId !== null && typeof window !== 'undefined') {
+    window.cancelAnimationFrame(treeSyncRafId);
+    treeSyncRafId = null;
+  }
+  treeObserver?.disconnect();
+  treeObserver = null;
+});
 
 const props = defineProps({
   treeData: {

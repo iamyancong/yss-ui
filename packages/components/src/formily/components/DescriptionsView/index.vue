@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Collapse as ACollapse, Descriptions as ADescriptions, Tooltip as ATooltip } from 'ant-design-vue';
-import { computed, inject, nextTick, onMounted, ref, type CSSProperties } from 'vue';
+import { computed, inject, nextTick, onMounted, ref, type CSSProperties, type VNode } from 'vue';
 import {
   DETAIL_RENDER_END_MARK,
   DETAIL_RENDER_EVENT,
@@ -152,10 +152,35 @@ const emitDetailPerf = async () => {
 onMounted(() => {
   void emitDetailPerf();
 });
+
+/**
+ * 同步 Descriptions 内部结构类名（兼容自定义 ConfigProvider prefixCls）
+ */
+const syncDescriptionsClasses = (vnode: VNode) => {
+  const root = vnode.el;
+  if (!(root instanceof HTMLElement)) return;
+  root.querySelectorAll<HTMLElement>('.yss-descriptions').forEach(descEl => {
+    const descPrefix = Array.from(descEl.classList).find(
+      cls => cls !== 'yss-descriptions' && cls.endsWith('-descriptions')
+    );
+    if (!descPrefix) return;
+    descEl.querySelectorAll<HTMLElement>(`.${descPrefix}-view`).forEach(viewEl => {
+      viewEl.classList.add('yss-descriptions__view');
+    });
+    descEl.querySelectorAll<HTMLElement>(`.${descPrefix}-item-content`).forEach(contentEl => {
+      contentEl.classList.add('yss-descriptions__item-content');
+    });
+  });
+};
 </script>
 
 <template>
-  <div ref="rootRef" style="width: 100%">
+  <div
+    ref="rootRef"
+    style="width: 100%"
+    @vue:mounted="syncDescriptionsClasses"
+    @vue:updated="syncDescriptionsClasses"
+  >
     <!-- 线性分组段 -->
     <template v-for="sec in renderSections" :key="sec.key">
       <template v-if="sec.kind === 'groups'">

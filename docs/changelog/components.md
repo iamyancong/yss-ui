@@ -10,6 +10,16 @@ toc: content
 
 YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
+## v1.9.2
+
+`2026-10-26`
+
+### 🐛 Bug Fixes
+
+- **自定义 prefixCls 样式兼容**：清理 `YCard`、`YConditionBuilder`、`YCron`、`YEditTable`、`YFileImport`、`YFormily`（`CompatibleFormItem`、`GroupHeader`、`DescriptionsView`）、`YMonthCalendar`、`YTable`、`YTree` 共 15 个组件样式与模板文件中写死的 `.ant-*` 选择器，改为通过组件内部节点挂载自有语义类名（`.y-*` / `.yss-*`）或动态解析 `ConfigProvider` 的 `prefixCls`（同时兼容 `ConfigProvider.config({ prefixCls })` 全局前缀配置），修复业务侧自定义 `prefixCls` 时组件布局与交互样式失效的问题，并新增 CI 门禁 `pnpm check:ant-prefix` 防止回归 (#59)。
+
+---
+
 ## v1.9.1
 
 `2026-10-22`

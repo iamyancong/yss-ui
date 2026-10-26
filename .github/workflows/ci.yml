@@ -59,6 +59,7 @@ jobs:
         run: |
           pnpm lint:ci
           pnpm lint:style:check
+          pnpm check:ant-prefix
 
   type-check:
     name: TypeScript Type Check

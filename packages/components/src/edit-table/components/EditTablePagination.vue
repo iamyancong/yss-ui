@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Pagination } from 'ant-design-vue';
+import { syncPaginationClasses } from '../../table/utils/syncPaginationClasses';
 
 defineOptions({ name: 'EditTablePagination' });
 
@@ -23,7 +24,11 @@ defineEmits<{
 </script>
 
 <template>
-  <div class="y-edit-table-pagination">
+  <div
+    class="y-edit-table-pagination"
+    @vue:mounted="syncPaginationClasses"
+    @vue:updated="syncPaginationClasses"
+  >
     <Pagination
       :current="pagination.current"
       :page-size="pagination.pageSize"

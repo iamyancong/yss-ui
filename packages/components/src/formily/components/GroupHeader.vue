@@ -1,13 +1,6 @@
-<template>
-  <div class="yss-form-group-header" :data-fullspan="fullSpan ? 'true' : null">
-    <div v-if="description" class="yss-form-group-header__desc">
-      <slot name="description">{{ description }}</slot>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { toRefs } from 'vue';
+import { toRefs, type VNode } from 'vue';
+import { syncFormItemElementClasses } from './CompatibleFormItem';
 
 /** GroupHeader 组件 Props */
 export interface GroupHeaderProps {
@@ -20,11 +13,34 @@ export interface GroupHeaderProps {
 // 默认让分组标题跨整行；如需参与栅格布局，可显式传 fullSpan=false
 const props = withDefaults(defineProps<GroupHeaderProps>(), { description: '', title: '', fullSpan: true });
 const { description, fullSpan } = toRefs(props);
+
+/**
+ * 同步外层 FormItem 语义类名（兼容自定义 ConfigProvider prefixCls 或原生 FormItem 包裹场景）
+ */
+const syncParentFormItem = (vnode: VNode) => {
+  const el = vnode.el;
+  if (!(el instanceof HTMLElement)) return;
+  const parentItem = el.closest('.yss-formily-item, [class*="-form-item"]');
+  syncFormItemElementClasses(parentItem);
+};
 </script>
 
 <script lang="ts">
 export default { name: 'GroupHeader' };
 </script>
+
+<template>
+  <div
+    class="yss-form-group-header"
+    :data-fullspan="fullSpan ? 'true' : null"
+    @vue:mounted="syncParentFormItem"
+    @vue:updated="syncParentFormItem"
+  >
+    <div v-if="description" class="yss-form-group-header__desc">
+      <slot name="description">{{ description }}</slot>
+    </div>
+  </div>
+</template>
 
 <style scoped lang="less">
 .yss-form-group-header {
@@ -45,21 +61,18 @@ export default { name: 'GroupHeader' };
 
 <style lang="less">
 /* 让包含 GroupHeader 的表单项呈现分组样式（类似卡片标题） */
-.ant-formily-form-item:has(.yss-form-group-header) .ant-formily-form-item-label,
-.ant-form-item:has(.yss-form-group-header) .ant-form-item-label {
+.yss-formily-item:has(.yss-form-group-header) .yss-formily-item__label {
   flex: 0 0 auto !important;
   width: auto !important;
   max-width: none !important;
 }
 
-.ant-formily-form-item:has(.yss-form-group-header) .ant-formily-form-item-control,
-.ant-form-item:has(.yss-form-group-header) .ant-form-item-control {
+.yss-formily-item:has(.yss-form-group-header) .yss-formily-item__control {
   flex: 1 1 auto !important;
   padding-top: 0;
 }
 
-.ant-formily-form-item:has(.yss-form-group-header) .ant-formily-form-item-label label,
-.ant-form-item:has(.yss-form-group-header) .ant-form-item-label > label {
+.yss-formily-item:has(.yss-form-group-header) .yss-formily-item__label label {
   position: relative;
   padding-left: 10px;
   font-weight: 600;
@@ -69,9 +82,8 @@ export default { name: 'GroupHeader' };
   white-space: nowrap;
 }
 
-.ant-formily-form-item:has(.yss-form-group-header) .ant-formily-form-item-label label::before,
-.ant-form-item:has(.yss-form-group-header) .ant-form-item-label > label::before {
-  content: '';
+.yss-formily-item:has(.yss-form-group-header) .yss-formily-item__label label::before {
+  content: "";
   position: absolute;
   left: 0;
   top: 50%;
@@ -83,13 +95,12 @@ export default { name: 'GroupHeader' };
 }
 
 /* 当显示开启 fullSpan 时强制让该项跨整行（不依赖栅格实现细节） */
-.ant-formily-form-item:has(.yss-form-group-header[data-fullspan='true']),
-.ant-form-item:has(.yss-form-group-header[data-fullspan='true']) {
+.yss-formily-item:has(.yss-form-group-header[data-fullspan="true"]) {
   /* 覆盖 FormGrid 可能设置的列跨度 */
   grid-column: 1 / -1 !important;
 }
 
-.ant-formily-form-item {
+.yss-formily-item {
   margin-bottom: 16px;
 }
 </style>

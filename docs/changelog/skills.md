@@ -10,6 +10,16 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.10.2
+
+`2026-10-26`
+
+### 🐛 Bug Fixes
+
+- **自定义 prefixCls 选择器推荐更新**：`yss-formily` 与 `formily-foundation` 查询表单样式示例中的 `:deep(.ant-formily-form-item)` 更新为组件自有语义类名 `:deep(.yss-formily-item)`，避免业务配置自定义 `ConfigProvider` `prefixCls` 后样式失效；`use-table-height` 同步说明绑定 Card 时自动定位 `.y-card__body`（或当前前缀的 `card-body`）(#59)。
+
+---
+
 ## v1.10.1
 
 `2026-10-22`

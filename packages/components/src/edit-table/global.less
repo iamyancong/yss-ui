@@ -50,33 +50,37 @@
 
 /* 通过全局非 scoped 设置 tooltip 的颜色搭配，与原始 JS 的硬覆盖保持一致并在暗色下重置 */
 .y-edit-table-error-tooltip {
-  .ant-tooltip-inner {
+  --antd-arrow-background-color: var(--bg-color-container, #fff);
+
+  [role="tooltip"] {
     background-color: var(--bg-color-container, #fff);
     color: var(--yss-color-error-6, var(--ant-error-color, #ff4d4f));
   }
 
-  .ant-tooltip-arrow-content {
+  > div > div:not([role="tooltip"]) span {
     background-color: var(--bg-color-container, #fff);
   }
 
-  .ant-tooltip-arrow::before,
-  .ant-tooltip-arrow::after {
+  > div > div:not([role="tooltip"])::before,
+  > div > div:not([role="tooltip"])::after {
     background: var(--bg-color-container, #fff);
   }
 }
 
 :root[data-prefers-color="dark"] .y-edit-table-error-tooltip {
-  .ant-tooltip-inner {
+  --antd-arrow-background-color: var(--ant-tooltip-bg, rgb(0 0 0 / 85%));
+
+  [role="tooltip"] {
     background-color: var(--ant-tooltip-bg, rgb(0 0 0 / 85%));
     color: var(--yss-color-error-6, var(--ant-error-color, #ff4d4f));
   }
 
-  .ant-tooltip-arrow-content {
+  > div > div:not([role="tooltip"]) span {
     background-color: var(--ant-tooltip-bg, rgb(0 0 0 / 85%));
   }
 
-  .ant-tooltip-arrow::before,
-  .ant-tooltip-arrow::after {
+  > div > div:not([role="tooltip"])::before,
+  > div > div:not([role="tooltip"])::after {
     background: var(--ant-tooltip-bg, rgb(0 0 0 / 85%));
   }
 }
@@ -92,10 +96,7 @@
 
 /* 单元格编辑器错误状态红框 */
 .y-edit-table-editor.is-error {
-  .ant-input,
-  .ant-select-selector,
-  .ant-picker,
-  .ant-input-number {
+  .y-edit-table-editor__box {
     border-color: var(--yss-color-error-6, var(--ant-error-color, #ff4d4f)) !important;
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--yss-color-error-6, var(--ant-error-color, #ff4d4f)) 20%, transparent) !important;
   }

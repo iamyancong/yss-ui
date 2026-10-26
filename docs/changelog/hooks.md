@@ -12,6 +12,15 @@ YSS UI Hooks 库（`@yss-ui/hooks`）的版本更新记录。
 
 ---
 
+## v1.2.1
+`2026-10-26`
+
+### 🐞 Bug Fixes
+
+- **useTableHeight**: 修复在自定义 `ConfigProvider` `prefixCls`（如 `prefixCls="custom"`）下硬编码查询 `.ant-card`、`.ant-card-body`、`.ant-card-head` 导致无法识别外层 Card 容器及扣除 Header 高度的问题；改为仅识别从组件 `provides` 上下文解析出的 `cardPrefixCls` 与 `.y-card`（兼容 `.y-card__body` / `.y-card__head`），避免误判业务自定义的 `.xxx-card` 容器 (#59)。
+
+---
+
 ## v1.2.0
 `2026-10-12`
 

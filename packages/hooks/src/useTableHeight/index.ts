@@ -1,18 +1,90 @@
-import { ref, computed, onScopeDispose, type Ref, watch, type ComponentPublicInstance } from 'vue';
+import {
+  ref,
+  computed,
+  onScopeDispose,
+  type Ref,
+  watch,
+  type ComponentPublicInstance,
+} from 'vue';
 import { useResizeObserver } from '@vueuse/core';
+import { resolveConfigProviderPrefixCls } from './resolveConfigProviderPrefixCls';
 import type { UseTableHeightOptions, UseTableHeightReturn } from './types';
 
 /** ref 可能是 DOM 元素或 Vue 组件实例 */
 type ElementOrComponent = HTMLElement | ComponentPublicInstance | undefined;
 
+/** 默认 Card 类名前缀 */
+const DEFAULT_CARD_PREFIX_CLS = 'ant-card';
+
+/**
+ * 从当前 Vue 组件实例上下文中获取 Ant Design Vue ConfigProvider 的 Card 类名前缀
+ * @description 通过遍历组件 provides 原型链查找 Symbol('configProvider')，无需运行时依赖 ant-design-vue
+ */
+const resolveCardPrefixClsFromInstance = (): string =>
+  resolveConfigProviderPrefixCls('card') ?? DEFAULT_CARD_PREFIX_CLS;
+
+/**
+ * 判断元素是否为 Card 根容器并解析其实际 Card 类名前缀
+ * @description 仅识别当前上下文解析出的 cardPrefixCls 与组件库 YCard (.y-card)，
+ * 避免将业务自定义的 .xxx-card（如 .order-card）误判为 Card 容器。
+ */
+const resolveElementCardPrefix = (el: HTMLElement, cardPrefixCls: string): string | null => {
+  if (el.classList.contains(cardPrefixCls)) return cardPrefixCls;
+  if (el.classList.contains('y-card')) {
+    const candidates = [...el.classList].filter(c => c !== 'y-card' && c.endsWith('-card'));
+    const directChildren = [...el.children];
+    const matchedWithChild = candidates.find(c =>
+      directChildren.some(
+        child => child.classList.contains(`${c}-body`) || child.classList.contains(`${c}-head`)
+      )
+    );
+    return matchedWithChild ?? candidates[0] ?? cardPrefixCls;
+  }
+  return null;
+};
+
+/**
+ * 获取 Card 元素的 Body 节点
+ */
+const findCardBodyElement = (cardElement: HTMLElement, prefixCls: string): HTMLElement | null => {
+  const directMatch = Array.from(cardElement.children).find(
+    (child): child is HTMLElement =>
+      child instanceof HTMLElement &&
+      (child.classList.contains('y-card__body') || child.classList.contains(`${prefixCls}-body`))
+  );
+  if (directMatch) return directMatch;
+  return cardElement.querySelector<HTMLElement>(`.y-card__body, .${prefixCls}-body`);
+};
+
+/**
+ * 向上查找最近的父级 Card 容器及其类名前缀
+ */
+const findParentCard = (
+  el: HTMLElement,
+  cardPrefixCls: string
+): { cardElement: HTMLElement; prefixCls: string } | null => {
+  let cur: HTMLElement | null = el;
+  while (cur) {
+    const matchedPrefix = resolveElementCardPrefix(cur, cardPrefixCls);
+    if (matchedPrefix) {
+      return { cardElement: cur, prefixCls: matchedPrefix };
+    }
+    cur = cur.parentElement;
+  }
+  return null;
+};
+
 /**
  * 从 ref 中获取真实的 DOM 元素
  * @description 兼容原生 DOM 元素和 Vue 组件实例
- * - 如果是 YCard/AntCard 组件，会自动获取 .ant-card-body 元素（避免 padding 影响）
+ * - 如果是 YCard/AntCard 组件，会自动获取 Card Body 元素（.y-card__body / .{prefix}-card-body，避免 padding 影响）
  * - 如果是其他 Vue 组件实例，通过 $el 获取根 DOM
  * - 如果是原生 DOM 元素，直接返回
  */
-const getElement = (target: ElementOrComponent): HTMLElement | null => {
+const getElement = (
+  target: ElementOrComponent,
+  cardPrefixCls = DEFAULT_CARD_PREFIX_CLS
+): HTMLElement | null => {
   if (!target) return null;
 
   let element: HTMLElement | null = null;
@@ -42,10 +114,11 @@ const getElement = (target: ElementOrComponent): HTMLElement | null => {
     return null;
   }
 
-  // 智能检测：如果是 Ant Design Card 组件，获取 .ant-card-body 元素
-  // 因为 .ant-card-body 有 padding，直接使用外层会导致高度计算偏差
-  if (element.classList.contains('ant-card') || element.classList.contains('y-card')) {
-    const cardBody = element.querySelector<HTMLElement>('.ant-card-body');
+  // 智能检测：如果是 Ant Design Card / YCard 组件，获取 Card Body 元素
+  // 因为 Card Body 有 padding，直接使用外层会导致高度计算偏差
+  const matchedPrefix = resolveElementCardPrefix(element, cardPrefixCls);
+  if (matchedPrefix) {
+    const cardBody = findCardBodyElement(element, matchedPrefix);
     if (cardBody) {
       return cardBody;
     }
@@ -55,13 +128,23 @@ const getElement = (target: ElementOrComponent): HTMLElement | null => {
 };
 
 /**
- * 获取 Ant Card Header 高度
+ * 获取 Card Header 高度
  * @description 当表格容器在 YCard/AntCard 内时，需要减去 Card Header 高度以避免遮挡
- * @param cardElement - .ant-card 或 .y-card 元素
+ * @param cardElement - Card 根元素（.{prefix}-card 或 .y-card）
+ * @param prefixCls - 当前 Card 的类名前缀（如 ant-card 或 custom-card）
  * @returns header height in pixels, or 0 if no header
  */
-const getCardHeaderHeight = (cardElement: HTMLElement): number => {
-  const header = cardElement.querySelector<HTMLElement>('.ant-card-head');
+const getCardHeaderHeight = (
+  cardElement: HTMLElement,
+  prefixCls = DEFAULT_CARD_PREFIX_CLS
+): number => {
+  const directHeader = Array.from(cardElement.children).find(
+    (child): child is HTMLElement =>
+      child instanceof HTMLElement &&
+      (child.classList.contains('y-card__head') || child.classList.contains(`${prefixCls}-head`))
+  );
+  const header =
+    directHeader ?? cardElement.querySelector<HTMLElement>(`.y-card__head, .${prefixCls}-head`);
   if (!header) return 0;
 
   const rect = header.getBoundingClientRect();
@@ -97,7 +180,7 @@ export const YEDITTABLE_ADD_BTN_HEIGHT = 40;
  *
  * **✨ 智能检测特性**：
  * - 如果 tableAreaRef 在 YCard/AntCard 内，会自动减去 Card Header 高度
- * - 如果 ref 绑定的是 YCard 组件实例，会自动定位到 .ant-card-body
+ * - 如果 ref 绑定的是 YCard 组件实例，会自动定位到 Card Body（.y-card__body / .{prefix}-card-body）
  * - 确保表格不会被 Card 的 title/extra 插槽遮挡
  *
  * @param tableAreaRef - 表格父容器的 ref (建议设置 flex: 1; overflow: hidden;)
@@ -140,6 +223,9 @@ export const useTableHeight = (
     addButtonHeight,
   } = options;
 
+  /** 当前上下文解析出的 Card 类名前缀（支持 ConfigProvider prefixCls） */
+  const cardPrefixCls = resolveCardPrefixClsFromInstance();
+
   /** 响应式表格高度 */
   const tableHeight = ref(defaultHeight);
 
@@ -170,7 +256,7 @@ export const useTableHeight = (
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const calculateHeight = (entries?: any) => {
-    const element = getElement(options.boundaryRef?.value || tableAreaRef.value);
+    const element = getElement(options.boundaryRef?.value || tableAreaRef.value, cardPrefixCls);
     if (!element) return;
 
     let height = 0;
@@ -192,9 +278,9 @@ export const useTableHeight = (
     // 🆕 检测父级 Card 的 Header 高度
     // 如果表格容器在 YCard/AntCard 内部，需要额外减去 Card Header 占用的空间
     let cardHeaderOffset = 0;
-    const parentCard = element.closest('.ant-card, .y-card');
-    if (parentCard instanceof HTMLElement) {
-      cardHeaderOffset = getCardHeaderHeight(parentCard);
+    const parentCard = findParentCard(element, cardPrefixCls);
+    if (parentCard) {
+      cardHeaderOffset = getCardHeaderHeight(parentCard.cardElement, parentCard.prefixCls);
     }
 
     const presetOffset = getPresetOffset();
@@ -215,7 +301,9 @@ export const useTableHeight = (
   // const elementRef = computed(() => getElement(tableAreaRef.value));
 
   // 监听容器尺寸变化
-  const observerRef = computed(() => getElement(options.boundaryRef?.value || tableAreaRef.value));
+  const observerRef = computed(() =>
+    getElement(options.boundaryRef?.value || tableAreaRef.value, cardPrefixCls)
+  );
 
   useResizeObserver(observerRef, entries => {
     const observedHeight = entries[0]?.contentRect.height ?? 0;

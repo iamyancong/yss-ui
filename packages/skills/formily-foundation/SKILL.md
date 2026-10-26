@@ -146,7 +146,7 @@ const schema = computed(() => createSchema(t));
     width: 100%;
     min-width: 0;
 
-    :deep(.ant-formily-form-item) {
+    :deep(.yss-formily-item) {
       margin-bottom: 0;
     }
 

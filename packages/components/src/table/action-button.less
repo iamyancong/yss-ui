@@ -3,15 +3,15 @@
   padding: 0 2px;
   color: var(--primary-color, #3371ff);
 
-  &:hover:not(:disabled, .ant-btn-disabled),
-  &:focus:not(:disabled, .ant-btn-disabled) {
+  &:hover:not(:disabled, .y-table-action-link--disabled),
+  &:focus:not(:disabled, .y-table-action-link--disabled) {
     color: var(--primary-color, #3371ff);
     opacity: 0.85;
   }
 
   /* 禁用态需覆盖主色，否则 disabled 只拦点击、视觉仍是可点主色 */
   &:disabled,
-  &.ant-btn-disabled {
+  &.y-table-action-link--disabled {
     color: var(--ant-disabled-color, rgb(0 0 0 / 25%));
     cursor: not-allowed;
     opacity: 1;

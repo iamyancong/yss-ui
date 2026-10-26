@@ -87,6 +87,7 @@ defineExpose({ open, close, reset });
         <slot name="uploader" :file-list="fileList" :accept="finalAccept" :multiple="multiple">
           <UploadDragger
             v-bind="draggerProps"
+            class="y-file-import__dragger"
             :file-list="fileList"
             :accept="finalAccept"
             :multiple="multiple"

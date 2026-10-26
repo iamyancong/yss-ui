@@ -281,7 +281,13 @@ const handleCancel = () => {
     @cancel="handleCancel"
   >
     <template #default>
-      <Button :type="antdType" size="small" :disabled="isDisabled" :title="actionText" class="y-table-action-link">
+      <Button
+        :type="antdType"
+        size="small"
+        :disabled="isDisabled"
+        :title="actionText"
+        :class="['y-table-action-link', { 'y-table-action-link--disabled': isDisabled }]"
+      >
         <span class="y-table-action-link__text">{{ actionText }}</span>
       </Button>
     </template>
@@ -294,7 +300,7 @@ const handleCancel = () => {
     :disabled="isDisabled"
     :loading="needLoading && loading"
     :title="actionText"
-    class="y-table-action-link"
+    :class="['y-table-action-link', { 'y-table-action-link--disabled': isDisabled }]"
     @click="handleConfirm"
   >
     <span class="y-table-action-link__text">{{ actionText }}</span>

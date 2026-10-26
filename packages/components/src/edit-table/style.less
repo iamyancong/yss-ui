@@ -31,20 +31,20 @@
   padding: 12px 0;
 }
 
-.y-edit-table-pagination :deep(.ant-pagination-options-size-changer) {
+.y-edit-table-pagination :deep(.y-pagination__size-changer) {
   min-width: 112px;
 }
 
-.y-edit-table-pagination :deep(.ant-pagination-options-size-changer .ant-select-selector) {
+.y-edit-table-pagination :deep(.y-pagination__size-selector) {
   min-width: 112px;
 }
 
-.y-edit-table-pagination :deep(.ant-pagination-options .ant-select-dropdown) {
+.y-edit-table-pagination :deep(.y-pagination__options div[class*="-select-dropdown"]) {
   min-width: 112px !important;
   width: max-content !important;
 }
 
-.y-edit-table-pagination :deep(.ant-pagination-options .ant-select-item-option-content) {
+.y-edit-table-pagination :deep(.y-pagination__options div[class*="-select-item-option-content"]) {
   overflow: visible;
   text-overflow: clip;
 }
@@ -83,10 +83,7 @@
 }
 
 :deep(.y-edit-table-editor.is-error) {
-  .ant-input,
-  .ant-select-selector,
-  .ant-picker,
-  .ant-input-number {
+  .y-edit-table-editor__box {
     border-color: var(--yss-color-error-6, var(--ant-error-color, #ff4d4f)) !important;
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--yss-color-error-6, var(--ant-error-color, #ff4d4f)) 20%, transparent) !important;
   }
