@@ -51,18 +51,18 @@
   ],
   "/changelog/mcp": [
     {
+      "name": "github-actions[bot]",
+      "email": "github-actions[bot]@users.noreply.github.com",
+      "commits": 15,
+      "avatar": "https://github.com/github-actions[bot].png?size=64",
+      "url": "https://github.com/github-actions[bot]"
+    },
+    {
       "name": "iamyancong",
       "email": "wangyancong@ysstech.com",
       "commits": 14,
       "avatar": "https://github.com/iamyancong.png?size=64",
       "url": "https://github.com/iamyancong"
-    },
-    {
-      "name": "github-actions[bot]",
-      "email": "github-actions[bot]@users.noreply.github.com",
-      "commits": 14,
-      "avatar": "https://github.com/github-actions[bot].png?size=64",
-      "url": "https://github.com/github-actions[bot]"
     }
   ],
   "/changelog/skills": [

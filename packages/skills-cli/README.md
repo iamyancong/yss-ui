@@ -105,13 +105,17 @@ project-root/
 
 ## 团队最佳协作实践
 
-1. **Git 忽略项**：建议在业务项目的 `.gitignore` 中加入技能目录，由开发成员本地按需 sync：
+1. **Git 忽略项（自动维护）**：`yss-skills sync` 会自动检测并向项目的 `.gitignore` 与 `.prettierignore` 注入防御规则：
+   - **必须纳入版本控制（主目录）**：`.agents/skills/`（实体文件拷贝，`source` 固定为 `"@yss-ui/skills"`）、`.agents/rules/` 与 `.cursorrules`。
+   - **必须忽略（IDE 软链接派生目录）**：`.agent/`、`.cursor/`、`.claude/`、`.trae/`。这些目录为按需生成的本地兼容软链接，且其 `.yss-skills-manifest.json` 统一记录相对路径 `../../.agents/skills`，不含个人本机绝对路径。
    ```gitignore
-   .agents/skills
-   .agent/skills
-   .cursor/skills
-   .claude/skills
-   .trae/skills
-   .yss-skills-manifest.json
+   # IDE Skills 软链接派生目录（主目录为 .agents/skills，软链接目录由 @yss-ui/skills-cli 本地派生请勿提交）
+   .agent/
+   .cursor/
+   .claude/
+   .trae/
    ```
-2. **共享规则**：将生成的 `.cursorrules` 与 `.agents/rules/` 提交至 Git 仓库，确保团队所有成员共享统一的 AI 提示词与规范入口。
+2. **存量项目清理已追踪软链接**：若历史项目在配置 `.gitignore` 前已误将 `.agent/` 等软链接目录提交入库，执行一次以下命令即可从 Git 索引移除（保留本地文件）：
+   ```bash
+   git rm -r --cached .agent .cursor .claude .trae 2>/dev/null || true
+   ```

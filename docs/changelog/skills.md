@@ -10,6 +10,17 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.10.3
+
+`2026-10-27`
+
+### 🐛 Bug Fixes
+
+- **软链接清单相对路径与 `.gitignore` 自动防御**：`@yss-ui/skills-cli` 在生成 `.agent/skills` 等 IDE 兼容软链接目录的 `.yss-skills-manifest.json` 时，将 `source` 从本机绝对路径改为相对路径 `../../.agents/skills`；同步时自动通过 `ensureGitIgnore` 为存量微应用补齐 `.agent/`、`.cursor/`、`.claude/`、`.trae/` 忽略规则，消除多人执行 `pnpm sync:skills` 时的本地路径冲突。
+- **前端提交软链接目录拦截**：`frontend-commit` 明确仅允许主目录 `.agents/` 与 `.cursorrules` 入库，禁止暂存 `.agent/`、`.cursor/`、`.claude/`、`.trae/` 等本地 IDE 软链接派生目录。
+
+---
+
 ## v1.10.2
 
 `2026-10-26`

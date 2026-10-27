@@ -8,6 +8,7 @@ const test = require('node:test');
 const {
   cleanupManagedSkillTarget,
   createIdeLinks,
+  ensureGitIgnore,
   ensurePrettierIgnore,
   resolveSkillsSource,
   syncSkillEntries,
@@ -97,6 +98,9 @@ test('项目级 IDE 目录已有第三方 Skills 时不会被整目录覆盖', a
       await fs.realpath(path.join(legacyRoot, 'frontend-commit')),
       await fs.realpath(path.join(primaryRoot, 'frontend-commit'))
     );
+    const manifest = await fs.readJson(path.join(legacyRoot, '.yss-skills-manifest.json'));
+    assert.equal(manifest.source, os.platform() === 'win32' ? '@yss-ui/skills' : '../../.agents/skills');
+    assert.equal(path.isAbsolute(manifest.source), false);
   } finally {
     await fs.remove(tempRoot);
   }
@@ -226,6 +230,35 @@ test('ensurePrettierIgnore 自动为项目创建或补齐 .prettierignore 规则
     assert.equal(content.includes('dist/'), true);
     assert.equal(content.includes('.cursorrules'), true);
     assert.equal(content.includes('.cursor/'), true);
+  } finally {
+    await fs.remove(tempRoot);
+  }
+});
+
+test('ensureGitIgnore 自动补齐 IDE 软链接目录忽略规则且不污染主目录 .agents/', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'yss-skills-gitignore-'));
+  const ignorePath = path.join(tempRoot, '.gitignore');
+
+  try {
+    // 1. 存量项目只配了 .cursor/ 时，自动补齐 .agent/、.claude/、.trae/
+    await fs.writeFile(ignorePath, 'node_modules/\ndist/\n.cursor/\n', 'utf8');
+    await ensureGitIgnore(tempRoot);
+    const content = await fs.readFile(ignorePath, 'utf8');
+    assert.equal(content.includes('.agent/'), true);
+    assert.equal(content.includes('.claude/'), true);
+    assert.equal(content.includes('.trae/'), true);
+    assert.equal(/^\.agents\/\s*$/m.test(content), false);
+
+    // 2. 再次执行保持幂等
+    await ensureGitIgnore(tempRoot);
+    const contentSecond = await fs.readFile(ignorePath, 'utf8');
+    assert.equal(contentSecond, content);
+
+    // 3. 已完整配置的项目（如标准模板或组件库）不重复追加标记块
+    const coveredContent = 'node_modules/\n.agent/\n.cursor/\n.claude/\n.trae/\n';
+    await fs.writeFile(ignorePath, coveredContent, 'utf8');
+    await ensureGitIgnore(tempRoot);
+    assert.equal(await fs.readFile(ignorePath, 'utf8'), coveredContent);
   } finally {
     await fs.remove(tempRoot);
   }

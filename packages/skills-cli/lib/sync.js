@@ -166,7 +166,7 @@ async function cleanupManagedSkillTarget(targetRoot, label) {
  * @param {string} sourceRoot Skills 源目录
  * @param {string} targetRoot 目标 Skills 目录
  * @param {string[]} skills 要同步的 Skill 名称
- * @param {{ link?: boolean, label?: string, deprecatedSkills?: string[], writeManifest?: boolean }} [options] 同步选项
+ * @param {{ link?: boolean, label?: string, deprecatedSkills?: string[], writeManifest?: boolean, manifestSource?: string }} [options] 同步选项
  */
 async function syncSkillEntries(sourceRoot, targetRoot, skills, options = {}) {
   const useLinks = Boolean(options.link) && os.platform() !== 'win32';
@@ -224,10 +224,13 @@ async function syncSkillEntries(sourceRoot, targetRoot, skills, options = {}) {
   }
 
   if (options.writeManifest) {
+    const manifestSource =
+      options.manifestSource ||
+      (useLinks ? normalizeSkillRoot(path.relative(targetRoot, sourceRoot)) || '.' : '@yss-ui/skills');
     await fs.writeJson(
       manifestPath,
       {
-        source: useLinks ? path.resolve(sourceRoot) : '@yss-ui/skills',
+        source: manifestSource,
         mode: useLinks ? 'link' : 'copy',
         skills,
       },
@@ -409,6 +412,11 @@ async function syncSkills(options = {}) {
         await ensurePrettierIgnore(cwd);
       } catch (error) {
         console.warn(chalk.yellow(`⚠️ Failed to update .prettierignore: ${error.message}`));
+      }
+      try {
+        await ensureGitIgnore(cwd);
+      } catch (error) {
+        console.warn(chalk.yellow(`⚠️ Failed to update .gitignore: ${error.message}`));
       }
 
       if (options.links !== false) {
@@ -605,9 +613,59 @@ ${markerEnd}`;
   console.log(chalk.green('Added AI Skills ignore rules to .prettierignore'));
 }
 
+/**
+ * 确保项目的 .gitignore 中包含 AI IDE 软链接派生目录忽略规则，避免多人协作同步时产生本地路径或软链接冲突。
+ * 注意：仅忽略软链接派生目录（.agent/、.cursor/、.claude/、.trae/），保留主目录 .agents/skills 纳入版本控制。
+ *
+ * @param {string} projectRoot 项目根目录
+ */
+async function ensureGitIgnore(projectRoot) {
+  const ignorePath = path.join(projectRoot, '.gitignore');
+  const markerStart = '# --- YSS AI SKILLS GITIGNORE START ---';
+  const markerEnd = '# --- YSS AI SKILLS GITIGNORE END ---';
+
+  const ignoreBlock = `${markerStart}
+# IDE Skills 软链接派生目录（主目录为 .agents/skills，软链接目录由 @yss-ui/skills-cli 本地派生请勿提交）
+.agent/
+.cursor/
+.claude/
+.trae/
+${markerEnd}`;
+
+  let content = '';
+  if (await fs.pathExists(ignorePath)) {
+    content = await fs.readFile(ignorePath, 'utf8');
+  }
+
+  // 1. 若已有标记块，幂等更新标记块内容
+  const regex = new RegExp(`${markerStart}[\\s\\S]*?${markerEnd}`, 'g');
+  if (regex.test(content)) {
+    content = content.replace(regex, ignoreBlock);
+    await fs.writeFile(ignorePath, content, 'utf8');
+    console.log(chalk.blue('Updated AI Skills symlink ignore rules in .gitignore'));
+    return;
+  }
+
+  // 2. 若现有 .gitignore 已覆盖全部 4 个 IDE 软链接目录（支持 .agent/ 或 .agent/skills 等写法），则无需重复追加
+  const requiredDirs = ['agent', 'cursor', 'claude', 'trae'];
+  const isAllCovered = requiredDirs.every(dir => {
+    const pattern = new RegExp(`^\\/?\\.${dir}(?:\\/|\\/skills\\/?)?\\s*$`, 'm');
+    return pattern.test(content);
+  });
+  if (isAllCovered) {
+    return;
+  }
+
+  // 3. 追加标记块
+  content = content ? `${content.trimEnd()}\n\n${ignoreBlock}\n` : `${ignoreBlock}\n`;
+  await fs.writeFile(ignorePath, content, 'utf8');
+  console.log(chalk.green('Added AI Skills symlink ignore rules to .gitignore'));
+}
+
 module.exports = {
   cleanupManagedSkillTarget,
   createIdeLinks,
+  ensureGitIgnore,
   ensurePrettierIgnore,
   isSafeSkillName,
   listSkills,
