@@ -1,6 +1,6 @@
 {
   "name": "file-preview-modal",
-  "propsCount": 27,
+  "propsCount": 33,
   "props": {
     "open": {
       "name": "open",
@@ -122,6 +122,54 @@
       "default": "undefined",
       "isCore": true
     },
+    "zoomable": {
+      "name": "zoomable",
+      "type": "array",
+      "tsType": "boolean | FilePreviewFileType[]",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "zoom": {
+      "name": "zoom",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "zoomMin": {
+      "name": "zoomMin",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "zoomMax": {
+      "name": "zoomMax",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "zoomStep": {
+      "name": "zoomStep",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "0.1",
+      "isCore": true
+    },
+    "zoomFit": {
+      "name": "zoomFit",
+      "type": "any",
+      "tsType": "FilePreviewZoomFit",
+      "required": false,
+      "default": "\"none\"",
+      "isCore": true
+    },
     "key": {
       "name": "key",
       "type": "any",
@@ -227,6 +275,14 @@
     {
       "name": "unsupported",
       "type": "[type: string, ctx: FilePreviewContext]"
+    },
+    {
+      "name": "update:zoom",
+      "type": "[zoom: number]"
+    },
+    {
+      "name": "zoom-change",
+      "type": "[zoom: number, info: FilePreviewZoomInfo, ctx: FilePreviewContext]"
     },
     {
       "name": "update:open",

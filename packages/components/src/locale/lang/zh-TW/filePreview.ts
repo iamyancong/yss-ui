@@ -73,6 +73,11 @@ const filePreview: YssFilePreviewLocale = {
   imageRotateRight: '向右旋轉',
   imageReset: '重設',
   imageLoadFailed: '圖片無法顯示，檔案可能已損壞或瀏覽器不支援該格式',
+  zoomIn: '放大',
+  zoomOut: '縮小',
+  zoomMenu: '縮放比例 {zoom}',
+  zoomFitWidth: '符合寬度',
+  zoomReset: '重設（100%）',
 };
 
 export default filePreview;

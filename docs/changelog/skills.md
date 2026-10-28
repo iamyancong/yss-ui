@@ -10,6 +10,16 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.10.5
+
+`2026-10-28`
+
+### ✨ Features
+
+- **文件预览缩放规范**：`component-selection-imports` 与组件速查表补充 `YFilePreview` 内置缩放用法（`v-model:zoom`、`zoomable` 等），明确禁止用 CSS 缩放容器或手写缩放按钮。
+
+---
+
 ## v1.10.4
 
 `2026-10-28`

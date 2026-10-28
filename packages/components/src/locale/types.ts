@@ -284,6 +284,16 @@ export interface YssFilePreviewLocale {
   imageReset: string;
   /** 图片：浏览器无法解码 */
   imageLoadFailed: string;
+  /** 缩放：放大 */
+  zoomIn: string;
+  /** 缩放：缩小 */
+  zoomOut: string;
+  /** 缩放：比例下拉的无障碍名称，参数 zoom 为当前比例（如 100%） */
+  zoomMenu: string;
+  /** 缩放：适应宽度 */
+  zoomFitWidth: string;
+  /** 缩放：恢复 100% */
+  zoomReset: string;
 }
 
 export interface YssLocale {

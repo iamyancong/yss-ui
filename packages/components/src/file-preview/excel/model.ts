@@ -26,6 +26,23 @@ export interface RawCell {
   missing?: boolean;
   /** 被合并区域覆盖（不是左上角），不显示内容 */
   covered?: boolean;
+  /** 单元格样式（WorkbookModel.cellStyles 的序号）；只有老版 xls 读取，xlsx 的样式由 exceljs 读取 */
+  style?: number;
+}
+
+export type BorderSide = 'top' | 'right' | 'bottom' | 'left';
+
+/** 单元格样式，字段与 x-spreadsheet 的样式一致（边框为 [线型, 颜色]） */
+export interface CellStyleModel {
+  font?: { name?: string; bold?: boolean; italic?: boolean };
+  color?: string;
+  underline?: boolean;
+  strike?: boolean;
+  bgcolor?: string;
+  align?: string;
+  valign?: string;
+  textwrap?: boolean;
+  border?: Partial<Record<BorderSide, [string, string]>>;
 }
 
 export interface SheetModel {
@@ -84,6 +101,8 @@ export interface WorkbookModel {
   theme?: ThemeInfo;
   /** 读取图片等二进制部件 */
   assets?: WorkbookAssets;
+  /** 单元格样式表（RawCell.style 指向这里）；老版 xls 转换时 SheetJS 丢掉了全部样式，从 BIFF 的 XF 记录读取 */
+  cellStyles?: CellStyleModel[];
 }
 
 export const createSheetModel = (name: string, state: SheetModel['state'] = 'visible'): SheetModel => ({

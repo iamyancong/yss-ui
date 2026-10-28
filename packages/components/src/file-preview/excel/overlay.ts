@@ -20,7 +20,7 @@ import {
   type SheetLink,
   type SparklineGroup,
 } from './drawing';
-import { SheetGeometry, type Rect } from './geometry';
+import { HIDDEN_SIZE, SheetGeometry, type Rect } from './geometry';
 import { ImageLoader, type ImageIssue } from './media';
 import type { SheetModel, WorkbookModel } from './model';
 import { applyChartFrame, CLS, groupChartItems, place, placeholderCard, renderItem, type ShapeContext } from './shapes';
@@ -44,6 +44,8 @@ export interface OverlayOptions {
   /** 打开工作簿内位置（Sheet1!A1） */
   navigate?: (sheet: string, row: number, col: number) => void;
   fontFamily?: string;
+  /** 初始缩放比例（行高、列宽已按比例写入数据） */
+  scale?: number;
 }
 
 interface LiveObject {
@@ -108,8 +110,10 @@ export class ExcelOverlay {
   private disposed = false;
   private readonly cleanups: Array<() => void> = [];
   private liveCharts = 0;
+  private scale = 1;
 
   constructor(private readonly options: OverlayOptions) {
+    if (options.scale && options.scale > 0) this.scale = options.scale;
     this.loader = new ImageLoader(options.model.assets ?? { bytes: async () => null, size: () => undefined }, {
       maxImagePixels: options.maxImagePixels,
     });
@@ -221,15 +225,61 @@ export class ExcelOverlay {
       rowHeight: r => {
         const v = rows[r];
         if (!v || typeof v !== 'object') return undefined;
-        return v.hide ? 0 : v.height;
+        return v.hide ? HIDDEN_SIZE : v.height;
       },
       colWidth: c => {
         const v = cols[c];
         if (!v || typeof v !== 'object') return undefined;
-        return v.hide ? 0 : v.width;
+        return v.hide ? HIDDEN_SIZE : v.width;
       },
       freeze: freeze ? { rows: freeze.rows, cols: freeze.cols } : undefined,
+      scale: this.scale,
     });
+  }
+
+  /** 表格缩放后（数据里的行高、列宽已改写）按新比例重算锚点、移动对象 */
+  setScale(scale: number) {
+    if (!(scale > 0)) return;
+    this.scale = scale;
+    this.relayout();
+  }
+
+  /**
+   * 行高、列宽变了（缩放、捏合中每帧、左上角裁剪变化）：重算锚点并移动已挂载的对象。
+   * 对象按 100% 的尺寸绘制后整体缩放（transform），不重建、不重画图表，每帧调用也很轻
+   */
+  relayout() {
+    if (this.disposed || this.sheetIndex < 0) return;
+    const geo = this.geometryFor(this.sheetIndex);
+    if (!geo) return;
+    this.geometry = geo;
+    const s = this.scale;
+    for (const o of this.objects) {
+      const rect = geo.anchorRect(o.obj.anchor);
+      if (!(rect.w >= 1 && rect.h >= 1) || !Number.isFinite(rect.x + rect.y)) continue;
+      o.rect = rect;
+      if (!o.el) continue;
+      const wrap = this.zoomWrap(o);
+      wrap.style.left = `${rect.x}px`;
+      wrap.style.top = `${rect.y}px`;
+      wrap.style.transform = Math.abs(s - 1) > 1e-6 ? `scale(${s})` : '';
+    }
+    this.update();
+  }
+
+  /** 按 100% 挂载的对象外面补一层缩放容器（对象自身可能有旋转等 transform，不能直接改） */
+  private zoomWrap(o: LiveObject): HTMLElement {
+    const el = o.el!;
+    if (el.classList.contains(`${CLS}__zoom`)) return el;
+    const wrap = document.createElement('div');
+    wrap.className = `${CLS}__zoom`;
+    place(wrap, { x: 0, y: 0, w: parseFloat(el.style.width) || 0, h: parseFloat(el.style.height) || 0 });
+    el.parentElement?.replaceChild(wrap, el);
+    el.style.left = '0px';
+    el.style.top = '0px';
+    wrap.appendChild(el);
+    o.el = wrap;
+    return wrap;
   }
 
   /** 隐藏行/列被展开后，按新的行列尺寸重算锚点 */
@@ -406,14 +456,32 @@ export class ExcelOverlay {
   private mount(o: LiveObject) {
     const { item } = o.obj;
     let el: HTMLElement;
+    // 缩放时对象按 100% 的尺寸绘制，再整体按比例变换（文字、线宽、图片与表格同比例）；
+    // 位置仍用缩放后的锚点，与画布逐像素对齐
+    const s = this.scale;
+    const zoomed = Math.abs(s - 1) > 1e-6;
+    const rect = zoomed ? { x: 0, y: 0, w: o.rect.w / s, h: o.rect.h / s } : o.rect;
     if (item.type === 'chart' || item.type === 'chartex') {
       el = document.createElement('div');
       el.className = `${CLS}__object ${CLS}__object--chart`;
-      place(el, o.rect);
+      place(el, rect);
       if (item.type === 'chart') applyChartFrame(el, item.chart?.style, item.chart?.roundedCorners);
-      this.mountChart(o, el, item);
     } else {
-      el = renderItem(item, o.rect, this.shapeContext);
+      el = renderItem(item, rect, this.shapeContext);
+    }
+    if (zoomed) {
+      const wrap = document.createElement('div');
+      wrap.className = `${CLS}__zoom`;
+      place(wrap, { x: o.rect.x, y: o.rect.y, w: rect.w, h: rect.h });
+      wrap.style.transform = `scale(${s})`;
+      wrap.appendChild(el);
+      el = wrap;
+    }
+    // 先挂到页面再画图表（图表按容器尺寸初始化）
+    this.planes[o.pane].appendChild(el);
+    if (item.type === 'chart' || item.type === 'chartex') {
+      this.mountChart(o, (zoomed ? el.firstElementChild : el) as HTMLElement, item);
+    } else {
       el.querySelectorAll<HTMLElement>('[data-group-chart]').forEach(c => {
         const it = groupChartItems.get(c);
         if (it && (it.type === 'chart' || it.type === 'chartex')) this.mountChart(o, c, it);
@@ -426,7 +494,6 @@ export class ExcelOverlay {
         el.addEventListener(t, stop)
       );
     }
-    this.planes[o.pane].appendChild(el);
     o.el = el;
   }
 
@@ -475,7 +542,13 @@ export class ExcelOverlay {
       .then(mod =>
         disposed || this.disposed || sheet !== this.sheetIndex
           ? undefined
-          : mod.renderChart(host, model, this.options.format, this.options.fontFamily)
+          : mod.renderChart(
+              host,
+              model,
+              this.options.format,
+              this.options.fontFamily,
+              Math.abs(this.scale - 1) > 1e-6 ? (window.devicePixelRatio || 1) * this.scale : undefined
+            )
       )
       .then(chart => {
         if (!chart) return;

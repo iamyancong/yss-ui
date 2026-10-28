@@ -125,7 +125,7 @@ PPTX 是**实验性**能力，默认不启用：不使用 pptx 的项目不需�
 - **数字格式**：内置格式编号 0–49（随语言切换，如中文的 `yyyy/m/d`、`¥#,##0.00`）与 27–36 / 50–58 的中文日期格式，自定义格式的日期时间、`[h]:mm`、百分比、小数位、千分位、货币、负数红色、括号、`@` 文本、分数、科学计数、条件分段（`[>=100]`）、`yyyy"年"m"月"d"日"`、`上午/下午` 与 1904 日期系统；
 - **单元格值**：公式显示文件里保存的计算结果，错误值（`#DIV/0!`、`#N/A` 等）、布尔值、富文本、超链接文字原样显示；
 - **布局**：合并单元格（不再重影）、隐藏的行 / 列 / 工作表、冻结窗格、按 Excel 换算的列宽与行高（隐藏列上的换行不撑高行）、字号、对齐（未设置时数字右对齐）、主题颜色与 tint、下划线 / 删除线；打开时显示文件保存时的当前工作表；
-- **xls**：读取旧版 Excel（BIFF8，Excel 97–2003）记录里的格式与公式结果。更早的 BIFF5 文件按 @vue-office/excel 原样显示。
+- **xls**：读取旧版 Excel（BIFF8，Excel 97–2003）记录里的格式与公式结果，以及单元格样式（边框、填充、字体、对齐，含只有边框的空白单元格和合并区域的外框）。行、列整体设置的样式（没有单元格记录的位置）与富文本中的局部字体不显示。更早的 BIFF5 文件按 @vue-office/excel 原样显示。
 
 **公式不会重新计算**。预览显示文件里保存的结果，以下情况会在表格上方给出提示：
 
@@ -151,6 +151,28 @@ PPTX 是**实验性**能力，默认不启用：不使用 pptx 的项目不需�
 | 工作表 | 标签颜色、冻结窗格、隐藏行列（按文件收起，与 Excel 打开时一致；单元格内容仍保留。把鼠标移到隐藏行下方的行号上，单击可临时展开，不写回文件。锚点下的隐藏行 / 列按 0 宽度计算）、三种锚点（单元格、单单元格、绝对位置）。对象超出已用区域时会扩大表格行列数 |
 
 仍不支持：富文本中的分段样式（按整格样式显示）、数字放不下时显示 `####`、`[DBNum1]` 等中文大写数字格式（按普通数字显示）、按工作表隐藏网格线、误差线、透视表 / 切片器 / 筛选下拉、条件格式公式规则、曲面图与地图图表。
+
+## 缩放
+
+xlsx / xls 和图片可以缩放。弹窗标题栏在业务操作区（`#actions`）和全屏按钮之间显示 `[ − ] [ 100% ▾ ] [ + ]`，下拉里有 50% / 75% / 100% / 125% / 150% / 200%、适应宽度和重置（100%）。窄屏（≤ 576px）只显示比例按钮，放大 / 缩小收进下拉。
+
+| 操作 | 说明 |
+| --- | --- |
+| Ctrl / ⌘ + `=`、`-`、`0` | 放大、缩小（按 `zoomStep`）、恢复 100%。弹窗里任意位置可用（焦点在输入框时除外）；内嵌的 `YFilePreview` 需要焦点在预览区内 |
+| Ctrl / ⌘ + 鼠标滚轮 | 每格按 `zoomStep` 缩放，以鼠标位置为中心，不会缩放整个页面 |
+| 触控板双指捏合（含 Safari） | 跟手连续缩放，以指针位置为中心；表格在捏合过程中每帧按新比例真正重绘（行号列标、文字始终清晰），指针下的内容精确到像素不动 |
+| 放大 / 缩小按钮、快捷键 | 表格约 150ms 平滑过渡，保持左上角；系统开启“减少动态效果”时直接跳到新比例 |
+| 触摸屏双指捏合 | 连续缩放 |
+
+- **Excel**：按比例重新绘制表格（行高、列宽、字号一起变），不是把画布拉伸，所以高清屏下文字和边框保持清晰；图表、图片、形状等叠加内容按同一比例定位和缩放，冻结窗格和滚动同步不变；缩放后左上角仍停在原来的单元格。大表格（约 2 万行以上）连续缩放时会稍等片刻再重绘。
+- **图片**：标题栏控件与图片工具栏共用同一个比例，图片工具栏只保留适应窗口、旋转和重置。图片打开时先适应窗口，范围默认 5%–800%（设置了 `zoomMin` / `zoomMax` 时按设置）。
+- **PDF** 用浏览器内置查看器显示，查看器自带缩放，不显示这个控件。docx、pptx、文本、CSV 暂不支持缩放。
+- 比例按文件分别记住：切换到别的文件时用那个文件自己的比例（第一次打开为 `zoom` 或 `zoomFit` 指定的比例），切回来时恢复。
+- 内嵌的 `YFilePreview` 不自带标题栏控件，用 `toolbar` 插槽参数或实例方法自己放按钮；此时图片继续显示自带的缩放按钮。
+
+```vue
+<YFilePreviewModal v-model:open="open" v-model:zoom="zoom" :files="files" :zoomable="['xlsx', 'xls']" />
+```
 
 ## 代码演示
 
@@ -202,8 +224,13 @@ PPTX 是**实验性**能力，默认不启用：不使用 pptx 的项目不需�
 | height | 预览区高度，数字按 px 处理 | `number \| string` | `'100%'` |
 | showDownload | 是否允许下载：控制「文件过大」「暂不支持」「加载失败」等提示里的下载按钮；为 `false` 时 PDF 还会尽量隐藏内置查看器工具栏 | `boolean` | `true` |
 | customDownload | 自定义下载（权限、留痕、签名 URL）。不调用 `ctx.defaultDownload()` 就不下载；设置后 PDF 隐藏内置查看器工具栏 | `(ctx: FilePreviewDownloadContext) => void \| Promise<void>` | - |
+| zoom (v-model) | 缩放比例，`1` 为 100%。只对可以缩放的文件生效，每个文件单独记住比例，见 [缩放](#缩放) | `number` | - |
+| zoomable | 是否允许缩放；传文件类型列表（如 `['xlsx', 'xls']`）只对这些类型开启 | `boolean \| FilePreviewFileType[]` | `true` |
+| zoomMin / zoomMax | 缩放范围 | `number` | `0.5` / `2`（图片 `0.05` / `8`） |
+| zoomStep | 放大 / 缩小按钮与快捷键的步长 | `number` | `0.1` |
+| zoomFit | 第一次打开某个文件时的比例：`'width'` 适应宽度、`'page'` 适应整页、`'none'` 使用 `zoom`（没有设置时 Excel 为 100%，图片适应窗口） | `'width' \| 'page' \| 'none'` | `'none'` |
 
-`source`、`fileName`、`fileType`、`maxSize`、`textEncoding`、`csvMode`、`csvRowNumber`、`showDownload` 任意一项变化，或 `customDownload` 从无到有（反之亦然）都会重新加载。
+`source`、`fileName`、`fileType`、`maxSize`、`textEncoding`、`csvMode`、`csvRowNumber`、`showDownload` 任意一项变化，或 `customDownload` 从无到有（反之亦然）都会重新加载。缩放相关属性变化不会重新加载。
 
 ### YFilePreview Events
 
@@ -212,12 +239,14 @@ PPTX 是**实验性**能力，默认不启用：不使用 pptx 的项目不需�
 | loaded | 渲染完成 | `(payload: { fileName: string; fileType: FilePreviewFileType }) => void` |
 | error | 加载、校验或渲染失败（含缺少依赖、文件过大、内容不一致） | `(error: Error) => void` |
 | unsupported | 格式不支持 | `(type: string) => void` |
+| update:zoom | 缩放比例变化 | `(zoom: number) => void` |
+| zoom-change | 缩放比例变化（按钮、快捷键、滚轮、切换文件时恢复该文件的比例）；捏合过程中只更新显示的百分比，停下后触发一次 | `(zoom: number, info: { fileType: FilePreviewFileType \| null }) => void` |
 
 ### YFilePreview Slots
 
 | 插槽 | 说明 | 参数 |
 | --- | --- | --- |
-| toolbar | 替换顶部工具栏 | `{ fileName, fileType, status, download, reload }` |
+| toolbar | 替换顶部工具栏 | `{ fileName, fileType, status, download, reload, zoom, setZoom, zoomIn, zoomOut, resetZoom, fitZoom }`，`zoom` 为 `FilePreviewZoomState` |
 | loading | 自定义加载中 | - |
 | unsupported | 自定义不支持格式的提示 | `{ type, download }` |
 | error | 自定义错误提示 | `{ error, retry, download }` |
@@ -233,6 +262,11 @@ PPTX 是**实验性**能力，默认不启用：不使用 pptx 的项目不需�
 | getFileName | 当前文件名 | `() => string` |
 | getFileType | 识别出的类型，未识别时为 `null` | `() => FilePreviewFileType \| null` |
 | getStatus | 当前状态 | `() => FilePreviewStatus` |
+| zoomState | 缩放状态（响应式）：`available` 当前文件能否缩放、`value` 当前比例、`min` / `max`、`canFit` 能否适应宽度 | `FilePreviewZoomState` |
+| setZoom | 设置比例，超出范围时收敛 | `(zoom: number) => void` |
+| zoomIn / zoomOut | 按 `zoomStep` 放大 / 缩小 | `() => void` |
+| resetZoom | 恢复 100% | `() => void` |
+| fitZoom | 适应宽度（默认）或整页 | `(mode?: 'width' \| 'page') => void` |
 
 `FilePreviewStatus` 取值：`'idle' | 'loading' | 'ready' | 'oversize' | 'empty' | 'mismatch' | 'missing-dependency' | 'unsupported' | 'error'`。
 
@@ -248,13 +282,14 @@ PPTX 是**实验性**能力，默认不启用：不使用 pptx 的项目不需�
 | fileSwitcher | 多个文件时标题显示为文件切换下拉（类型图标 + 文件名 + 箭头，点击列出全部文件，10 个及以上可搜索）。只有一个文件或设置了 `title` 时显示普通标题；在下拉里选择文件与翻页一样触发 `update:index` / `change` | `boolean` | `true` |
 | loop | 是否循环翻页。默认到第一个 / 最后一个文件时对应翻页按钮禁用、方向键无反应；为 `true` 且多于一个文件时首尾相接，按钮始终可用 | `boolean` | `false` |
 | showDownload | 是否显示标题栏下载按钮。PDF 用浏览器内置查看器显示时不显示（查看器自带下载）；为 `false` 时还会尽量隐藏内置查看器工具栏 | `boolean` | `true` |
-| keyboard | 是否启用键盘操作（← → 切换、Esc 关闭；全屏时 Esc 先退出全屏）。多个弹窗叠加时只有最上层响应；焦点在输入框或 Excel 表格内时方向键留给它们自己 | `boolean` | `true` |
+| keyboard | 是否启用键盘操作（← → 切换、Esc 关闭；全屏时 Esc 先退出全屏；缩放快捷键不受此项控制，用 `zoomable` 关闭）。多个弹窗叠加时只有最上层响应；焦点在输入框或 Excel 表格内时方向键留给它们自己 | `boolean` | `true` |
 | maxSize | 最大预览字节数 | `number` | `20 * 1024 * 1024` |
 | textEncoding | 文本编码 | `TextEncoding` | `'auto'` |
 | csvMode | CSV 初始显示方式 | `CsvMode` | `'table'` |
 | csvRowNumber | CSV 表格是否显示行号列 | `boolean` | `false` |
 | getContainer | 弹窗挂载节点 | `() => HTMLElement` | - |
 | customDownload | 自定义下载，同 `YFilePreview`；设置后 PDF 也显示标题栏下载按钮 | `(ctx: FilePreviewDownloadContext) => void \| Promise<void>` | - |
+| zoom (v-model) / zoomable / zoomMin / zoomMax / zoomStep / zoomFit | 缩放，同 `YFilePreview`。可以缩放时标题栏显示缩放控件 | - | - |
 
 `files` 可以随时修改（例如删除当前文件）：下标越界会自动收敛并触发 `update:index`，当前文件变了会触发 `change`，列表清空时自动关闭（触发 `update:open(false)` 和 `close`）。打开弹窗时不会触发 `change`。
 
@@ -269,12 +304,14 @@ PPTX 是**实验性**能力，默认不启用：不使用 pptx 的项目不需�
 | loaded | 当前文件渲染完成 | `(payload: FilePreviewLoadedPayload, ctx: FilePreviewContext) => void` |
 | error | 当前文件加载或解析失败 | `(error: Error, ctx: FilePreviewContext) => void` |
 | unsupported | 当前文件格式不支持 | `(type: string, ctx: FilePreviewContext) => void` |
+| update:zoom | 缩放比例变化 | `(zoom: number) => void` |
+| zoom-change | 缩放比例变化 | `(zoom: number, info: { fileType }, ctx: FilePreviewContext) => void` |
 
 ### YFilePreviewModal Slots
 
 | 插槽 | 说明 | 参数 |
 | --- | --- | --- |
-| actions | 标题栏右侧的业务操作区（全屏、下载按钮之前） | `FilePreviewContext` |
+| actions | 标题栏右侧的业务操作区（缩放控件、全屏、下载按钮之前） | `FilePreviewContext` |
 
 ### YFilePreviewModal 实例方法
 
@@ -317,11 +354,12 @@ const lastIndex = await controller.afterClose; // 关闭后刷新列表等
 | 选项 | 说明 | 类型 |
 | --- | --- | --- |
 | fileName / fileType | 仅 `open` 生效 | `string` / `FilePreviewFileType` |
-| width 等 | 同 `YFilePreviewModal`：width、title、fileSwitcher、loop、maxSize、textEncoding、csvMode、csvRowNumber、showDownload、keyboard、customDownload | - |
+| width 等 | 同 `YFilePreviewModal`：width、title、fileSwitcher、loop、maxSize、textEncoding、csvMode、csvRowNumber、showDownload、keyboard、customDownload、zoom、zoomable、zoomMin、zoomMax、zoomStep、zoomFit | - |
 | onChange | 当前文件变化（翻页、`update` 后） | `(ctx: FilePreviewContext) => void` |
 | onLoaded | 当前文件渲染完成 | `(payload: FilePreviewLoadedPayload, ctx: FilePreviewContext) => void` |
 | onError | 当前文件加载或解析失败 | `(error: Error, ctx: FilePreviewContext) => void` |
 | onClose | 本次打开结束，参数为最后的下标 | `(lastIndex: number) => void` |
+| onZoomChange | 缩放比例变化 | `(zoom: number, info: { fileType }, ctx: FilePreviewContext) => void` |
 | slots | 插槽 render 函数，目前支持 `actions` | `{ actions?: (ctx: FilePreviewContext) => VNodeChild }` |
 
 `FilePreviewController`（只对本次打开有效，弹窗关闭或再次 `open` 之后调用不会有任何效果）：
@@ -432,6 +470,21 @@ registerPreviewRenderer({
 - `render(container, data, ctx)`：`container` 是本次渲染专用的空节点；`ctx` 包含 `fileName`、`fileType`、`textEncoding`、`csvMode`、`csvRowNumber`、`showDownload`、`signal`（取消信号）、`t`（国际化函数）、`appContext`、`locale`（当前语言，如 `zh-CN`，可用于按语言格式化日期数字）；
 - 渲染内容自己要用方向键（例如表格选区）时，给根节点加 `data-preview-keyboard="self"`，弹窗在用户点进该区域后不再用方向键切换文件；
 - `resize()`（可选）：预览区域尺寸变化后调用（全屏切换、窗口缩放、父容器变化，已防抖，渲染完成后才会调用）。内容随容器自适应的渲染器不需要实现，按初始化尺寸绘制 canvas 的渲染器在这里重新布局；
+- `zoom`（可选）：缩放能力，渲染完成后读取。实现了才显示缩放控件、响应快捷键；`ctx.zoom` 是这个文件要使用的初始比例（可直接按它渲染），`ctx.externalZoomControl` 为 `true` 时标题栏已有缩放控件，渲染器不要再显示自己的放大 / 缩小按钮：
+
+  ```ts
+  import type { PreviewZoomController } from '@yss-ui/components/file-preview';
+
+  let scale = ctx.zoom ?? 1;
+  const zoom: PreviewZoomController = {
+    get: () => scale,
+    set: z => { scale = z; root.style.fontSize = `${14 * z}px`; }, // 已收敛到范围内，可防抖
+    fit: mode => undefined, // 可选：计算并应用适应比例，返回应用后的比例
+    range: { min: 0.5, max: 4 }, // 可选：没设置 zoomMin / zoomMax 时使用
+    onChange: listener => () => {}, // 可选：渲染器自己改变比例时通知外壳
+  };
+  ```
+
 - `destroy()`：切换文件、卸载组件时调用，需要清理自己创建的 DOM、URL 和事件；
 - 注册内置类型（如 `pdf`）会覆盖内置渲染器；`unregisterPreviewRenderer(type)` 可以取消注册。
 

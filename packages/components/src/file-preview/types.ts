@@ -136,6 +136,42 @@ export interface FilePreviewProps {
    * 设置后 PDF 会隐藏内置查看器工具栏（其中的下载无法拦截），统一走这里
    */
   customDownload?: FilePreviewCustomDownload;
+  /**
+   * 是否允许缩放，默认 true；也可以传文件类型列表（如 ['xlsx', 'xls']）只对这些类型开启。
+   * 只有实现了缩放的渲染器才显示控件（第一期：xlsx / xls / 图片；pdf 由浏览器查看器缩放，不显示）
+   */
+  zoomable?: boolean | FilePreviewFileType[];
+  /** 缩放比例（1 = 100%），支持 v-model:zoom。每个文件单独记住比例，切换文件时恢复该文件上次的比例 */
+  zoom?: number;
+  /** 最小比例，默认 0.5（图片默认可缩小到适应窗口以下） */
+  zoomMin?: number;
+  /** 最大比例，默认 2（图片默认 8） */
+  zoomMax?: number;
+  /** 放大 / 缩小按钮与快捷键的步长，默认 0.1 */
+  zoomStep?: number;
+  /** 首次打开某个文件时的比例：'width' 适应宽度、'page' 适应整页、'none' 用 zoom（默认 'none'；图片始终先适应窗口） */
+  zoomFit?: FilePreviewZoomFit;
+}
+
+/** 首次打开文件时的适应方式 */
+export type FilePreviewZoomFit = 'width' | 'page' | 'none';
+
+/** zoom-change 事件的附加信息 */
+export interface FilePreviewZoomInfo {
+  /** 当前文件类型 */
+  fileType: FilePreviewFileType | null;
+}
+
+/** 缩放状态（toolbar 插槽与 expose 使用） */
+export interface FilePreviewZoomState {
+  /** 当前文件是否可以缩放（渲染器实现了缩放且 zoomable 允许） */
+  available: boolean;
+  /** 当前比例 */
+  value: number;
+  min: number;
+  max: number;
+  /** 是否支持适应宽度 */
+  canFit: boolean;
 }
 
 /** loaded 事件参数 */
@@ -154,6 +190,10 @@ export type FilePreviewEmits = {
   error: [error: Error];
   /** 文件类型不支持预览，参数为识别出的类型或后缀 */
   unsupported: [type: string];
+  /** 缩放比例变化（v-model:zoom） */
+  'update:zoom': [zoom: number];
+  /** 缩放比例变化（按钮、快捷键、滚轮、切换文件恢复比例） */
+  'zoom-change': [zoom: number, info: FilePreviewZoomInfo];
 };
 
 /** YFilePreview Expose */
@@ -168,6 +208,18 @@ export interface FilePreviewExpose {
   getStatus: () => FilePreviewStatus;
   /** 下载当前文件（配置了 customDownload 时调用它） */
   download: () => Promise<void>;
+  /** 缩放状态（响应式） */
+  zoomState: FilePreviewZoomState;
+  /** 设置比例（收敛到范围内） */
+  setZoom: (zoom: number) => void;
+  /** 按 zoomStep 放大 */
+  zoomIn: () => void;
+  /** 按 zoomStep 缩小 */
+  zoomOut: () => void;
+  /** 恢复 100% */
+  resetZoom: () => void;
+  /** 适应宽度（或整页） */
+  fitZoom: (mode?: 'width' | 'page') => void;
 }
 
 /** YFilePreviewModal Props */
@@ -213,6 +265,21 @@ export interface FilePreviewModalProps {
   getContainer?: string | HTMLElement | (() => HTMLElement) | false;
   /** 自定义下载，同 YFilePreview；设置后 PDF 也显示标题栏下载按钮 */
   customDownload?: FilePreviewCustomDownload;
+  /**
+   * 是否允许缩放，默认 true；也可以传文件类型列表（如 ['xlsx', 'xls']）只对这些类型开启。
+   * 只有实现了缩放的渲染器才显示控件（第一期：xlsx / xls / 图片；pdf 由浏览器查看器缩放，不显示）
+   */
+  zoomable?: boolean | FilePreviewFileType[];
+  /** 缩放比例（1 = 100%），支持 v-model:zoom。每个文件单独记住比例，切换文件时恢复该文件上次的比例 */
+  zoom?: number;
+  /** 最小比例，默认 0.5（图片默认可缩小到适应窗口以下） */
+  zoomMin?: number;
+  /** 最大比例，默认 2（图片默认 8） */
+  zoomMax?: number;
+  /** 放大 / 缩小按钮与快捷键的步长，默认 0.1 */
+  zoomStep?: number;
+  /** 首次打开某个文件时的比例：'width' 适应宽度、'page' 适应整页、'none' 用 zoom（默认 'none'；图片始终先适应窗口） */
+  zoomFit?: FilePreviewZoomFit;
 }
 
 /** YFilePreviewModal Slots */
@@ -251,6 +318,10 @@ export type FilePreviewModalEmits = {
   error: [error: Error, ctx: FilePreviewContext];
   /** 当前文件类型不支持预览 */
   unsupported: [type: string, ctx: FilePreviewContext];
+  /** 缩放比例变化（v-model:zoom） */
+  'update:zoom': [zoom: number];
+  /** 缩放比例变化 */
+  'zoom-change': [zoom: number, info: FilePreviewZoomInfo, ctx: FilePreviewContext];
 };
 
 /** useFilePreview 打开选项 */
@@ -281,6 +352,16 @@ export interface UseFilePreviewOptions {
   keyboard?: boolean;
   /** 自定义下载 */
   customDownload?: FilePreviewCustomDownload;
+  /** 是否允许缩放，规则同 YFilePreviewModal */
+  zoomable?: boolean | FilePreviewFileType[];
+  /** 初始缩放比例 */
+  zoom?: number;
+  zoomMin?: number;
+  zoomMax?: number;
+  zoomStep?: number;
+  zoomFit?: FilePreviewZoomFit;
+  /** 缩放比例变化 */
+  onZoomChange?: (zoom: number, info: FilePreviewZoomInfo, ctx: FilePreviewContext) => void;
   /** 当前文件变化（翻页、列表更新） */
   onChange?: (ctx: FilePreviewContext) => void;
   /** 当前文件渲染完成 */

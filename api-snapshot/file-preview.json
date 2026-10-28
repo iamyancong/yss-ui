@@ -1,6 +1,6 @@
 {
   "name": "file-preview",
-  "propsCount": 22,
+  "propsCount": 28,
   "props": {
     "source": {
       "name": "source",
@@ -79,6 +79,54 @@
       "tsType": "FilePreviewCustomDownload",
       "required": false,
       "default": "undefined",
+      "isCore": true
+    },
+    "zoomable": {
+      "name": "zoomable",
+      "type": "array",
+      "tsType": "boolean | FilePreviewFileType[]",
+      "required": false,
+      "default": "true",
+      "isCore": true
+    },
+    "zoom": {
+      "name": "zoom",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "zoomMin": {
+      "name": "zoomMin",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "zoomMax": {
+      "name": "zoomMax",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "zoomStep": {
+      "name": "zoomStep",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "0.1",
+      "isCore": true
+    },
+    "zoomFit": {
+      "name": "zoomFit",
+      "type": "any",
+      "tsType": "FilePreviewZoomFit",
+      "required": false,
+      "default": "\"none\"",
       "isCore": true
     },
     "key": {
@@ -178,12 +226,20 @@
     {
       "name": "unsupported",
       "type": "[type: string]"
+    },
+    {
+      "name": "update:zoom",
+      "type": "[zoom: number]"
+    },
+    {
+      "name": "zoom-change",
+      "type": "[zoom: number, info: FilePreviewZoomInfo]"
     }
   ],
   "slots": [
     {
       "name": "toolbar",
-      "type": "{ fileName: string; fileType: FilePreviewFileType | null; status: FilePreviewStatus; download: () => Promise<void>; reload: () => Promise<void>; }"
+      "type": "{ fileName: string; fileType: FilePreviewFileType | null; status: FilePreviewStatus; download: () => Promise<void>; reload: () => Promise<void>; zoom: FilePreviewZoomState; setZoom: (zoom: number) => void; zoomIn: () => void; zoomOut: () => void; resetZoom: () => void; fitZoom: (mode?: \"width\" | \"page\") => void; }"
     },
     {
       "name": "loading",
@@ -218,6 +274,30 @@
     {
       "name": "download",
       "type": "() => Promise<void>"
+    },
+    {
+      "name": "zoomState",
+      "type": "FilePreviewZoomState"
+    },
+    {
+      "name": "setZoom",
+      "type": "(zoom: number) => void"
+    },
+    {
+      "name": "zoomIn",
+      "type": "() => void"
+    },
+    {
+      "name": "zoomOut",
+      "type": "() => void"
+    },
+    {
+      "name": "resetZoom",
+      "type": "() => void"
+    },
+    {
+      "name": "fitZoom",
+      "type": "(mode?: \"width\" | \"page\" | undefined) => void"
     }
   ]
 }

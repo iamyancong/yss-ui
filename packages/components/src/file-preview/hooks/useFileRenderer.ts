@@ -3,11 +3,11 @@
  * 每次渲染使用独立的 AbortController、子容器和渲染实例，切换文件或卸载时整体销毁，
  * 过期的异步结果不会写入新文件的容器。
  */
-import { getCurrentInstance, onBeforeUnmount, ref, watch, type Ref } from 'vue';
+import { getCurrentInstance, onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue';
 import { DEFAULT_MAX_FILE_SIZE, RESIZE_DEBOUNCE } from '../constant';
 import { isAbortError, MissingDependencyError } from '../errors';
 import { getRenderer, hasCustomRenderer } from '../renderers/registry';
-import type { FilePreviewTranslate, PreviewRendererInstance } from '../renderers/types';
+import type { FilePreviewTranslate, PreviewRendererInstance, PreviewZoomController } from '../renderers/types';
 import type {
   FilePreviewContext,
   FilePreviewFileType,
@@ -31,6 +31,8 @@ export interface UseFileRendererOptions {
   t: FilePreviewTranslate;
   /** 当前语言名，如 'zh-CN' */
   locale?: () => string;
+  /** 渲染前读取缩放设置：初始比例、是否由外壳显示缩放控件 */
+  zoomContext?: (fileType: string) => { zoom?: number; externalZoomControl?: boolean };
 }
 
 interface RenderSession {
@@ -51,7 +53,7 @@ function disposeSession(session: RenderSession): void {
   session.host = null;
 }
 
-export function useFileRenderer({ props, emit, containerRef, t, locale }: UseFileRendererOptions) {
+export function useFileRenderer({ props, emit, containerRef, t, locale, zoomContext }: UseFileRendererOptions) {
   const appContext = getCurrentInstance()?.appContext ?? null;
 
   const status = ref<FilePreviewStatus>('idle');
@@ -66,6 +68,8 @@ export function useFileRenderer({ props, emit, containerRef, t, locale }: UseFil
   /** 原始文件名（未转义） */
   const fileName = ref('');
   const fileSize = ref(0);
+  /** 当前渲染器的缩放能力（渲染完成后才有） */
+  const zoomController = shallowRef<PreviewZoomController | null>(null);
 
   let current: RenderSession | null = null;
   /** 最近一次成功读取的内容，下载时直接保存，不重复请求 */
@@ -81,6 +85,7 @@ export function useFileRenderer({ props, emit, containerRef, t, locale }: UseFil
   });
 
   const teardown = () => {
+    zoomController.value = null;
     if (current) {
       disposeSession(current);
       current = null;
@@ -184,8 +189,11 @@ export function useFileRenderer({ props, emit, containerRef, t, locale }: UseFil
         t,
         locale: locale?.(),
         appContext,
+        ...(zoomContext?.(fileType) ?? {}),
       });
       if (isStale()) return;
+
+      zoomController.value = session.instance.zoom ?? null;
 
       loadedData = { buffer: result.buffer, mimeType: result.mimeType };
       status.value = 'ready';
@@ -317,5 +325,6 @@ export function useFileRenderer({ props, emit, containerRef, t, locale }: UseFil
     download,
     getContext,
     teardown,
+    zoomController,
   };
 }

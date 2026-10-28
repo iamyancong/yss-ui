@@ -25,7 +25,8 @@ import {
 } from '../constant';
 import type { ImageFileType } from '../types';
 import { sniffImageKind } from '../utils/detect';
-import type { PreviewRenderer, RenderContext } from './types';
+import { isWheelNotch, PINCH_IDLE_MS, PINCH_ZOOM_SENSITIVITY, wheelDeltaPx } from '../utils/zoom';
+import type { PreviewRenderer, PreviewRendererInstance, PreviewZoomController, RenderContext } from './types';
 
 /** 适应窗口时与容器边缘保留的距离；底部多留出浮动工具栏的高度 */
 const FIT_PADDING_X = 32;
@@ -67,6 +68,8 @@ export const imageRenderer: PreviewRenderer = {
     let url: string | null = null;
     const iconHolders: HTMLElement[] = [];
     let relayout: (() => void) | null = null;
+    const zoomListeners = new Set<(zoom: number, info?: { live?: boolean }) => void>();
+    let zoomApi: { get(): number; set(z: number): void; fit(): number } | null = null;
 
     const cleanup = () => {
       for (const holder of iconHolders) vueRender(null, holder);
@@ -76,9 +79,22 @@ export const imageRenderer: PreviewRenderer = {
       root?.remove();
       root = null;
       relayout = null;
+      zoomApi = null;
+      zoomListeners.clear();
     };
 
-    return {
+    const zoom: PreviewZoomController = {
+      get: () => zoomApi?.get() ?? 1,
+      set: z => zoomApi?.set(z),
+      fit: () => zoomApi?.fit(),
+      range: { min: IMAGE_MIN_SCALE, max: IMAGE_MAX_SCALE },
+      onChange(listener) {
+        zoomListeners.add(listener);
+        return () => zoomListeners.delete(listener);
+      },
+    };
+
+    const instance: PreviewRendererInstance = {
       async render(container: HTMLElement, data: ArrayBuffer, context: RenderContext) {
         if (context.signal.aborted) return;
         const { t } = context;
@@ -91,6 +107,8 @@ export const imageRenderer: PreviewRenderer = {
 
         const viewport = document.createElement('div');
         viewport.className = 'yss-file-preview-image__viewport';
+        // Ctrl / ⌘ + 滚轮由这里按鼠标位置缩放，外壳不再处理
+        viewport.dataset.previewZoom = 'self';
         const stage = document.createElement('div');
         stage.className = 'yss-file-preview-image__stage';
         const img = document.createElement('img');
@@ -124,11 +142,10 @@ export const imageRenderer: PreviewRenderer = {
         const divider = document.createElement('span');
         divider.className = 'yss-file-preview-image__divider';
         divider.setAttribute('aria-hidden', 'true');
+        // 缩放控件在外壳（弹窗头部）时，这里只保留适应 / 原始尺寸、旋转与重置
+        if (context.externalZoomControl) toolbar.classList.add('is-zoom-external');
+        else toolbar.append(buttons.zoomOut, percent, buttons.zoomIn, divider);
         toolbar.append(
-          buttons.zoomOut,
-          percent,
-          buttons.zoomIn,
-          divider,
           buttons.toggleFit,
           buttons.rotateLeft,
           buttons.rotateRight,
@@ -172,9 +189,16 @@ export const imageRenderer: PreviewRenderer = {
           return Math.min(1, availableWidth / w!, availableHeight / h!);
         };
         const maxScale = () =>
-          Math.max(fitScale(), Math.min(IMAGE_MAX_SCALE, IMAGE_MAX_DISPLAY_SIZE / Math.max(naturalWidth, naturalHeight)));
+          Math.max(
+            fitScale(),
+            Math.min(IMAGE_MAX_SCALE, IMAGE_MAX_DISPLAY_SIZE / Math.max(naturalWidth, naturalHeight))
+          );
         const minScale = () => Math.min(IMAGE_MIN_SCALE, fitScale());
 
+        let reported = Number.NaN;
+        /** 捏合进行中：只通知外壳实时的百分比，停下后再通知最终比例 */
+        let live = false;
+        let fitIcon: boolean | null = null;
         const apply = () => {
           if (fit) scale = fitScale();
           scale = clamp(scale, minScale(), maxScale());
@@ -197,8 +221,18 @@ export const imageRenderer: PreviewRenderer = {
           const toggleLabel = fit ? t('imageActualSize') : t('imageFit');
           buttons.toggleFit.setAttribute('aria-label', toggleLabel);
           buttons.toggleFit.title = toggleLabel;
-          const holder = buttons.toggleFit.querySelector<HTMLElement>('.yss-file-preview-image__icon');
-          if (holder) vueRender(createVNode(fit ? OneToOneOutlined : ExpandOutlined), holder);
+          // 图标只在适应 / 原始尺寸切换时重新渲染（捏合时每帧都会调用 apply）
+          if (fitIcon !== fit) {
+            fitIcon = fit;
+            const holder = buttons.toggleFit.querySelector<HTMLElement>('.yss-file-preview-image__icon');
+            if (holder) vueRender(createVNode(fit ? OneToOneOutlined : ExpandOutlined), holder);
+          }
+          const rounded = Math.round(scale * 10000) / 10000;
+          if (live) zoomListeners.forEach(fn => fn(rounded, { live: true }));
+          else if (rounded !== reported) {
+            reported = rounded;
+            zoomListeners.forEach(fn => fn(rounded));
+          }
         };
 
         /** 以视口内某点为锚点缩放，锚点下的内容保持不动；默认锚点为视口中心 */
@@ -253,17 +287,73 @@ export const imageRenderer: PreviewRenderer = {
           return [event.clientX - rect.left, event.clientY - rect.top] as const;
         };
 
-        // Ctrl / ⌘ + 滚轮缩放（触控板双指捏合也是带 ctrlKey 的 wheel），普通滚轮照常滚动
+        // Ctrl / ⌘ + 滚轮缩放，普通滚轮照常滚动。鼠标滚轮一格按步长；触控板双指捏合（也是带 ctrlKey 的 wheel）
+        // 按 deltaY 连续缩放，事件按 requestAnimationFrame 合并成每帧一次布局
+        let pinchFactor = 1;
+        let pinchAt: readonly [number, number] = [0, 0];
+        let pinchFrame: unknown = null;
+        let pinchTimer: ReturnType<typeof setTimeout> | null = null;
+        let safariGesture: { scale: number } | null = null;
+        const endLive = () => {
+          if (pinchTimer !== null) clearTimeout(pinchTimer);
+          pinchTimer = null;
+          if (!live) return;
+          live = false;
+          if (root) apply();
+        };
+        const schedulePinch = (factor: number, at: readonly [number, number], autoEnd: boolean) => {
+          pinchFactor *= factor;
+          pinchAt = at;
+          live = true;
+          if (pinchFrame === null) {
+            const raf =
+              typeof requestAnimationFrame === 'function'
+                ? requestAnimationFrame
+                : (cb: () => void) => setTimeout(cb, 16);
+            pinchFrame = raf(() => {
+              pinchFrame = null;
+              const f = pinchFactor;
+              pinchFactor = 1;
+              if (root) zoomBy(f, pinchAt[0], pinchAt[1]);
+            });
+          }
+          if (pinchTimer !== null) clearTimeout(pinchTimer);
+          pinchTimer = autoEnd ? setTimeout(endLive, PINCH_IDLE_MS) : null;
+        };
         viewport.addEventListener(
           'wheel',
           event => {
             if (!event.ctrlKey && !event.metaKey) return;
             event.preventDefault();
-            const [x, y] = pointInViewport(event);
-            zoomBy(clamp(Math.exp(-event.deltaY / 300), 0.5, 2), x, y);
+            if (safariGesture) return;
+            const at = pointInViewport(event);
+            if (isWheelNotch(event) && !live) {
+              zoomBy(event.deltaY < 0 ? IMAGE_ZOOM_STEP : 1 / IMAGE_ZOOM_STEP, at[0], at[1]);
+              return;
+            }
+            const px = wheelDeltaPx(event.deltaY, event.deltaMode);
+            schedulePinch(clamp(Math.exp(-px * PINCH_ZOOM_SENSITIVITY), 0.5, 2), at, true);
           },
           { passive: false }
         );
+        // Safari（macOS 触控板捏合）：gesture* 事件的 scale 为相对手势开始的倍数
+        type GestureLike = Event & { scale?: number; clientX: number; clientY: number };
+        viewport.addEventListener('gesturestart', event => {
+          event.preventDefault();
+          safariGesture = { scale: 1 };
+        });
+        viewport.addEventListener('gesturechange', event => {
+          const g = event as GestureLike;
+          if (!safariGesture || !(typeof g.scale === 'number' && g.scale > 0)) return;
+          event.preventDefault();
+          schedulePinch(g.scale / safariGesture.scale, pointInViewport(g as unknown as MouseEvent), false);
+          safariGesture.scale = g.scale;
+        });
+        viewport.addEventListener('gestureend', event => {
+          event.preventDefault();
+          safariGesture = null;
+          endLive();
+        });
 
         viewport.addEventListener('dblclick', event => {
           const [x, y] = pointInViewport(event);
@@ -275,7 +365,13 @@ export const imageRenderer: PreviewRenderer = {
         viewport.addEventListener('pointerdown', event => {
           root?.focus({ preventScroll: true });
           if (event.button !== 0 || !viewport.classList.contains('is-pannable')) return;
-          drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: viewport.scrollLeft, top: viewport.scrollTop };
+          drag = {
+            id: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+            left: viewport.scrollLeft,
+            top: viewport.scrollTop,
+          };
           viewport.setPointerCapture?.(event.pointerId);
           viewport.classList.add('is-dragging');
           event.preventDefault();
@@ -316,8 +412,21 @@ export const imageRenderer: PreviewRenderer = {
           apply();
           if (fit) centerScroll();
         };
-        apply();
-        centerScroll();
+        zoomApi = {
+          get: () => Math.round(scale * 10000) / 10000,
+          set: z => zoomTo(z),
+          fit: () => {
+            setFit();
+            return Math.round(scale * 10000) / 10000;
+          },
+        };
+        if (typeof context.zoom === 'number' && Number.isFinite(context.zoom) && context.zoom > 0) {
+          zoomTo(context.zoom);
+          centerScroll();
+        } else {
+          apply();
+          centerScroll();
+        }
       },
       resize() {
         relayout?.();
@@ -325,7 +434,9 @@ export const imageRenderer: PreviewRenderer = {
       destroy() {
         cleanup();
       },
+      zoom,
     };
+    return instance;
   },
 };
 

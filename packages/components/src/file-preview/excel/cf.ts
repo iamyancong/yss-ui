@@ -47,7 +47,7 @@ export interface CfResult {
 }
 
 /** Excel 默认的 64 色索引调色板（indexed 颜色） */
-const INDEXED = [
+export const INDEXED = [
   '000000', 'FFFFFF', 'FF0000', '00FF00', '0000FF', 'FFFF00', 'FF00FF', '00FFFF',
   '000000', 'FFFFFF', 'FF0000', '00FF00', '0000FF', 'FFFF00', 'FF00FF', '00FFFF',
   '800000', '008000', '000080', '808000', '800080', '008080', 'C0C0C0', '808080',

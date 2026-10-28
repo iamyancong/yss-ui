@@ -3,10 +3,20 @@
  *
  * @vue-office/excel 打开 xls 时先用内置的 SheetJS 转成 xlsx 再交给 exceljs，转换时数字格式与公式结果都会丢失
  * （日期显示为 46287 这样的序列号、45% 显示为 0.45、公式单元格为空）。这里直接读取 BIFF 记录拿回这些信息。
+ * SheetJS 社区版转换时还会丢掉全部样式（边框、填充、字体、对齐），这里一并从 FONT / XF / PALETTE 记录读取。
  * 只读取需要的记录，不解析公式本身；BIFF5（Excel 95）及更早版本返回 null，按 exceljs 的数据显示。
  */
 import { builtinFormat } from './builtin-formats';
-import { createSheetModel, setCell, type RawCell, type SheetModel, type WorkbookModel } from './model';
+import { INDEXED } from './cf';
+import {
+  createSheetModel,
+  setCell,
+  type BorderSide,
+  type CellStyleModel,
+  type RawCell,
+  type SheetModel,
+  type WorkbookModel,
+} from './model';
 
 const ENDOFCHAIN = 0xfffffffe;
 const FREESECT = 0xffffffff;
@@ -233,6 +243,97 @@ const ERRORS: Record<number, string> = {
   0x2b: '#GETTING_DATA',
 };
 
+interface BiffFont {
+  sz: number;
+  name: string;
+  bold: boolean;
+  italic: boolean;
+  strike: boolean;
+  underline: boolean;
+  color: number;
+}
+
+interface BiffXf {
+  font: number;
+  fmt: number;
+  /** 水平对齐 alc、垂直对齐 alcV、自动换行 */
+  alc: number;
+  alcV: number;
+  wrap: boolean;
+  /** 左右上下边框线型（dgLeft…）与颜色序号 */
+  dg: [number, number, number, number];
+  icv: [number, number, number, number];
+  /** 填充图案、前景色、背景色 */
+  fls: number;
+  fore: number;
+  back: number;
+}
+
+/** BIFF 线型 → x-spreadsheet 线型（它只认 thin / medium / thick / dashed / dotted / double） */
+const BORDER_STYLES = [
+  '',
+  'thin',
+  'medium',
+  'dashed',
+  'dotted',
+  'thick',
+  'double',
+  'thin', // hair
+  'medium', // mediumDashed
+  'dashed', // dashDot
+  'medium', // mediumDashDot
+  'dashed', // dashDotDot
+  'medium', // mediumDashDotDot
+  'medium', // slantDashDot
+];
+const H_ALIGN = ['general', 'left', 'center', 'right', 'fill', 'justify', 'centerContinuous', 'distributed'];
+const V_ALIGN = ['top', 'middle', 'bottom', 'justify', 'distributed'];
+/** 非实心图案按前景色占比与背景色混合（50% 灰、75% 灰、25% 灰、条纹…、12.5% 灰、6.25% 灰） */
+const PATTERN_DENSITY = [
+  0, 1, 0.5, 0.75, 0.25, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.125, 0.0625,
+];
+
+const mix = (a: string, b: string, t: number) => {
+  const ch = (hex: string, i: number) => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16);
+  return `#${[0, 1, 2]
+    .map(i =>
+      Math.round(ch(a, i) * t + ch(b, i) * (1 - t))
+        .toString(16)
+        .padStart(2, '0')
+    )
+    .join('')}`.toUpperCase();
+};
+
+/** 把 XF 记录转成单元格样式 */
+function xfToStyle(
+  xf: BiffXf,
+  font: BiffFont | undefined,
+  color: (icv: number, fallback: string) => string
+): CellStyleModel {
+  const style: CellStyleModel = {};
+  if (font) {
+    style.font = { name: font.name || undefined, bold: font.bold || undefined, italic: font.italic || undefined };
+    if (font.underline) style.underline = true;
+    if (font.strike) style.strike = true;
+    const fc = color(font.color, '#000000');
+    if (fc !== '#000000') style.color = fc;
+  }
+  if (xf.alc) style.align = H_ALIGN[xf.alc] ?? 'general';
+  style.valign = V_ALIGN[xf.alcV] ?? 'bottom';
+  if (xf.wrap) style.textwrap = true;
+  const sides: BorderSide[] = ['left', 'right', 'top', 'bottom'];
+  sides.forEach((side, i) => {
+    const line = BORDER_STYLES[xf.dg[i]];
+    if (line) (style.border ??= {})[side] = [line, color(xf.icv[i], '#000000')];
+  });
+  if (xf.fls) {
+    const fore = color(xf.fore, '#000000');
+    const back = color(xf.back, '#FFFFFF');
+    style.bgcolor = xf.fls === 1 ? fore : mix(fore, back, PATTERN_DENSITY[xf.fls] ?? 0.5);
+  }
+  return style;
+}
+
 /** 解析 BIFF8 xls；不是 BIFF8 或解析失败时返回 null */
 export function parseXlsModel(data: ArrayBuffer, { locale = 'zh-CN' }: { locale?: string } = {}): WorkbookModel | null {
   const stream = readCompoundStream(data, ['Workbook', 'Book']);
@@ -242,8 +343,9 @@ export function parseXlsModel(data: ArrayBuffer, { locale = 'zh-CN' }: { locale?
   if (!first || first.type !== 0x0809 || u16(first.data, 0) !== 0x0600) return null;
 
   const formats = new Map<number, string>();
-  const fonts: number[] = [];
-  const xfs: Array<{ font: number; fmt: number }> = [];
+  const fonts: BiffFont[] = [];
+  const xfs: BiffXf[] = [];
+  const palette = INDEXED.map(c => `#${c}`);
   const sheets: Array<{ name: string; state: SheetModel['state']; offset: number }> = [];
   const sst: string[] = [];
   let date1904 = false;
@@ -275,15 +377,52 @@ export function parseXlsModel(data: ArrayBuffer, { locale = 'zh-CN' }: { locale?
       case 0x003d:
         activeTab = u16(d, 10);
         break;
-      case 0x0031:
-        fonts.push(u16(d, 0) / 20);
+      case 0x0031: {
+        // FONT
+        const grbit = u16(d, 2);
+        fonts.push({
+          sz: u16(d, 0) / 20,
+          italic: (grbit & 0x02) !== 0,
+          strike: (grbit & 0x08) !== 0,
+          color: u16(d, 4),
+          bold: u16(d, 6) >= 700,
+          underline: d[10] !== 0,
+          name: d.length > 15 ? xlString(d, 14, 1) : '',
+        });
         break;
+      }
+      case 0x0092: {
+        // PALETTE：自定义的 8~63 号颜色
+        const n = Math.min(u16(d, 0), 56);
+        for (let i = 0; i < n; i++) {
+          const at = 2 + i * 4;
+          const rgb = [d[at], d[at + 1], d[at + 2]].map(v => v.toString(16).padStart(2, '0'));
+          palette[8 + i] = `#${rgb.join('')}`.toUpperCase();
+        }
+        break;
+      }
       case 0x041e:
         formats.set(u16(d, 0), xlString(d, 2));
         break;
-      case 0x00e0:
-        xfs.push({ font: u16(d, 0), fmt: u16(d, 2) });
+      case 0x00e0: {
+        // XF
+        const b1 = u32(d, 10);
+        const b2 = u32(d, 14);
+        const fill = u16(d, 18);
+        xfs.push({
+          font: u16(d, 0),
+          fmt: u16(d, 2),
+          alc: d[6] & 0x07,
+          wrap: (d[6] & 0x08) !== 0,
+          alcV: (d[6] >> 4) & 0x07,
+          dg: [b1 & 0x0f, (b1 >> 4) & 0x0f, (b1 >> 8) & 0x0f, (b1 >> 12) & 0x0f],
+          icv: [(b1 >>> 16) & 0x7f, (b1 >>> 23) & 0x7f, b2 & 0x7f, (b2 >>> 7) & 0x7f],
+          fls: (b2 >>> 26) & 0x3f,
+          fore: fill & 0x7f,
+          back: (fill >> 7) & 0x7f,
+        });
         break;
+      }
       case 0x0085: {
         const dt = d[5];
         if (dt === 0) {
@@ -303,23 +442,30 @@ export function parseXlsModel(data: ArrayBuffer, { locale = 'zh-CN' }: { locale?
   flushSst();
 
   // FONT 序号 4 不存在（BIFF 的历史约定），4 以后的序号要减 1
-  const fontSize = (i: number) => fonts[i >= 4 ? i - 1 : i];
+  const fontAt = (i: number): BiffFont | undefined => fonts[i >= 4 ? i - 1 : i];
   const fmtCode = (ifmt: number) => formats.get(ifmt) ?? builtinFormat(ifmt, locale);
   const xfFmt = xfs.map(x => fmtCode(x.fmt));
-  const xfSize = xfs.map(x => fontSize(x.font));
+  const xfSize = xfs.map(x => fontAt(x.font)?.sz);
+  // 64 / 0x7FFF 等为系统颜色（窗口前景、自动），按默认色处理
+  const color = (icv: number, fallback: string) => (icv < 64 ? (palette[icv] ?? fallback) : fallback);
+  const cellStyles = xfs.map(x => xfToStyle(x, fontAt(x.font), color));
+  /** 空白单元格只有设置了边框或填充时才需要显示 */
+  const visibleBlank = (ixfe: number) => !!(cellStyles[ixfe]?.border || cellStyles[ixfe]?.bgcolor);
   const model: WorkbookModel = {
     date1904,
     activeTab,
     fullCalcOnLoad: false,
     sheets: [],
     themeColors: [],
-    defaultFont: { sz: fonts[0] || 10 },
+    defaultFont: { name: fonts[0]?.name || undefined, sz: fonts[0]?.sz || 10 },
+    cellStyles,
   };
 
   for (const info of sheets) {
     const sheet = createSheetModel(info.name, info.state);
     const cell = (ixfe: number, t: RawCell['t'], v: RawCell['v'], f = false): RawCell => {
       const c: RawCell = { t, v, fmt: xfFmt[ixfe] ?? 'General', sz: xfSize[ixfe] };
+      if (cellStyles[ixfe]) c.style = ixfe;
       if (f) {
         c.f = true;
         sheet.formulaCells++;
@@ -349,6 +495,20 @@ export function parseXlsModel(data: ArrayBuffer, { locale = 'zh-CN' }: { locale?
           const colFirst = u16(d, 2);
           const n = (d.length - 6) / 6;
           for (let i = 0; i < n; i++) setCell(sheet, row, colFirst + i, cell(u16(d, 4 + i * 6), 'n', RK(u32(d, 6 + i * 6))));
+          break;
+        }
+        case 0x0201: // BLANK
+          if (visibleBlank(u16(d, 4))) setCell(sheet, u16(d, 0), u16(d, 2), cell(u16(d, 4), 'z', null));
+          break;
+        case 0x00be: {
+          // MULBLANK
+          const row = u16(d, 0);
+          const colFirst = u16(d, 2);
+          const n = (d.length - 6) / 2;
+          for (let i = 0; i < n; i++) {
+            const ixfe = u16(d, 4 + i * 2);
+            if (visibleBlank(ixfe)) setCell(sheet, row, colFirst + i, cell(ixfe, 'z', null));
+          }
           break;
         }
         case 0x00fd: // LABELSST

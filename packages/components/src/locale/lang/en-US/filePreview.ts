@@ -77,6 +77,11 @@ const filePreview: YssFilePreviewLocale = {
   imageReset: 'Reset',
   imageLoadFailed:
     'The image cannot be displayed. The file may be corrupted or the format is not supported by this browser.',
+  zoomIn: 'Zoom in',
+  zoomOut: 'Zoom out',
+  zoomMenu: 'Zoom {zoom}',
+  zoomFitWidth: 'Fit width',
+  zoomReset: 'Reset (100%)',
 };
 
 export default filePreview;

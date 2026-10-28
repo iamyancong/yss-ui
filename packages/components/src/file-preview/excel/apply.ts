@@ -12,7 +12,7 @@
  */
 import type { CfStyle } from './cf';
 import type { CellFormatter, FormattedCell } from './format';
-import { columnName, type RawCell, type SheetModel, type WorkbookModel } from './model';
+import { columnName, type CellStyleModel, type RawCell, type SheetModel, type WorkbookModel } from './model';
 
 /** x-spreadsheet 的单元格样式（只列出这里用到的字段） */
 export interface XsStyle {
@@ -186,6 +186,21 @@ export function applySheetModel(
     return styles[cell.style];
   };
 
+  // 模型自带样式（老版 xls）：按「原样式 + 模型样式 + 显示类型」生成独立样式，避免改到共用同一样式的其他单元格
+  const ownStyles = new Map<string, number>();
+  const modelStyleOf = (cell: XsCell, index: number, kind: string): XsStyle => {
+    const base = typeof cell.style === 'number' && styles[cell.style] ? cell.style : -1;
+    const key = `${base}|${index}|${kind}`;
+    let at = ownStyles.get(key);
+    if (at === undefined) {
+      styles.push(withModelStyle(base >= 0 ? styles[base] : {}, model.cellStyles![index]));
+      at = styles.length - 1;
+      ownStyles.set(key, at);
+    }
+    cell.style = at;
+    return styles[at];
+  };
+
   const rowMaxFont = new Map<number, number>();
   const wrapped: Array<{ r: number; c: number; text: string; px: number; font?: string; bold?: boolean }> = [];
 
@@ -199,14 +214,15 @@ export function applySheetModel(
         if (cell) cell.text = '';
         continue;
       }
+      const ownStyle = raw.style !== undefined && model.cellStyles?.[raw.style] ? raw.style : undefined;
       if (!cell) {
-        if (raw.t === 'z') continue;
+        if (raw.t === 'z' && ownStyle === undefined) continue;
         cell = xsCells[c] = {};
       }
       const out: FormattedCell = formatter.format(raw);
       cell.text = out.text;
       count++;
-      const style = styleOf(cell);
+      const style = ownStyle !== undefined ? modelStyleOf(cell, ownStyle, out.kind) : styleOf(cell);
       fixStyle(style, raw, out, model.themeColors);
       const sz = raw.sz ?? defaultSz;
       rowMaxFont.set(r, Math.max(rowMaxFont.get(r) ?? 0, sz));
@@ -235,6 +251,28 @@ export function applySheetModel(
         derived.set(id, index);
       }
       cell.style = index;
+    }
+  }
+
+  // 合并区域：x-spreadsheet 只按左上角单元格的边框画整个区域，右、下边框在 Excel 里记录在最右列、最下行的单元格上
+  if (model.cellStyles) {
+    const own = (r: number, c: number) => {
+      const i = sheet.cells.get(r)?.get(c)?.style;
+      return i !== undefined ? model.cellStyles![i]?.border : undefined;
+    };
+    for (const m of sheet.merges) {
+      const right = own(m.r0, m.c1)?.right;
+      const bottom = own(m.r1, m.c0)?.bottom;
+      if (!right && !bottom) continue;
+      const row = rows[m.r0];
+      const cell = row && typeof row === 'object' ? row.cells?.[m.c0] : undefined;
+      if (!cell) continue;
+      const base = typeof cell.style === 'number' && styles[cell.style] ? styles[cell.style] : {};
+      const border = { ...((base.border as Record<string, unknown>) ?? {}) };
+      if (right && !border.right) border.right = [...right];
+      if (bottom && !border.bottom) border.bottom = [...bottom];
+      styles.push({ ...base, border });
+      cell.style = styles.length - 1;
     }
   }
 
@@ -344,6 +382,29 @@ function objectExtent(sheet: SheetModel): { row: number; col: number } {
   }
   for (const s of sheet.extras?.sparklines ?? []) for (const it of s.items) row = Math.max(row, it.row);
   return { row: Math.min(row, 1048575), col: Math.min(col, 16383) };
+}
+
+/** 用模型里的样式替换原样式的边框、填充、字体、对齐（SheetJS 转换后的这些信息不可靠） */
+function withModelStyle(base: XsStyle, own: CellStyleModel): XsStyle {
+  const out: XsStyle = { ...base };
+  for (const k of ['border', 'fill', 'bgcolor', 'color', 'align', 'valign', 'textwrap', 'underline', 'strike'] as const)
+    delete out[k];
+  const font: NonNullable<XsStyle['font']> = { ...(base.font ?? {}) };
+  delete font.color;
+  delete font.underline;
+  delete font.strike;
+  if (own.font?.name) font.name = own.font.name;
+  font.bold = !!own.font?.bold;
+  font.italic = !!own.font?.italic;
+  out.font = font;
+  if (own.border) {
+    out.border = {};
+    for (const [side, value] of Object.entries(own.border)) (out.border as Record<string, unknown>)[side] = [...value!];
+  }
+  for (const k of ['bgcolor', 'color', 'align', 'valign', 'textwrap', 'underline', 'strike'] as const) {
+    if (own[k] !== undefined) (out as Record<string, unknown>)[k] = own[k];
+  }
+  return out;
 }
 
 function fixStyle(style: XsStyle, raw: RawCell, out: FormattedCell, theme: string[]) {

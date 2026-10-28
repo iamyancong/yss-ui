@@ -156,12 +156,24 @@ function alignLabelsToZero(chart: EChartsLike, option: Record<string, any>): boo
 }
 
 /** 在 dom 里画图表；dom 需要已有尺寸 */
-export async function renderChart(dom: HTMLElement, model: ChartModel, format: NumberFormatter, fontFamily?: string): Promise<RenderedChart> {
+export async function renderChart(
+  dom: HTMLElement,
+  model: ChartModel,
+  format: NumberFormatter,
+  fontFamily?: string,
+  /** 画布像素比；表格缩放时为 devicePixelRatio × 比例，放大后保持清晰 */
+  pixelRatio?: number
+): Promise<RenderedChart> {
   const echarts = await loadECharts();
   const width = dom.clientWidth || 400;
   const height = dom.clientHeight || 300;
   const { option, multiLevel } = buildChartOption(model, { width, height, format, fontFamily });
-  const chart = echarts.init(dom, undefined, { renderer: 'canvas', width, height });
+  const chart = echarts.init(dom, undefined, {
+    renderer: 'canvas',
+    width,
+    height,
+    ...(pixelRatio && pixelRatio > 0 ? { devicePixelRatio: pixelRatio } : {}),
+  });
   chart.setOption(option, true);
   try {
     alignLabelsToZero(chart, option);

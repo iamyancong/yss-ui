@@ -8,10 +8,12 @@ import {
   RightOutlined,
 } from '@ant-design/icons-vue';
 import { Button, Modal, theme, Tooltip } from 'ant-design-vue';
-import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
+import { computed, onBeforeUnmount, provide, ref, shallowRef, watch } from 'vue';
 import { useLocale } from '../locale/useLocale';
 import { DEFAULT_MAX_FILE_SIZE, EXTENSION_TYPE_MAP } from './constant';
 import FileSwitcher from './components/FileSwitcher.vue';
+import ZoomControl from './components/ZoomControl.vue';
+import { FILE_PREVIEW_ZOOM_HOST } from './hooks/usePreviewZoom';
 import FilePreview from './index.vue';
 import { hasCustomRenderer } from './renderers/registry';
 import type {
@@ -26,12 +28,14 @@ import type {
   FilePreviewModalSlots,
   FileSource,
   FileSourceLoader,
+  FilePreviewZoomInfo,
 } from './types';
 import { extractExtension } from './utils/detect';
 import { MODAL_CLASSES, renderModalWithOwnClasses } from './utils/modalClasses';
 import { createPopupLayer } from './utils/popupLayer';
 import { isPreviewItem, resolveItemName } from './utils/item';
 import { isTopmostModal, popModal, pushModal } from './utils/modalStack';
+import { zoomShortcut } from './utils/zoom';
 
 defineOptions({ name: 'YFilePreviewModal' });
 
@@ -51,6 +55,12 @@ const props = withDefaults(defineProps<FilePreviewModalProps>(), {
   customDownload: undefined,
   fileSwitcher: true,
   loop: false,
+  zoomable: true,
+  zoom: undefined,
+  zoomMin: undefined,
+  zoomMax: undefined,
+  zoomStep: 0.1,
+  zoomFit: 'none',
 });
 
 const emit = defineEmits<FilePreviewModalEmits>();
@@ -59,6 +69,8 @@ defineSlots<FilePreviewModalSlots>();
 const { t } = useLocale('filePreview');
 
 const modalId = Symbol('YFilePreviewModal');
+// 缩放控件显示在头部：内置渲染器不再显示自己的放大 / 缩小按钮
+provide(FILE_PREVIEW_ZOOM_HOST, true);
 const isFullscreen = ref(false);
 const previewRef = ref<FilePreviewExpose | null>(null);
 
@@ -271,6 +283,15 @@ const handleUnsupported = (type: string) => {
   if (currentFile.value) emit('unsupported', type, currentContext());
 };
 
+/* ---------------- 缩放 ---------------- */
+
+const zoomState = computed(() => previewRef.value?.zoomState ?? null);
+const showZoom = computed(() => !!zoomState.value?.available);
+const handleZoomUpdate = (zoom: number) => emit('update:zoom', zoom);
+const handleZoomChange = (zoom: number, info: FilePreviewZoomInfo) => {
+  if (currentFile.value) emit('zoom-change', zoom, info, currentContext());
+};
+
 /**
  * 列表变化时：下标越界自动收敛并通知 update:index；当前文件变了通知 change；列表清空时关闭弹窗。
  * 打开弹窗时只记录当前文件，不触发 change。
@@ -361,7 +382,18 @@ const handlePointerDown = (event: PointerEvent) => {
 
 /** 方向键切换文件：只有最上层的预览弹窗响应 */
 const handleKeyDown = (event: KeyboardEvent) => {
-  if (!props.open || !props.keyboard || !isTopmostModal(modalId)) return;
+  if (!props.open || !isTopmostModal(modalId)) return;
+  // Ctrl / ⌘ + = / - / 0 缩放（焦点在预览内容里时 YFilePreview 已处理并 preventDefault）
+  const zoomKey = zoomShortcut(event);
+  if (zoomKey) {
+    if (event.defaultPrevented || !showZoom.value || closestFrom(event.target, EDITABLE_SELECTOR)) return;
+    event.preventDefault();
+    if (zoomKey === 'in') previewRef.value?.zoomIn();
+    else if (zoomKey === 'out') previewRef.value?.zoomOut();
+    else previewRef.value?.resetZoom();
+    return;
+  }
+  if (!props.keyboard) return;
   if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
   // 全屏时 Esc 先退出全屏（与浏览器原生全屏一致），再按一次才关闭弹窗。
   // 全屏期间 Modal 的 keyboard 关掉，Esc 会冒泡到这里；不看 defaultPrevented：
@@ -497,6 +529,19 @@ onBeforeUnmount(() => {
           <div v-if="$slots.actions && slotContext" class="yss-file-preview-modal__actions">
             <slot name="actions" v-bind="slotContext" />
           </div>
+          <ZoomControl
+            v-if="showZoom && zoomState"
+            :value="zoomState.value"
+            :min="zoomState.min"
+            :max="zoomState.max"
+            :can-fit="zoomState.canFit"
+            :popup-container="getPopupContainer"
+            @set="z => previewRef?.setZoom(z)"
+            @zoom-in="previewRef?.zoomIn()"
+            @zoom-out="previewRef?.zoomOut()"
+            @fit="previewRef?.fitZoom('width')"
+            @reset="previewRef?.resetZoom()"
+          />
           <Tooltip
             :title="isFullscreen ? t('exitFullscreen') : t('fullscreen')"
             placement="bottom"
@@ -571,7 +616,15 @@ onBeforeUnmount(() => {
         :csv-row-number="csvRowNumber"
         :show-download="showDownload"
         :custom-download="previewCustomDownload"
+        :zoomable="zoomable"
+        :zoom="zoom"
+        :zoom-min="zoomMin"
+        :zoom-max="zoomMax"
+        :zoom-step="zoomStep"
+        :zoom-fit="zoomFit"
         height="100%"
+        @update:zoom="handleZoomUpdate"
+        @zoom-change="handleZoomChange"
         @loaded="handleLoaded"
         @error="handleError"
         @unsupported="handleUnsupported"

@@ -17,6 +17,8 @@ export interface CreateOverlayOptions {
   formatter: CellFormatter | null;
   maxImagePixels?: number;
   navigate?: (sheet: string, row: number, col: number) => void;
+  /** 当前缩放比例 */
+  scale?: number;
 }
 
 export function createExcelOverlay(options: CreateOverlayOptions): ExcelOverlay | null {
@@ -43,6 +45,7 @@ export function createExcelOverlay(options: CreateOverlayOptions): ExcelOverlay 
     },
     maxImagePixels: options.maxImagePixels,
     navigate: options.navigate,
+    scale: options.scale,
     fontFamily: fontFamily(model.theme?.minorLatin, model.theme?.minorEa),
   });
   if (!overlay.attach()) {

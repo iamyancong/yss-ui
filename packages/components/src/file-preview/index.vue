@@ -8,10 +8,11 @@ import {
   WarningOutlined,
 } from '@ant-design/icons-vue';
 import { Button, Spin } from 'ant-design-vue';
-import { computed, onMounted, ref, type Component } from 'vue';
+import { computed, inject, onBeforeUnmount, onMounted, ref, type Component } from 'vue';
 import { useLocale } from '../locale/useLocale';
 import { DEFAULT_MAX_FILE_SIZE, formatFileSize, LEGACY_OFFICE_TYPES, SUPPORTED_FILE_TYPES } from './constant';
 import { useFileRenderer } from './hooks/useFileRenderer';
+import { FILE_PREVIEW_ZOOM_HOST, usePreviewZoom } from './hooks/usePreviewZoom';
 import { getCustomRendererTypes } from './renderers/registry';
 import type { FilePreviewTranslate } from './renderers/types';
 import type { FilePreviewEmits, FilePreviewExpose, FilePreviewProps } from './types';
@@ -28,6 +29,12 @@ const props = withDefaults(defineProps<FilePreviewProps>(), {
   height: '100%',
   showDownload: true,
   customDownload: undefined,
+  zoomable: true,
+  zoom: undefined,
+  zoomMin: undefined,
+  zoomMax: undefined,
+  zoomStep: 0.1,
+  zoomFit: 'none',
 });
 
 const emit = defineEmits<FilePreviewEmits>();
@@ -48,7 +55,25 @@ const {
   fileSize,
   render,
   download,
-} = useFileRenderer({ props, emit, containerRef, t, locale: () => localeName.value });
+  zoomController,
+} = useFileRenderer({
+  props,
+  emit,
+  containerRef,
+  t,
+  locale: () => localeName.value,
+  zoomContext: type => zoom.zoomContext(type),
+});
+
+const zoom = usePreviewZoom({
+  props,
+  emit,
+  controller: zoomController,
+  status,
+  detectedType,
+  externalControl: inject(FILE_PREVIEW_ZOOM_HOST, false),
+});
+onBeforeUnmount(zoom.dispose);
 
 onMounted(() => {
   void render();
@@ -131,11 +156,30 @@ defineExpose<FilePreviewExpose>({
   getFileType: () => detectedType.value,
   getStatus: () => status.value,
   download,
+  zoomState: zoom.state,
+  setZoom: zoom.setZoom,
+  zoomIn: zoom.zoomIn,
+  zoomOut: zoom.zoomOut,
+  resetZoom: zoom.resetZoom,
+  fitZoom: zoom.fitZoom,
 });
 </script>
 
 <template>
-  <div class="yss-file-preview" :class="`yss-file-preview--${status}`" :style="rootStyle">
+  <div
+    class="yss-file-preview"
+    :class="`yss-file-preview--${status}`"
+    :style="rootStyle"
+    @keydown="zoom.handleKeydown"
+    @wheel.capture="zoom.handleWheel"
+    @gesturestart="zoom.handleGestureStart"
+    @gesturechange="zoom.handleGestureChange"
+    @gestureend="zoom.handleGestureEnd"
+    @touchstart.passive="zoom.handleTouchStart"
+    @touchmove="zoom.handleTouchMove"
+    @touchend.passive="zoom.handleTouchEnd"
+    @touchcancel.passive="zoom.handleTouchEnd"
+  >
     <slot
       name="toolbar"
       :file-name="fileName"
@@ -143,6 +187,12 @@ defineExpose<FilePreviewExpose>({
       :status="status"
       :download="download"
       :reload="render"
+      :zoom="zoom.state"
+      :set-zoom="zoom.setZoom"
+      :zoom-in="zoom.zoomIn"
+      :zoom-out="zoom.zoomOut"
+      :reset-zoom="zoom.resetZoom"
+      :fit-zoom="zoom.fitZoom"
     />
 
     <div class="yss-file-preview__body">

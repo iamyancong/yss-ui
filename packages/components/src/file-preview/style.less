@@ -158,6 +158,12 @@
     transform-origin: 0 0;
   }
 
+  // 缩放时对象按 100% 尺寸绘制后整体缩放（见 excel/overlay.ts mount）
+  &__zoom {
+    position: absolute;
+    transform-origin: 0 0;
+  }
+
   &__object {
     position: absolute;
     box-sizing: border-box;
@@ -1131,5 +1137,62 @@
     justify-content: center;
     padding: 8px;
     border-top: 1px solid var(--ant-border-color-split, rgb(5 5 5 / 6%));
+  }
+}
+
+// 弹窗头部缩放控件：[ − ] [ 100% ▾ ] [ + ]，与头部图标按钮同高、同色
+.yss-file-preview-zoom {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  height: 32px;
+
+  &__level&__level {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    height: 32px;
+    min-width: 64px;
+    padding: 0 6px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    color: var(--yss-fpm-icon, rgb(0 0 0 / 65%));
+    border-radius: var(--yss-fpm-radius, 6px);
+
+    &:hover {
+      color: var(--yss-fpm-icon-hover, rgb(0 0 0 / 88%));
+      background: var(--yss-fpm-icon-bg-hover, rgb(0 0 0 / 4%));
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--yss-fpm-focus, #91caff);
+      outline-offset: 1px;
+    }
+  }
+
+  &__text {
+    flex: 1;
+    text-align: center;
+  }
+
+  &__arrow {
+    font-size: 10px;
+  }
+
+  &__option {
+    display: inline-flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 72px;
+  }
+
+  @media (max-width: 480px) {
+    &__level&__level {
+      height: 28px;
+      min-width: 56px;
+      padding: 0 4px;
+    }
   }
 }

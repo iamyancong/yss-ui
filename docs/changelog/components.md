@@ -10,6 +10,21 @@ toc: content
 
 YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
+## v1.9.3
+
+`2026-10-28`
+
+### ✨ Features
+
+- **FilePreview 缩放**：`YFilePreview`、`YFilePreviewModal` 与 `useFilePreview` 新增 `xlsx`、`xls` 和图片缩放支持（标题栏缩放控件、快捷键 `Ctrl`/`⌘` + `=`/`-`/`0`、`Ctrl` + 滚轮与双指捏合），支持 `v-model:zoom`、`zoomable`、`zoomMin` / `zoomMax`、`zoomStep`、`zoomFit`、`zoom-change` 事件及实例缩放方法；Excel 按比例重绘表格与叠加层以保持清晰，并按文件记忆缩放比例。
+- **FilePreview `.xls` 样式**：解析旧版 Excel（BIFF8）单元格的边框、背景填充、字体与对齐样式（含带边框空白格与合并区域外框）。
+
+### 🐛 Bug Fixes
+
+- **FilePreview Excel 叠加层定位**：修复隐藏行 / 列后图表、图片等叠加对象发生位置偏移的问题。
+
+---
+
 ## v1.9.2
 
 `2026-10-26`

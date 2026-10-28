@@ -21,6 +21,8 @@ export interface GeometryInput {
   defaultColWidth?: number;
   defaultRowHeight?: number;
   freeze?: { rows: number; cols: number };
+  /** 缩放比例：行高、列宽已经按比例写入，锚点在单元格内的偏移与绝对尺寸（EMU）在这里乘同一比例 */
+  scale?: number;
 }
 
 /** 一维的累计尺寸（前缀和），超出已知范围时按默认尺寸外推 */
@@ -79,6 +81,12 @@ class Axis {
   }
 }
 
+/**
+ * 隐藏的行、列：x-spreadsheet 按 0 绘制。这里给一个极小的正数，0 会被当作「没有设置」而按默认行高、列宽计算，
+ * 导致隐藏行列之后的对象整体下移 / 右移一个默认行高（24px）/ 列宽（80px）
+ */
+export const HIDDEN_SIZE = 0.0001;
+
 /** 与 x-spreadsheet 用同样的尺寸（隐藏行列为 0.1px），叠加层与画布逐像素对齐 */
 const visibleSize = (v: number | undefined, fallback: number) => (v === undefined || !(v > 0) ? fallback : v);
 
@@ -86,8 +94,10 @@ export class SheetGeometry {
   readonly cols: Axis;
   readonly rows: Axis;
   readonly freeze: { rows: number; cols: number };
+  readonly scale: number;
 
   constructor(input: GeometryInput) {
+    this.scale = input.scale && input.scale > 0 ? input.scale : 1;
     const dw = input.defaultColWidth ?? 80;
     const dh = input.defaultRowHeight ?? 24;
     this.cols = new Axis(c => visibleSize(input.colWidth(c), dw), input.colCount, dw);
@@ -111,23 +121,18 @@ export class SheetGeometry {
     const cw = this.cols.sizeOf(m.col);
     const rh = this.rows.sizeOf(m.row);
     return {
-      x: this.cols.start(m.col) + Math.min(m.colOff / EMU_PER_PX, cw),
-      y: this.rows.start(m.row) + Math.min(m.rowOff / EMU_PER_PX, rh),
+      x: this.cols.start(m.col) + Math.min((m.colOff / EMU_PER_PX) * this.scale, cw),
+      y: this.rows.start(m.row) + Math.min((m.rowOff / EMU_PER_PX) * this.scale, rh),
     };
   }
 
   anchorRect(anchor: Anchor): Rect {
+    const k = this.scale / EMU_PER_PX;
     if (anchor.kind === 'abs' && anchor.pos && anchor.ext) {
-      return {
-        x: anchor.pos.x / EMU_PER_PX,
-        y: anchor.pos.y / EMU_PER_PX,
-        w: anchor.ext.cx / EMU_PER_PX,
-        h: anchor.ext.cy / EMU_PER_PX,
-      };
+      return { x: anchor.pos.x * k, y: anchor.pos.y * k, w: anchor.ext.cx * k, h: anchor.ext.cy * k };
     }
     const a = this.point(anchor.from!);
-    if (anchor.kind === 'one' && anchor.ext)
-      return { ...a, w: anchor.ext.cx / EMU_PER_PX, h: anchor.ext.cy / EMU_PER_PX };
+    if (anchor.kind === 'one' && anchor.ext) return { ...a, w: anchor.ext.cx * k, h: anchor.ext.cy * k };
     const b = anchor.to ? this.point(anchor.to) : a;
     return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
   }

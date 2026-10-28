@@ -14,6 +14,12 @@ export {
 } from './renderers/registry';
 export { FileLoadError, MissingDependencyError } from './errors';
 export { DEFAULT_MAX_FILE_SIZE, SUPPORTED_FILE_TYPES } from './constant';
-export type { FilePreviewTranslate, PreviewRenderer, PreviewRendererInstance, RenderContext } from './renderers/types';
+export type {
+  FilePreviewTranslate,
+  PreviewRenderer,
+  PreviewRendererInstance,
+  PreviewZoomController,
+  RenderContext,
+} from './renderers/types';
 export type { YssFilePreviewLocale } from '../locale/types';
 export * from './types';
