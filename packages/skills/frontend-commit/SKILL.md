@@ -56,7 +56,7 @@ git ls-files --others --exclude-standard
 
 - 同时理解暂存区、未暂存区和未跟踪文件；不要只依据文件名生成消息。
 - 将改动按用户可理解的行为和因果关系分组。功能实现、配套测试和为该功能必需的最小配置可以属于同一原子提交。
-- lockfile 必须与对应 manifest 一起提交。只提交项目本来就跟踪且由本次意图产生的生成代码；排除构建产物、缓存和临时文件。AI Skills 仅主目录 `.agents/` 与 `.cursorrules` 允许入库，禁止暂存 `.agent/`、`.cursor/`、`.claude/`、`.trae/` 等本地 IDE 软链接派生目录。
+- lockfile 必须与对应 manifest 一起提交。只提交项目本来就跟踪且由本次意图产生的生成代码；排除构建产物、缓存和临时文件。AI Skills 仅主目录 `.agents/` 与 `.cursorrules` 允许入库，禁止暂存 `.agent/skills`、`.cursor/skills`、`.claude/skills`、`.trae/skills` 等本地 IDE Skills 软链接派生路径；`.cursor/rules`、`.cursor/mcp.json`、`.claude/settings.json` 等团队共享 IDE 配置按正常改动处理，不得因位于 IDE 目录而排除。
 - 若无改动、改动与请求不符、多个逻辑变更无法安全拆分，先说明并停止。需要逐行拆分同一文件时，不要靠猜测改写暂存区。
 
 ### 3. 选择 type、scope 与正文

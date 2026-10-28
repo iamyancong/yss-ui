@@ -10,6 +10,10 @@ const REGISTRY = process.env.YSS_SKILLS_REGISTRY || 'https://registry.npmjs.org/
 const LOCAL_SKILLS_SOURCE = path.resolve(__dirname, '../../skills');
 const SYNC_MANIFEST = '.yss-skills-manifest.json';
 const DEFAULT_PRIMARY_TARGET = '.agents/skills';
+/** 未配置 symbolicLinks 时使用的项目级 IDE Skills 兼容目录 */
+const DEFAULT_SYMBOLIC_LINKS = ['.agent/skills', '.cursor/skills', '.claude/skills', '.trae/skills'];
+/** 旧版 Codex 项目级 Skills 目录，仅用于 Prettier 忽略兼容 */
+const LEGACY_CODEX_SKILLS = '.codex/skills';
 
 /**
  * Download and extract the latest @yss-ui/skills package
@@ -240,6 +244,32 @@ async function syncSkillEntries(sourceRoot, targetRoot, skills, options = {}) {
 }
 
 /**
+ * 提示 IDE 兼容目录中存在非 YSS 托管的条目。
+ * 兼容目录（如 .claude/skills）由 ensureGitIgnore 整体忽略，团队自研 Skill 放在这里不会进入版本控制。
+ *
+ * @param {string} targetRoot IDE 兼容 Skills 目录
+ * @param {string} label 日志标签
+ * @param {string[]} skills 托管 Skill 名称
+ * @param {string} primaryTarget 项目级 Skills 主目录
+ */
+async function warnUnmanagedEntries(targetRoot, label, skills, primaryTarget) {
+  let entries = [];
+  try {
+    entries = await fs.readdir(targetRoot);
+  } catch (_) {
+    return;
+  }
+  const unmanaged = entries.filter(entry => !entry.startsWith('.') && !skills.includes(entry));
+  if (unmanaged.length === 0) return;
+  console.warn(
+    chalk.yellow(
+      `  ⚠ ${label} contains non-YSS entries (${unmanaged.join(', ')}). ` +
+        `${label} is ignored by .gitignore; move team-shared skills to ${primaryTarget} to keep them in version control.`
+    )
+  );
+}
+
+/**
  * 为项目内不同 AI IDE 建立按 Skill 粒度的链接，不覆盖目标目录中的第三方 Skills。
  *
  * @param {string} projectRoot 项目根目录
@@ -284,6 +314,7 @@ async function createIdeLinks(projectRoot, primaryTarget, links, skills, depreca
         deprecatedSkills,
         writeManifest: true,
       });
+      await warnUnmanagedEntries(targetRoot, link, skills, primaryTarget);
     } catch (error) {
       console.warn(chalk.yellow(`  ⚠ Failed to sync ${link}: ${error.message}`));
     }
@@ -408,13 +439,14 @@ async function syncSkills(options = {}) {
       } catch (error) {
         console.warn(chalk.yellow(`⚠️ Failed to update .agents/rules: ${error.message}`));
       }
+      const symbolicLinks = skillsConfig.symbolicLinks || DEFAULT_SYMBOLIC_LINKS;
       try {
-        await ensurePrettierIgnore(cwd);
+        await ensurePrettierIgnore(cwd, symbolicLinks);
       } catch (error) {
         console.warn(chalk.yellow(`⚠️ Failed to update .prettierignore: ${error.message}`));
       }
       try {
-        await ensureGitIgnore(cwd);
+        await ensureGitIgnore(cwd, symbolicLinks);
       } catch (error) {
         console.warn(chalk.yellow(`⚠️ Failed to update .gitignore: ${error.message}`));
       }
@@ -561,105 +593,174 @@ ${skillLines}
 }
 
 /**
- * 确保项目的 .prettierignore 中包含 AI Skills 与规则的忽略项，避免本地提交时格式化改写产生差异。
+ * 转义正则特殊字符。
  *
- * @param {string} projectRoot 项目根目录
+ * @param {string} value 原始字符串
+ * @returns {string} 可安全拼接到 RegExp 的字符串
  */
-async function ensurePrettierIgnore(projectRoot) {
-  const ignorePath = path.join(projectRoot, '.prettierignore');
-  const markerStart = '# --- YSS AI SKILLS IGNORE START ---';
-  const markerEnd = '# --- YSS AI SKILLS IGNORE END ---';
-
-  const ignoreBlock = `${markerStart}
-# 官方 Skills 为发布包派生资产，由 @yss-ui/skills-cli 托管同步，严禁本地 Prettier 格式化改写产生漂移
-.agents/
-.agent/
-.cursor/
-.claude/
-.trae/
-.codex/
-.cursorrules
-${markerEnd}`;
-
-  let content = '';
-  if (await fs.pathExists(ignorePath)) {
-    content = await fs.readFile(ignorePath, 'utf8');
-  }
-
-  // 1. 若已有标记块，更新标记块内容
-  const regex = new RegExp(`${markerStart}[\\s\\S]*?${markerEnd}`, 'g');
-  if (regex.test(content)) {
-    content = content.replace(regex, ignoreBlock);
-    await fs.writeFile(ignorePath, content, 'utf8');
-    console.log(chalk.blue('Updated AI Skills ignore rules in .prettierignore'));
-    return;
-  }
-
-  // 2. 若已有散落的 .agents/ 规则，检查是否有缺失的核心目录
-  const requiredPatterns = ['.agents/', '.agent/', '.cursor/', '.claude/', '.trae/', '.cursorrules'];
-  const hasSomeAgentRule = content.includes('.agents/') || content.includes('.agents/skills/');
-
-  if (hasSomeAgentRule) {
-    const isMissingAny = requiredPatterns.some(pat => !content.includes(pat));
-    if (!isMissingAny) {
-      // 已经全部包含，无需重复追加
-      return;
-    }
-  }
-
-  // 3. 追加标记块
-  content = content ? `${content.trimEnd()}\n\n${ignoreBlock}\n` : `${ignoreBlock}\n`;
-  await fs.writeFile(ignorePath, content, 'utf8');
-  console.log(chalk.green('Added AI Skills ignore rules to .prettierignore'));
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
- * 确保项目的 .gitignore 中包含 AI IDE 软链接派生目录忽略规则，避免多人协作同步时产生本地路径或软链接冲突。
- * 注意：仅忽略软链接派生目录（.agent/、.cursor/、.claude/、.trae/），保留主目录 .agents/skills 纳入版本控制。
+ * 将 symbolicLinks 配置规范化为可安全写入 .gitignore / .prettierignore 的项目相对路径。
+ * 结尾不带斜杠：git 的 `dir/` 写法只匹配真实目录，匹配不到「整个 skills 目录本身就是软链接」的情况。
  *
- * @param {string} projectRoot 项目根目录
+ * @param {unknown} links IDE Skills 兼容目录列表；非数组时回退到默认目录
+ * @returns {string[]} 去重后的项目相对路径（如 `.cursor/skills`）
  */
-async function ensureGitIgnore(projectRoot) {
-  const ignorePath = path.join(projectRoot, '.gitignore');
-  const markerStart = '# --- YSS AI SKILLS GITIGNORE START ---';
-  const markerEnd = '# --- YSS AI SKILLS GITIGNORE END ---';
+function normalizeIgnoreEntries(links) {
+  const source = Array.isArray(links) ? links : DEFAULT_SYMBOLIC_LINKS;
+  const entries = [];
+  for (const link of source) {
+    if (typeof link !== 'string') continue;
+    const normalized = link
+      .trim()
+      .replace(/\\/g, '/')
+      .replace(/\/{2,}/g, '/')
+      .replace(/^(?:\.\/)+/, '')
+      .replace(/\/+$/, '');
+    if (!normalized || path.posix.isAbsolute(normalized) || path.win32.isAbsolute(normalized)) continue;
+    if (normalized.split('/').some(segment => segment === '.' || segment === '..')) continue;
+    // 拒绝空白、通配、否定与注释字符，避免写入超出预期范围的忽略规则
+    if (/[\s*?[\]!#]/.test(normalized)) continue;
+    if (!entries.includes(normalized)) entries.push(normalized);
+  }
+  return entries;
+}
 
-  const ignoreBlock = `${markerStart}
-# IDE Skills 软链接派生目录（主目录为 .agents/skills，软链接目录由 @yss-ui/skills-cli 本地派生请勿提交）
-.agent/
-.cursor/
-.claude/
-.trae/
-${markerEnd}`;
+/**
+ * 解析忽略文件中的有效规则行：去除空行、注释、否定规则，并去掉根锚点 `/`。
+ *
+ * @param {string} content 忽略文件内容
+ * @returns {string[]} 规则行
+ */
+function parseIgnoreLines(content) {
+  return content
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(line => line && !line.startsWith('#') && !line.startsWith('!'))
+    .map(line => line.replace(/^\//, ''));
+}
 
+/**
+ * 判断已有规则是否已覆盖指定路径。
+ * 仅接受精确路径（`.cursor/skills`）或顶层目录（`.cursor`、`.cursor/`，视为用户主动选择整目录忽略）；
+ * `.cursor/skills/` 带结尾斜杠匹配不到整目录软链接，视为未覆盖。
+ *
+ * @param {string[]} lines 已解析的规则行
+ * @param {string} entry 期望忽略的路径
+ * @returns {boolean} 是否已覆盖
+ */
+function isIgnoreEntryCovered(lines, entry) {
+  const target = entry.replace(/\/+$/, '');
+  const topDir = target.split('/')[0];
+  return lines.some(line => line === target || line === topDir || line === `${topDir}/`);
+}
+
+/**
+ * 在忽略文件中幂等维护 CLI 托管标记块：已存在则整体替换，未覆盖则追加，规则为空则移除旧标记块。
+ * 保留原文件换行风格（LF / CRLF）。
+ *
+ * @param {string} ignorePath 忽略文件路径
+ * @param {{ markerStart: string, markerEnd: string, comment: string, entries: string[] }} block 标记块配置
+ * @returns {Promise<'added' | 'updated' | 'removed' | 'unchanged'>} 处理结果
+ */
+async function upsertManagedIgnoreBlock(ignorePath, block) {
+  const { markerStart, markerEnd, comment, entries } = block;
   let content = '';
   if (await fs.pathExists(ignorePath)) {
     content = await fs.readFile(ignorePath, 'utf8');
   }
 
-  // 1. 若已有标记块，幂等更新标记块内容
-  const regex = new RegExp(`${markerStart}[\\s\\S]*?${markerEnd}`, 'g');
-  if (regex.test(content)) {
-    content = content.replace(regex, ignoreBlock);
-    await fs.writeFile(ignorePath, content, 'utf8');
-    console.log(chalk.blue('Updated AI Skills symlink ignore rules in .gitignore'));
-    return;
+  const eol = content.includes('\r\n') ? '\r\n' : '\n';
+  const blockPattern = `${escapeRegExp(markerStart)}[\\s\\S]*?${escapeRegExp(markerEnd)}`;
+  const hasBlock = new RegExp(blockPattern).test(content);
+
+  // 1. 无可写规则：仅清理旧标记块（避免遗留 1.1.1 整目录忽略规则）
+  if (entries.length === 0) {
+    if (!hasBlock) return 'unchanged';
+    const stripped = content.replace(new RegExp(`(?:\\r?\\n)*${blockPattern}`, 'g'), '').trimEnd();
+    await fs.writeFile(ignorePath, stripped ? `${stripped}${eol}` : '', 'utf8');
+    return 'removed';
   }
 
-  // 2. 若现有 .gitignore 已覆盖全部 4 个 IDE 软链接目录（支持 .agent/ 或 .agent/skills 等写法），则无需重复追加
-  const requiredDirs = ['agent', 'cursor', 'claude', 'trae'];
-  const isAllCovered = requiredDirs.every(dir => {
-    const pattern = new RegExp(`^\\/?\\.${dir}(?:\\/|\\/skills\\/?)?\\s*$`, 'm');
-    return pattern.test(content);
+  const blockText = [markerStart, comment, ...entries, markerEnd].join(eol);
+
+  // 2. 已有标记块：替换第一个、删除其余重复块（连同其前置空行），避免留下多份相同标记块
+  if (hasBlock) {
+    let replaced = false;
+    const next = content.replace(new RegExp(`(?:\\r?\\n)*${blockPattern}`, 'g'), match => {
+      if (replaced) return '';
+      replaced = true;
+      return match.replace(new RegExp(blockPattern), () => blockText);
+    });
+    if (next === content) return 'unchanged';
+    await fs.writeFile(ignorePath, next, 'utf8');
+    return 'updated';
+  }
+
+  // 3. 用户规则已全部覆盖：尊重现有配置，不追加
+  const lines = parseIgnoreLines(content);
+  if (entries.every(entry => isIgnoreEntryCovered(lines, entry))) {
+    return 'unchanged';
+  }
+
+  // 4. 追加标记块
+  const next = content ? `${content.trimEnd()}${eol}${eol}${blockText}${eol}` : `${blockText}${eol}`;
+  await fs.writeFile(ignorePath, next, 'utf8');
+  return 'added';
+}
+
+/**
+ * 确保项目的 .prettierignore 中包含 AI Skills 与规则的忽略项，避免本地提交时格式化改写产生差异。
+ * IDE 目录仅忽略 Skills 兼容路径（如 `.cursor/skills`），不影响 `.cursor/mcp.json`、`.claude/settings.json` 等团队配置。
+ *
+ * @param {string} projectRoot 项目根目录
+ * @param {unknown} [symbolicLinks] IDE Skills 兼容目录列表，默认读取内置目录
+ * @returns {Promise<'added' | 'updated' | 'removed' | 'unchanged'>} 处理结果
+ */
+async function ensurePrettierIgnore(projectRoot, symbolicLinks = DEFAULT_SYMBOLIC_LINKS) {
+  const entries = Array.from(
+    new Set(['.agents/', ...normalizeIgnoreEntries(symbolicLinks), LEGACY_CODEX_SKILLS, '.cursorrules'])
+  );
+  const result = await upsertManagedIgnoreBlock(path.join(projectRoot, '.prettierignore'), {
+    markerStart: '# --- YSS AI SKILLS IGNORE START ---',
+    markerEnd: '# --- YSS AI SKILLS IGNORE END ---',
+    comment: '# 官方 Skills 为发布包派生资产，由 @yss-ui/skills-cli 托管同步，严禁本地 Prettier 格式化改写产生漂移',
+    entries,
   });
-  if (isAllCovered) {
-    return;
-  }
 
-  // 3. 追加标记块
-  content = content ? `${content.trimEnd()}\n\n${ignoreBlock}\n` : `${ignoreBlock}\n`;
-  await fs.writeFile(ignorePath, content, 'utf8');
-  console.log(chalk.green('Added AI Skills symlink ignore rules to .gitignore'));
+  if (result === 'added') console.log(chalk.green('Added AI Skills ignore rules to .prettierignore'));
+  if (result === 'updated') console.log(chalk.blue('Updated AI Skills ignore rules in .prettierignore'));
+  return result;
+}
+
+/**
+ * 确保项目的 .gitignore 中包含 AI IDE Skills 兼容软链接的忽略规则，避免多人协作同步时产生本地路径或软链接冲突。
+ * 注意：
+ * - 只忽略 `skillsConfig.symbolicLinks` 中的具体路径（如 `.cursor/skills`），不整目录忽略 `.cursor/`、`.claude/` 等，
+ *   确保 `.cursor/rules`、`.cursor/mcp.json`、`.claude/settings.json` 等团队共享配置仍纳入版本控制；
+ * - 路径结尾不带斜杠，兼容「整个 skills 目录本身就是软链接」的场景；
+ * - 主目录 `.agents/skills` 保持纳入版本控制。
+ *
+ * @param {string} projectRoot 项目根目录
+ * @param {unknown} [symbolicLinks] IDE Skills 兼容目录列表，默认读取内置目录
+ * @returns {Promise<'added' | 'updated' | 'removed' | 'unchanged'>} 处理结果
+ */
+async function ensureGitIgnore(projectRoot, symbolicLinks = DEFAULT_SYMBOLIC_LINKS) {
+  const result = await upsertManagedIgnoreBlock(path.join(projectRoot, '.gitignore'), {
+    markerStart: '# --- YSS AI SKILLS GITIGNORE START ---',
+    markerEnd: '# --- YSS AI SKILLS GITIGNORE END ---',
+    comment:
+      '# IDE Skills 兼容软链接（主目录 .agents/skills 需入库；以下路径由 @yss-ui/skills-cli 本地派生，标记块由 CLI 托管请勿手改）',
+    entries: normalizeIgnoreEntries(symbolicLinks),
+  });
+
+  if (result === 'added') console.log(chalk.green('Added AI Skills symlink ignore rules to .gitignore'));
+  if (result === 'updated') console.log(chalk.blue('Updated AI Skills symlink ignore rules in .gitignore'));
+  if (result === 'removed') console.log(chalk.blue('Removed AI Skills symlink ignore rules from .gitignore'));
+  return result;
 }
 
 module.exports = {
@@ -667,9 +768,12 @@ module.exports = {
   createIdeLinks,
   ensureGitIgnore,
   ensurePrettierIgnore,
+  isIgnoreEntryCovered,
   isSafeSkillName,
   listSkills,
+  normalizeIgnoreEntries,
   normalizeSkillRoot,
+  parseIgnoreLines,
   resolveSkillsSource,
   resolvesManagedSkillsFrom,
   syncSkillEntries,

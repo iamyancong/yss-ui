@@ -10,6 +10,28 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.10.4
+
+`2026-10-28`
+
+### 🐛 Bug Fixes
+
+- **`.gitignore` 只忽略 IDE Skills 兼容路径**：`@yss-ui/skills-cli` 的 `ensureGitIgnore` 改为按 `skills.config.json#symbolicLinks` 生成 `.agent/skills`、`.cursor/skills`、`.claude/skills`、`.trae/skills`（结尾不带斜杠，兼容整个 skills 目录本身就是软链接的情况），不再整目录忽略 `.agent/`、`.cursor/`、`.claude/`、`.trae/`，避免 `.cursor/rules`、`.cursor/mcp.json`、`.claude/settings.json` 等团队共享配置被静默排除出版本控制；覆盖判断改为逐行解析，`.cursor/skills/` 带斜杠或 `!` 否定规则视为未覆盖，用户主动写的整目录规则保持不动；保留原文件 CRLF 换行，存在多个重复标记块时只保留第一个位置的一份，并规范化、拒绝越界或通配的 `symbolicLinks` 配置 (#60)。
+- **`.prettierignore` 同步收窄**：`ensurePrettierIgnore` 的 IDE 目录同样只忽略 Skills 兼容路径（保留 `.agents/`、`.cursorrules` 与旧版 `.codex/skills`），`.cursor/mcp.json` 等配置恢复可被 Prettier 格式化 (#60)。
+- **兼容目录第三方 Skill 提示**：同步时若 `.cursor/skills` 等兼容目录中存在非 YSS 托管条目，CLI 输出提示，建议将团队自研 Skill 移至主目录 `.agents/skills` 以纳入版本控制 (#60)。
+- **frontend-commit 暂存范围收窄**：只禁止暂存 `.agent/skills`、`.cursor/skills`、`.claude/skills`、`.trae/skills` 等 Skills 软链接派生路径，`.cursor/rules`、`.cursor/mcp.json`、`.claude/settings.json` 等团队 IDE 配置按正常改动处理 (#60)。
+- **README 清理命令修正**：`skills-cli` README 中的存量清理命令由整目录 `git rm -r --cached .agent .cursor .claude .trae` 改为只移除 `*/skills`，避免把团队已跟踪的 rules / mcp.json / settings 从仓库中删除 (#60)。
+
+### ⚠️ 行为变化与升级说明
+
+- 从 `@yss-ui/skills-cli@1.1.1` 升级后，重新执行一次 `npx -y @yss-ui/skills-cli sync`：`.gitignore` 与 `.prettierignore` 中的 `YSS AI SKILLS` 标记块会被自动替换为只忽略 Skills 兼容路径的规则，无需手工编辑。
+- 替换后执行 `git status`：1.1.1 生效期间在 `.cursor/`、`.claude/`、`.trae/`、`.agent/` 下新建、被静默忽略的 rules / mcp.json / settings 等文件会重新显示为未跟踪，请确认后补交。
+- 若曾在标记块之外手工复制过 1.1.1 文档中的整目录规则（`.cursor/` 等），CLI 会视为用户主动选择而保留，请手动改为 `.cursor/skills` 等具体路径。
+- 若曾按 1.1.1 README 执行过整目录 `git rm -r --cached`：尚未提交时用 `git restore --staged .agent .cursor .claude .trae` 撤销；已提交则从历史提交中恢复被移除的团队配置。
+- `.cursor/skills` 等兼容目录会被整体忽略：团队自研或第三方 Skill 请放在主目录 `.agents/skills`。
+
+---
+
 ## v1.10.3
 
 `2026-10-27`

@@ -105,17 +105,22 @@ project-root/
 
 ## 团队最佳协作实践
 
-1. **Git 忽略项（自动维护）**：`yss-skills sync` 会自动检测并向项目的 `.gitignore` 与 `.prettierignore` 注入防御规则：
-   - **必须纳入版本控制（主目录）**：`.agents/skills/`（实体文件拷贝，`source` 固定为 `"@yss-ui/skills"`）、`.agents/rules/` 与 `.cursorrules`。
-   - **必须忽略（IDE 软链接派生目录）**：`.agent/`、`.cursor/`、`.claude/`、`.trae/`。这些目录为按需生成的本地兼容软链接，且其 `.yss-skills-manifest.json` 统一记录相对路径 `../../.agents/skills`，不含个人本机绝对路径。
+1. **Git 忽略项（自动维护）**：`yss-skills sync` 会自动检测并向项目的 `.gitignore` 与 `.prettierignore` 写入 `# --- YSS AI SKILLS ... START/END ---` 标记块（标记块由 CLI 托管，每次同步整体覆盖，请勿在块内手改）：
+   - **必须纳入版本控制**：主目录 `.agents/skills/`（实体文件拷贝，`source` 固定为 `"@yss-ui/skills"`）、`.agents/rules/`、`.cursorrules`，以及 `.cursor/rules/`、`.cursor/mcp.json`、`.claude/settings.json`、`.claude/commands/`、`.trae/rules/` 等团队共享的 IDE 配置。
+   - **只忽略 IDE Skills 兼容路径**：由 `skills.config.json#symbolicLinks` 生成，即 `.agent/skills`、`.cursor/skills`、`.claude/skills`、`.trae/skills`。路径**结尾不带斜杠**，因为 Git 的 `dir/` 写法只匹配真实目录，匹配不到“整个 skills 目录本身就是软链接”的情况。
    ```gitignore
-   # IDE Skills 软链接派生目录（主目录为 .agents/skills，软链接目录由 @yss-ui/skills-cli 本地派生请勿提交）
-   .agent/
-   .cursor/
-   .claude/
-   .trae/
+   # --- YSS AI SKILLS GITIGNORE START ---
+   # IDE Skills 兼容软链接（主目录 .agents/skills 需入库；以下路径由 @yss-ui/skills-cli 本地派生，标记块由 CLI 托管请勿手改）
+   .agent/skills
+   .cursor/skills
+   .claude/skills
+   .trae/skills
+   # --- YSS AI SKILLS GITIGNORE END ---
    ```
-2. **存量项目清理已追踪软链接**：若历史项目在配置 `.gitignore` 前已误将 `.agent/` 等软链接目录提交入库，执行一次以下命令即可从 Git 索引移除（保留本地文件）：
+   - 若 `.gitignore` 已有等价规则（精确路径，或你主动写的 `.cursor/` 整目录规则），CLI 不会追加；`.cursor/skills/` 这类带斜杠写法视为未覆盖，会补齐标记块。
+2. **团队自研 Skill 放主目录**：`.cursor/skills`、`.claude/skills` 等兼容目录整体被忽略，团队自研或第三方 Skill 请放入 `.agents/skills/` 以纳入版本控制；同步时若在兼容目录中发现非 YSS 托管条目，CLI 会输出提示。
+3. **存量项目清理已追踪软链接**：若历史项目在配置 `.gitignore` 前已误将 Skills 兼容路径提交入库，执行一次以下命令即可从 Git 索引移除（保留本地文件）。**只能移除 `*/skills`，不要对 `.cursor`、`.claude` 等整目录执行**，否则会把团队共享的 rules / mcp.json / settings 一并从仓库删除：
    ```bash
-   git rm -r --cached .agent .cursor .claude .trae 2>/dev/null || true
+   git rm -r --cached --ignore-unmatch .agent/skills .cursor/skills .claude/skills .trae/skills
    ```
+4. **从 1.1.1 升级**：1.1.1 曾整目录忽略 `.agent/`、`.cursor/`、`.claude/`、`.trae/`。升级后重新执行一次 `yss-skills sync` 即会自动替换标记块；随后检查 `git status`，把期间被静默忽略的 rules / mcp.json / settings 等文件补交。如果曾按旧文档执行过整目录 `git rm --cached`，尚未提交时用 `git restore --staged .cursor .claude .trae .agent` 撤销，已提交则从历史提交中恢复。

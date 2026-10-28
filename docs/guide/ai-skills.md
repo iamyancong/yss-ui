@@ -63,7 +63,8 @@ CLI 同步命令包含以下完整处理流程：
 2. 同步业务向技能到 `.agents/skills/`（Codex / Agent Skills 标准主目录）；
 3. 自动更新 `.cursorrules` 中的 `YSS AI SKILLS` 区块（AI 的技能发现清单）；
 4. 自动更新 `.agents/rules/`（Antigravity 风格规则）；
-5. 为兼容旧工具与其他 IDE，按 Skill 粒度创建软链：`.agent/skills`、`.cursor/skills`、`.trae/skills`、`.claude/skills`（Windows 降级为拷贝），不会删除目标目录中的第三方 Skills。
+5. 为兼容旧工具与其他 IDE，按 Skill 粒度创建软链：`.agent/skills`、`.cursor/skills`、`.trae/skills`、`.claude/skills`（Windows 降级为拷贝），不会删除目标目录中的第三方 Skills；
+6. 自动维护 `.gitignore` / `.prettierignore` 中的 `YSS AI SKILLS` 标记块，只忽略上述 Skills 兼容路径（不带结尾斜杠，兼容整目录软链接），不忽略 `.cursor/`、`.claude/` 等整个 IDE 目录。
 
 常用选项：
 
@@ -76,7 +77,7 @@ CLI 同步命令包含以下完整处理流程：
 | `--global-only` | 只更新用户级 AI IDE 目录，隐含 `--global` |
 | `--no-links` | 跳过为其他 IDE 创建软链 |
 
-> **建议**：把 `.agents/skills`、`.agent/skills`、`.cursor/skills`、`.trae/skills`、`.claude/skills` 加入业务项目的 `.gitignore`，让每位成员本地各自 sync；`.cursorrules` 则提交进仓库共享。
+> **建议**：主目录 `.agents/skills`、`.agents/rules` 与 `.cursorrules` 提交进仓库共享；`.agent/skills`、`.cursor/skills`、`.trae/skills`、`.claude/skills` 由 CLI 自动写入 `.gitignore`，每位成员本地各自 sync。`.cursor/rules`、`.cursor/mcp.json`、`.claude/settings.json` 等团队 IDE 配置正常入库；团队自研 Skill 请放在 `.agents/skills`，不要放进被忽略的兼容目录。
 
 > 从旧版升级时，CLI 会保留 `.agent/skills` 作为兼容链接。仅当执行用户级同步时，才会根据 `.yss-skills-manifest.json` 清理旧 `~/.codex/skills` 中由 YSS CLI 管理的同名项；其他用户 Skill 不受影响。
 
