@@ -2,7 +2,7 @@
   {
     "key": "components",
     "pkg": "@yss-ui/components",
-    "version": "v1.9.3",
+    "version": "v1.9.4",
     "date": "2026-10-28",
     "highlight": "16 个公开组件补齐全量 API 契约，公开类型导出与文档对齐",
     "link": "/changelog/components",
@@ -20,7 +20,7 @@
   {
     "key": "mcp",
     "pkg": "@yss-ui/mcp",
-    "version": "v0.8.5",
+    "version": "v0.8.6",
     "date": "2026-10-28",
     "highlight": "首发：7 个文档查询工具 + 12 个 AI 工具一键安装器",
     "link": "/changelog/mcp",
