@@ -10,6 +10,22 @@ toc: content
 
 YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
+## v1.9.4
+
+`2026-10-28`
+
+### 🐛 Bug Fixes
+
+- **YTable 多级分组表头**：列渲染改为递归，`children` 支持任意层级嵌套的多级表头。修复前只渲染两层，更深层级被丢弃，第二层分组被当成没有 `field` 的叶子列渲染，表现为表头缺层、数据列为空、列与字段对不上。
+- **YTable 分组列 key**：没有 `field` / `type` 的同级分组列，key 从同为 `undefined` 改为「索引 + 标题」，修复动态增删分组时 Vue 复用错列组件、vxe-table 列登记顺序错乱的问题。
+- **YTable 分组列属性透传**：`getColgroupProps` 不再把 `children`、`isTransform`、`props`、`filters` 等叶子列属性透传给 `vxe-colgroup`。`field` 照常透传，列设置持久化和列拖拽依赖它。
+
+### 📝 Documentation
+
+- **YTable 多级表头示例**：新增多级表头 Demo（以「方案名称 → 报告日期 → 账户名称」动态表头为例），演示 `show-custom-header` + `merge-header-cells` 合并表头、`span-method` 纵向合并分组行和动态增删方案。
+
+---
+
 ## v1.9.3
 
 `2026-10-28`

@@ -276,7 +276,7 @@ export interface YTableColumn extends Omit<VxeTableDefines.ColumnOptions, 'child
   formatter?: (params: any) => string | number;
   /** 当 type 为 'action' 时的列级操作配置（优先级高于顶层 actionConfig） */
   actionConfig?: YTableActionConfig;
-  /** 分组表头：子列（仅叶子列会渲染为 vxe-column） */
+  /** 分组表头：子列，支持任意层级嵌套（含 children 的节点渲染为 vxe-colgroup，叶子节点渲染为 vxe-column） */
   children?: YTableColumn[];
 }
 

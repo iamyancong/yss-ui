@@ -110,9 +110,11 @@ export function useColumnProps(baseProps: any, resolveActionConfig: (column?: YT
   const getColgroupProps = (group: YTableColumn) => {
     const {
       // 分组自身不需要的叶子列属性/扩展能力，避免无意义传递
+      // 注意：children 由递归列节点自行渲染，不能透传给 vxe-colgroup（非其 Prop，会落到 DOM attribute 上）
+      // field 保留透传：列设置持久化（custom-config.storage）与列拖拽依赖分组列的 field 作为标识
       children: _children,
-      field: _field,
       type: _type,
+      filterable: _filterable,
       filters: _filters,
       filterMethod: _filterMethod,
       filterMultiple: _filterMultiple,
@@ -121,9 +123,10 @@ export function useColumnProps(baseProps: any, resolveActionConfig: (column?: YT
       props: _props,
       formatter: _formatter,
       actionConfig: _actionConfig,
+      ...rest
     } = (group as any) || {};
 
-    const result: Record<string, any> = { ...group };
+    const result: Record<string, any> = { ...rest };
     // 若未显式传 headerAlign，则回退为 align
     if (result.headerAlign === undefined && result.align !== undefined) {
       result.headerAlign = result.align;

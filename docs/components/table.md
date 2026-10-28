@@ -89,6 +89,12 @@ toc: content
 
 <code id="demo-table-group-header" src="./demos/table/group-header/index.vue"></code>
 
+### 多级表头
+
+`children` 支持任意层级嵌套，层级数不受限制：含 `children` 的节点渲染为分组表头，叶子节点渲染为实际列。示例以「方案名称 → 报告日期 → 账户名称」动态表头为例，并结合 `merge-header-cells` 横向合并左侧表头、`span-method` 纵向合并风险分组；点击「追加方案」可验证动态重建列后分组顺序保持稳定。
+
+<code id="demo-table-multi-level-header" src="./demos/table/multi-level-header/index.vue"></code>
+
 ### 表头行高（headerHeight）
 
 <code id="demo-table-header-height" src="./demos/table/header-height/index.vue"></code>
@@ -313,7 +319,7 @@ const handleBatchDelete = () => {
 | isTransform | `boolean` | - | 是否启用字典翻译显示（配合 `optionsMap` 使用） |
 | props | `Record<string, any>` | - | 扩展配置对象，如字典翻译的 `fieldNames: { label: 'name', value: 'id' }` |
 | actionConfig | `YTableActionConfig` | - | 当 `type='action'` 时的列级操作配置（优先级高于顶层 `actionConfig`） |
-| children | `YTableColumn[]` | - | 分组表头：子列配置（仅叶子列会渲染为实际列） |
+| children | `YTableColumn[]` | - | 分组表头：子列配置，支持任意层级嵌套（含 `children` 的节点渲染为分组表头，叶子节点渲染为实际列） |
 
 > **提示**：
 > - 当 `filterable=true` 时，如不需要内置筛选 UI，可直接省略 `filters`；如需远程筛选，请监听 `filter-change` 事件并更新数据源。

@@ -41,199 +41,12 @@
         :show-overflow="false"
         drag-sort
       />
-      <template v-for="column in normalizedColumns" :key="column.field || column.type">
-        <!-- 分组表头：若存在 children 则渲染 vxe-colgroup 包裹子列 -->
-        <vxe-colgroup v-if="column.children && column.children.length" v-bind="getColgroupProps(column as any)">
-          <!-- 分组表头自定义内容插槽（kebab-case 优先，兼容 camelCase） -->
-          <template v-if="$slots['group-header'] || $slots.groupHeader" #header="scope">
-            <slot v-if="$slots['group-header']" name="group-header" v-bind="scope" />
-            <slot v-else name="groupHeader" v-bind="scope" />
-          </template>
-          <vxe-column
-            v-for="sub in column.children"
-            :key="(sub as any).field || (sub as any).type"
-            v-bind="getColumnProps(sub as any)"
-          >
-            <template
-              v-if="
-                ((sub as any).field &&
-                  ($slots[((sub as any).field as string) + 'Header'] ||
-                    $slots[`${(sub as any).field as string}-header`] ||
-                    $slots[`${toKebabCase((sub as any).field as string)}-header`])) ||
-                $slots.header
-              "
-              #header="scope"
-            >
-              <template v-if="(sub as any).field && $slots[((sub as any).field as string) + 'Header']">
-                <slot :name="((sub as any).field as string) + 'Header'" v-bind="scope" />
-              </template>
-              <template v-else-if="(sub as any).field && $slots[`${(sub as any).field as string}-header`]">
-                <slot :name="`${(sub as any).field as string}-header`" v-bind="scope" />
-              </template>
-              <template v-else-if="(sub as any).field && $slots[`${toKebabCase((sub as any).field as string)}-header`]">
-                <slot :name="`${toKebabCase((sub as any).field as string)}-header`" v-bind="scope" />
-              </template>
-              <template v-else-if="$slots.header">
-                <slot name="header" v-bind="scope" />
-              </template>
-            </template>
-            <template
-              v-if="(sub as any).type === 'expand' && ($slots['expand-row'] || $slots.expandRow)"
-              #content="scope"
-            >
-              <div v-resize="handleExpandResize">
-                <slot v-if="$slots['expand-row']" name="expand-row" v-bind="scope" />
-                <slot v-else name="expandRow" v-bind="scope" />
-              </div>
-            </template>
-            <template
-              v-if="(sub as any).type === 'action' || ((sub as any).field && $slots[(sub as any).field!])"
-              #default="scope"
-            >
-              <ActionColumn
-                v-if="(sub as any).type === 'action'"
-                :buttons="resolveActionConfig(sub as any).buttons"
-                :display-limit="resolveActionConfig(sub as any).displayLimit"
-                :more-render-type="resolveActionConfig(sub as any).moreRenderType"
-                :more-text="resolveActionConfig(sub as any).moreText"
-                :close-on-scroll="resolveActionConfig(sub as any).closeOnScroll !== false"
-                :scope="scope"
-              >
-                <template v-if="$slots['action-more-icon']" #more>
-                  <slot name="action-more-icon" />
-                </template>
-                <template v-else-if="$slots.actionMoreIcon" #more>
-                  <slot name="actionMoreIcon" />
-                </template>
-              </ActionColumn>
-              <slot
-                v-else
-                :name="
-                  $slots[toKebabCase((sub as any).field as string)]
-                    ? `${toKebabCase((sub as any).field as string)}`
-                    : (sub as any).field
-                "
-                :row="scope.row"
-                :column="scope.column"
-                :row-index="scope.rowIndex"
-              />
-            </template>
-            <template
-              v-if="
-                ((sub as any).field &&
-                  ($slots[((sub as any).field as string) + 'Filter'] ||
-                    $slots[`${toKebabCase((sub as any).field as string)}-filter`])) ||
-                $slots.filter
-              "
-              #filter="scope"
-            >
-              <template v-if="(sub as any).field && $slots[((sub as any).field as string) + 'Filter']">
-                <slot :name="((sub as any).field as string) + 'Filter'" v-bind="scope" />
-              </template>
-              <template v-else-if="(sub as any).field && $slots[`${toKebabCase((sub as any).field as string)}-filter`]">
-                <slot :name="`${toKebabCase((sub as any).field as string)}-filter`" v-bind="scope" />
-              </template>
-              <template v-else-if="$slots.filter">
-                <slot name="filter" v-bind="scope" />
-              </template>
-            </template>
-          </vxe-column>
-        </vxe-colgroup>
-        <!-- 普通列 -->
-        <vxe-column v-else v-bind="getColumnProps(column)">
-          <!-- 表头插槽：优先按列字段命名，其次使用全局 header -->
-          <!-- 支持三种命名方式：fieldHeader (camelCase)、field-header (原始field+后缀)、kebab-case-header -->
-          <template
-            v-if="
-              (column.field &&
-                ($slots[(column.field as string) + 'Header'] ||
-                  $slots[`${column.field as string}-header`] ||
-                  $slots[`${toKebabCase(column.field as string)}-header`])) ||
-              $slots.header
-            "
-            #header="scope"
-          >
-            <template v-if="column.field && $slots[(column.field as string) + 'Header']">
-              <slot :name="(column.field as string) + 'Header'" v-bind="scope" />
-            </template>
-            <template v-else-if="column.field && $slots[`${column.field as string}-header`]">
-              <slot :name="`${column.field as string}-header`" v-bind="scope" />
-            </template>
-            <template v-else-if="column.field && $slots[`${toKebabCase(column.field as string)}-header`]">
-              <slot :name="`${toKebabCase(column.field as string)}-header`" v-bind="scope" />
-            </template>
-            <template v-else-if="$slots.header">
-              <slot name="header" v-bind="scope" />
-            </template>
-          </template>
-          <!-- 展开行内容插槽 -->
-          <template v-if="column.type === 'expand' && ($slots['expand-row'] || $slots.expandRow)" #content="scope">
-            <div v-resize="handleExpandResize">
-              <slot v-if="$slots['expand-row']" name="expand-row" v-bind="scope" />
-              <slot v-else name="expandRow" v-bind="scope" />
-            </div>
-          </template>
-          <!-- 自定义单元格内容插槽（按 field 匹配） -->
-          <template
-            v-if="
-              column.type === 'action' ||
-              (column.field && ($slots[column.field!] || $slots[toKebabCase(column.field as string)]))
-            "
-            #default="scope"
-          >
-            <ActionColumn
-              v-if="column.type === 'action'"
-              :buttons="resolveActionConfig(column).buttons"
-              :display-limit="resolveActionConfig(column).displayLimit"
-              :more-render-type="resolveActionConfig(column).moreRenderType"
-              :more-text="resolveActionConfig(column).moreText"
-              :close-on-scroll="resolveActionConfig(column).closeOnScroll !== false"
-              :scope="scope"
-            >
-              <template v-if="$slots['action-more-icon']" #more>
-                <slot name="action-more-icon" />
-              </template>
-              <template v-else-if="$slots.actionMoreIcon" #more>
-                <slot name="actionMoreIcon" />
-              </template>
-            </ActionColumn>
-            <slot
-              v-else
-              :name="
-                $slots[toKebabCase(column.field as string)] ? `${toKebabCase(column.field as string)}` : column.field
-              "
-              :row="scope.row"
-              :column="scope.column"
-              :row-index="scope.rowIndex"
-            />
-          </template>
-          <!-- 自定义筛选面板插槽：仅当外部提供时才覆盖 vxe 默认面板 -->
-          <!-- 支持三种命名方式：fieldFilter (camelCase)、field-filter (原始field+后缀)、kebab-case-filter -->
-          <template
-            v-if="
-              (column.field &&
-                ($slots[(column.field as string) + 'Filter'] ||
-                  $slots[`${column.field as string}-filter`] ||
-                  $slots[`${toKebabCase(column.field as string)}-filter`])) ||
-              $slots.filter
-            "
-            #filter="scope"
-          >
-            <template v-if="column.field && $slots[(column.field as string) + 'Filter']">
-              <slot :name="(column.field as string) + 'Filter'" v-bind="scope" />
-            </template>
-            <template v-else-if="column.field && $slots[`${column.field as string}-filter`]">
-              <slot :name="`${column.field as string}-filter`" v-bind="scope" />
-            </template>
-            <template v-else-if="column.field && $slots[`${toKebabCase(column.field as string)}-filter`]">
-              <slot :name="`${toKebabCase(column.field as string)}-filter`" v-bind="scope" />
-            </template>
-            <template v-else-if="$slots.filter">
-              <slot name="filter" v-bind="scope" />
-            </template>
-          </template>
-        </vxe-column>
-      </template>
+      <!-- 业务列：递归渲染，children 存在时为 vxe-colgroup，支持任意层级分组表头 -->
+      <TableColumnNode
+        v-for="(column, index) in normalizedColumns"
+        :key="getColumnNodeKey(column, index)"
+        :column="column"
+      />
       <!-- 追加操作列（顶层 actionConfig 生效且列中未声明） -->
       <vxe-column
         v-if="appendActionColumn"
@@ -278,10 +91,11 @@
 import { useVxeLocale } from '../locale/useVxeLocale';
 useVxeLocale();
 import { Pagination } from 'ant-design-vue';
-import { computed, nextTick, onMounted, ref, watch, useAttrs, useSlots } from 'vue';
+import { computed, nextTick, onMounted, provide, ref, watch, useAttrs, useSlots } from 'vue';
 import type { VxeTablePropTypes } from 'vxe-table';
-import { VxeColgroup, VxeColumn, VxeTable, VxeToolbar } from 'vxe-table';
+import { VxeColumn, VxeTable, VxeToolbar } from 'vxe-table';
 import ActionColumn from './ActionColumn.vue';
+import TableColumnNode, { getColumnNodeKey, Y_TABLE_COLUMN_NODE_CONTEXT } from './TableColumnNode';
 import { syncPaginationClasses } from './utils/syncPaginationClasses';
 import { useActionColumn, useColumnProps, useNormalizedColumns } from './hooks/useColumns';
 import { useTableEvents } from './hooks/useEvents';
@@ -316,24 +130,6 @@ const props = defineProps(yTableProps);
 // Emits 定义
 const emit = defineEmits<YTableEmits>();
 
-/**
- * 局部指令：监听 DOM 尺寸变化
- */
-const vResize = {
-  mounted(el: HTMLElement, binding: any) {
-    const observer = new ResizeObserver(() => {
-      binding.value();
-    });
-    observer.observe(el);
-    (el as any)._resizeObserver = observer;
-  },
-  unmounted(el: HTMLElement) {
-    if ((el as any)._resizeObserver) {
-      (el as any)._resizeObserver.disconnect();
-    }
-  },
-};
-
 let resizeTimer: any = null;
 /**
  * 处理展开行尺寸变化
@@ -353,14 +149,6 @@ defineSlots<Record<string, (props: any) => any>>();
 const tableRef = ref<InstanceType<typeof VxeTable>>();
 const toolbarRef = ref<InstanceType<typeof VxeToolbar>>();
 const paginationRef = ref<InstanceType<typeof Pagination>>();
-
-// 将驼峰/下划线转换为中划线（用于 DOM 模板下的插槽名兼容）
-const toKebabCase = (input: string): string => {
-  return String(input)
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .replace(/_/g, '-')
-    .toLowerCase();
-};
 
 // 安装 vxe-pc-ui
 useVxeInstall();
@@ -472,6 +260,15 @@ const { resolveActionConfig } = useActionConfigHook(props as any);
 
 // 获取列配置属性
 const { getColumnProps, getColgroupProps } = useColumnProps(props as any, resolveActionConfig);
+
+// 向递归列节点提供渲染上下文（插槽、列属性解析、操作列配置、展开行重算）
+provide(Y_TABLE_COLUMN_NODE_CONTEXT, {
+  slots,
+  getColumnProps,
+  getColgroupProps,
+  resolveActionConfig,
+  onExpandResize: handleExpandResize,
+});
 
 // 事件处理器
 const {
