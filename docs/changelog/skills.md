@@ -10,6 +10,16 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.11.0
+
+`2026-10-29`
+
+### ✨ Features
+
+- **文件预览大文件规范**：`component-selection-imports` 补充 `YFilePreview` 大文件预览、非阻塞提示条与单元格截断说明（`largeFileWarnSize`、`excelMaxCells`），明确禁止业务侧自行按文件大小拦截、弹确认框或换用其他表格预览库。
+
+---
+
 ## v1.10.5
 
 `2026-10-28`
