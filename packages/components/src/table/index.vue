@@ -1,5 +1,13 @@
 <template>
-  <div class="y-table-wrapper" :style="wrapperStyleVars">
+  <div
+    class="y-table-wrapper"
+    :class="{
+      'y-table-wrapper--no-data': loadingEmpty,
+      'y-table-wrapper--loading-compact': loadingCompact,
+      'y-table-wrapper--loading-tiny': loadingTiny,
+    }"
+    :style="[wrapperStyleVars, loadingStyleVars]"
+  >
     <vxe-toolbar
       v-if="hasToolbar"
       ref="toolbarRef"
@@ -21,6 +29,7 @@
       ref="tableRef"
       :data="displayData"
       :loading="props.loading"
+      :min-height="getMinimumTableHeight()"
       class="yss-custom-vxe-table"
       @current-row-change="handleCurrentRowChange"
       @cell-click="handleCellClick"
@@ -46,6 +55,7 @@
         v-for="(column, index) in normalizedColumns"
         :key="getColumnNodeKey(column, index)"
         :column="column"
+        :slot-keys="getSlotKeys($slots)"
       />
       <!-- 追加操作列（顶层 actionConfig 生效且列中未声明） -->
       <vxe-column
@@ -91,11 +101,11 @@
 import { useVxeLocale } from '../locale/useVxeLocale';
 useVxeLocale();
 import { Pagination } from 'ant-design-vue';
-import { computed, nextTick, onMounted, provide, ref, watch, useAttrs, useSlots } from 'vue';
+import { computed, nextTick, onBeforeUpdate, onMounted, provide, ref, watch, useAttrs, useSlots } from 'vue';
 import type { VxeTablePropTypes } from 'vxe-table';
 import { VxeColumn, VxeTable, VxeToolbar } from 'vxe-table';
 import ActionColumn from './ActionColumn.vue';
-import TableColumnNode, { getColumnNodeKey, Y_TABLE_COLUMN_NODE_CONTEXT } from './TableColumnNode';
+import TableColumnNode, { getColumnNodeKey, getSlotKeys, Y_TABLE_COLUMN_NODE_CONTEXT } from './TableColumnNode';
 import { syncPaginationClasses } from './utils/syncPaginationClasses';
 import { useActionColumn, useColumnProps, useNormalizedColumns } from './hooks/useColumns';
 import { useTableEvents } from './hooks/useEvents';
@@ -108,6 +118,8 @@ import { useStyleVars } from './hooks/useStyleVars';
 import { useActionConfig as useActionConfigHook, useTableProps as useTablePropsHook } from './hooks/useTableProps';
 import { useVxeInstall } from './hooks/useVxeInstall';
 import { useTableDragScroll } from './hooks/useTableDragScroll';
+import { useLoadingLayout } from './hooks/useLoadingLayout';
+import { useTableMinHeight } from './hooks/useTableMinHeight';
 import { makeProxyTableInstance } from './utils';
 import { yTableProps, type YTableEmits } from './type';
 
@@ -173,6 +185,18 @@ const displayData = useSafeData(
 
 // vxe 表格透传配置
 const { tableProps } = useTablePropsHook(props as any);
+/** 受限高度默认保留完整一行，显式 minHeight（含 0）仍按调用方配置。 */
+// useAttrs() 在 Vue 3.3+ 返回会收集依赖的代理，业务方后续增删 min-height 时 enabled 会重新求值。
+const minimumTableHeight = useTableMinHeight(
+  tableRef,
+  () =>
+    [props.height, props.maxHeight].some(value => value !== null && value !== undefined) &&
+    [attrs.minHeight, attrs['min-height']].every(value => value === null || value === undefined),
+  () => props.cellConfig?.height ?? 36
+);
+/** 渲染时优先读取业务透传的 min-height。 */
+const getMinimumTableHeight = (): VxeTablePropTypes.MinHeight | undefined =>
+  (attrs.minHeight ?? attrs['min-height'] ?? minimumTableHeight.value) as VxeTablePropTypes.MinHeight | undefined;
 
 // 工具栏插槽检测
 const slots = useSlots();
@@ -270,6 +294,16 @@ provide(Y_TABLE_COLUMN_NODE_CONTEXT, {
   onExpandResize: handleExpandResize,
 });
 
+// 业务方用 v-if 增删插槽后，列节点已拿到新插槽，但 VXE 表头/表体不会自行重绘；
+// 这里只在插槽集合真的变化时刷新一次列渲染（复用原列对象，列宽、筛选等状态不丢）。
+let lastSlotKeys = getSlotKeys(slots);
+onBeforeUpdate(() => {
+  const nextSlotKeys = getSlotKeys(slots);
+  if (nextSlotKeys === lastSlotKeys) return;
+  lastSlotKeys = nextSlotKeys;
+  void nextTick(() => tableRef.value?.refreshColumn?.());
+});
+
 // 事件处理器
 const {
   handleCurrentRowChange,
@@ -320,6 +354,17 @@ if (typeof window !== 'undefined') {
 
 // 包裹容器样式变量
 const { wrapperStyleVars } = useStyleVars(props as any);
+
+// 加载中提示定位：居中于表体而非整表，避免表体较矮时浮到表头上
+const { loadingStyleVars, loadingCompact, loadingTiny } = useLoadingLayout(
+  tableRef,
+  computed(() => !!props.loading)
+);
+/** 按 VXE 筛选后的实际渲染结果保留空态占位，兼容源数据非空但筛选无结果。 */
+// getTableData() 读取的是 VXE 的 reactive reactData.tableData，加载中用户改筛选时也会重新计算。
+const loadingEmpty = computed(
+  () => props.loading && !(tableRef.value?.getTableData().tableData ?? displayData.value).length
+);
 
 // 暴露组件实例方法
 defineExpose({

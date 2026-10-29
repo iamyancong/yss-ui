@@ -101,6 +101,54 @@
   min-height: var(--rowHeight);
 }
 
+/*
+ * 空数据 + 加载中：vxe 在 loading 时移除 is--empty，空状态占位行被 display:none，表体高度塌成 0，
+ * 加载提示只能挤在表头上。这里保留占位行高度（vxe 默认 visibility:hidden，不显示「暂无数据」文案），
+ * 让「暂无数据」区域原位替换为加载中。
+ */
+.y-table-wrapper--no-data :deep(.vxe-table.is--loading .vxe-table--empty-block) {
+  display: flex;
+}
+
+/* 仅修正自身的 VXE 加载节点，避免影响展开行内嵌的其他表格；遮罩仍覆盖整表。 */
+.y-table-wrapper > :deep(.yss-custom-vxe-table > div > div > .vxe-table--loading > .vxe-loading--chunk),
+.y-table-wrapper > :deep(.yss-custom-vxe-table > div > div > .vxe-table--loading > .vxe-loading--wrapper) {
+  top: calc(var(--y-table-loading-offset, 0px) + var(--y-table-loading-body-height, 0px) / 2);
+  max-height: var(--y-table-loading-body-height, 0);
+  overflow: hidden;
+}
+
+/* 表体过矮放不下纵向提示时，改为「图标 + 文案」单行紧凑布局 */
+.y-table-wrapper--loading-compact
+  > :deep(.yss-custom-vxe-table > div > div > .vxe-table--loading > .vxe-loading--chunk) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.y-table-wrapper--loading-compact > :deep(.yss-custom-vxe-table > div > div > .vxe-table--loading .vxe-loading--text) {
+  padding: 0;
+}
+
+/* 极小表体仍保持图标可见，禁止提示侵入表头或表尾。 */
+.y-table-wrapper--loading-tiny > :deep(.yss-custom-vxe-table > div > div > .vxe-table--loading .vxe-loading--text) {
+  display: none;
+}
+
+.y-table-wrapper--loading-tiny > :deep(.yss-custom-vxe-table > div > div > .vxe-table--loading .vxe-loading--icon) {
+  display: flex;
+  justify-content: center;
+  line-height: 1;
+  font-size: min(1em, var(--y-table-loading-body-height, 0px));
+}
+
+.y-table-wrapper--loading-tiny
+  > :deep(.yss-custom-vxe-table > div > div > .vxe-table--loading .vxe-loading--default-icon) {
+  font-size: min(1.4em, var(--y-table-loading-body-height, 0px));
+  line-height: 1;
+}
+
 :deep(.yss-custom-vxe-table .vxe-table--header-inner-wrapper) {
   background-color: rgb(245 248 255);
 }

@@ -369,9 +369,15 @@ export default defineConfig({
       color: var(--yss-doc-text-body);
     }
 
-    .dumi-default-content li {
+    .dumi-default-content li:not(.dumi-default-previewer-demo li) {
       margin: 6px 0;
       padding-left: 2px;
+    }
+
+    /* Demo 预览区恢复组件默认排版，避免文档正文的字号/行高渗透进组件（如 vxe 筛选面板选项间距被撑大） */
+    .dumi-default-content .dumi-default-previewer-demo {
+      font-size: 14px;
+      line-height: 1.5715;
     }
 
     .dumi-default-content li::marker {

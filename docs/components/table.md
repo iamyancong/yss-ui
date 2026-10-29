@@ -39,6 +39,16 @@ toc: content
 ### 远程分页
 <code id="demo-table-pagination-remote" src="./demos/table/pagination-remote/index.vue"></code>
 
+### 加载状态与空态
+
+`loading` 的遮罩覆盖整表，提示始终限制在实际表体内，不包含表头和汇总表尾。空数据及本地筛选无结果时保留占位高度；表体较矮时使用单行提示。
+
+设置固定高度时，加载提示按可见表体区域的完整高度垂直居中，与当前数据行数无关。下例可在加载期间切换 320 / 480px，高度变化后提示会继续保持居中；空数据、单行数据和带汇总表尾均可对照。
+
+设置 `height` / `maxHeight` 时，默认最小高度会按实际表头、至少一整行、汇总表尾和横向滚动条计算，避免只有一条数据也被截断滚动。该下限可能超过过小的高度配置；需要严格限制在极小容器时，可显式设置 `minHeight`（包括 `0`）覆盖默认保护，此时极矮表体的加载提示会降级为仅图标。
+
+<code id="demo-table-loading-state" src="./demos/table/loading-state/index.vue"></code>
+
 ### 操作列（更多/隐藏/二次确认）
 
 <code id="demo-table-action" src="./demos/table/action/index.vue"></code>
@@ -160,6 +170,7 @@ YTable 当前基于 `vxe-table@4.19.10`。本文完整记录 YSS 自有 Props、
 | --- | --- | --- | --- |
 | height | `number \| string` | - | 表格固定高度。 |
 | maxHeight | `number \| string` | - | 表格最大高度。 |
+| minHeight | `number \| string` | 动态计算 | 未显式设置且使用 `height` / `maxHeight` 时，至少保留完整一行与表头、表尾、横向滚动条。显式设置时按 VXE 配置透传（含 `0`）。 |
 | loading | `boolean` | `false` | 表格加载状态。 |
 | showHeader | `boolean` | `true` | 是否显示表头。 |
 | stripe | `boolean` | `false` | 是否显示斑马纹。 |

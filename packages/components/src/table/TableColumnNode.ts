@@ -86,12 +86,36 @@ const pickSlotName = (slots: Slots, names: Array<string | false | undefined>): s
   names.find((name): name is string => !!name && !!slots[name]);
 
 /**
+ * 生成当前可用插槽名签名，用于让递归列节点感知外部 `v-if` 动态增删插槽。
+ * @param slots 插槽对象
+ * @returns 排序后的插槽名签名字符串
+ */
+export const getSlotKeys = (slots: Record<string, unknown> | undefined | null): string => {
+  if (!slots) return '';
+  return Object.keys(slots)
+    .filter(name => Boolean(slots[name]))
+    .sort()
+    .join('|');
+};
+
+/**
+ * 插槽在本轮更新中刚被移除、但 VXE 尚未拿到最新插槽对象时的兜底：
+ * 直接调用 VXE 自身的取值 API，保证经过 headerFormatter / formatter，与默认渲染一致。
+ */
+const fallbackHeader = (scope: any, column: YTableColumn) =>
+  scope?.$table?.getHeaderCellLabel?.(scope.column) ?? column.title ?? '';
+const fallbackCell = (scope: any) => scope?.$table?.getCellLabel?.(scope.row, scope.column) ?? '';
+
+/**
  * YTable 内部递归列节点：
  * - 存在 `children` 时渲染 `vxe-colgroup`，并递归渲染子列，支持任意层级的多级分组表头；
  * - 否则渲染 `vxe-column`，并接入字段插槽、表头插槽、筛选插槽、展开行与操作列。
  *
  * 组件自身不产生额外 DOM，`vxe-column`/`vxe-colgroup` 的根节点仍是父容器的直接子元素，
  * 保证 vxe-table 按 DOM 位置登记列顺序的逻辑不受影响。
+ *
+ * 动态插槽：业务方用 `v-if` 增删插槽时，`slotKeys` 变化驱动本节点重渲染，
+ * 不通过改 key 重建 vxe 列，以免丢失用户拖拽的列宽、已勾选的筛选项等列状态。
  */
 const TableColumnNode = defineComponent({
   name: 'YTableColumnNode',
@@ -100,6 +124,11 @@ const TableColumnNode = defineComponent({
     column: {
       type: Object as PropType<YTableColumn>,
       required: true,
+    },
+    /** 当前 YTable 插槽键签名（用于感知外部 v-if 动态增删插槽） */
+    slotKeys: {
+      type: String,
+      default: '',
     },
   },
   setup(props) {
@@ -112,17 +141,23 @@ const TableColumnNode = defineComponent({
     /** 渲染分组列（递归）。 */
     const renderColgroup = (column: YTableColumn): VNode => {
       const { slots } = ctx;
+      // vxe-colgroup 只在 setup 时读取一次 slots.header，之后增删不会生效；
+      // 因此始终挂载 header，运行时再判断分组表头插槽是否存在，不存在时按 VXE 默认标题渲染。
       const groupSlots: Record<string, (scope: any) => any> = {
+        header: (scope: any) => {
+          // 分组表头自定义内容插槽（kebab-case 优先，兼容 camelCase）
+          const groupHeaderSlot = pickSlotName(slots, ['group-header', 'groupHeader']);
+          return groupHeaderSlot ? slots[groupHeaderSlot]?.(scope) : fallbackHeader(scope, column);
+        },
         default: () =>
           (column.children || []).map((child, index) =>
-            h(TableColumnNode, { key: getColumnNodeKey(child, index), column: child })
+            h(TableColumnNode, {
+              key: getColumnNodeKey(child, index),
+              column: child,
+              slotKeys: props.slotKeys,
+            })
           ),
       };
-      // 分组表头自定义内容插槽（kebab-case 优先，兼容 camelCase）
-      const groupHeaderSlot = pickSlotName(slots, ['group-header', 'groupHeader']);
-      if (groupHeaderSlot) {
-        groupSlots.header = (scope: any) => slots[groupHeaderSlot]?.(scope);
-      }
       return h(VxeColgroup as any, ctx.getColgroupProps(column), groupSlots);
     };
 
@@ -131,6 +166,8 @@ const TableColumnNode = defineComponent({
       const { slots } = ctx;
       const field = column.field as string | undefined;
       const kebabField = field ? toKebabCase(field) : undefined;
+      // vxe-column 直接引用组件自身的 slots 对象，Vue 更新时会原地增删其中的键，
+      // 因此这里只按当前存在的插槽挂载，移除后 VXE 会自然回到默认渲染（含 formatter / cellRender）。
       const columnSlots: Record<string, (scope: any) => any> = {};
 
       // 表头插槽：优先按列字段命名，其次使用全局 header
@@ -142,7 +179,8 @@ const TableColumnNode = defineComponent({
         'header',
       ]);
       if (headerSlot) {
-        columnSlots.header = (scope: any) => slots[headerSlot]?.(scope);
+        columnSlots.header = (scope: any) =>
+          slots[headerSlot] ? slots[headerSlot]?.(scope) : fallbackHeader(scope, column);
       }
 
       // 展开行内容插槽
@@ -153,10 +191,12 @@ const TableColumnNode = defineComponent({
       }
 
       // 自定义单元格内容（操作列 / 按 field 匹配的字段插槽）
+      const cellSlot = column.type !== 'action' && field ? pickSlotName(slots, [kebabField, field]) : undefined;
+
       if (column.type === 'action') {
-        const moreSlot = pickSlotName(slots, ['action-more-icon', 'actionMoreIcon']);
         columnSlots.default = (scope: any) => {
           const cfg = ctx.resolveActionConfig(column);
+          const moreSlot = pickSlotName(slots, ['action-more-icon', 'actionMoreIcon']);
           return h(
             ActionColumn,
             {
@@ -170,10 +210,11 @@ const TableColumnNode = defineComponent({
             moreSlot ? { more: () => slots[moreSlot]?.() } : undefined
           );
         };
-      } else if (field && (slots[field] || (kebabField && slots[kebabField]))) {
-        const cellSlot = kebabField && slots[kebabField] ? kebabField : field;
+      } else if (cellSlot) {
         columnSlots.default = (scope: any) =>
-          slots[cellSlot]?.({ row: scope.row, column: scope.column, rowIndex: scope.rowIndex });
+          slots[cellSlot]
+            ? slots[cellSlot]?.({ row: scope.row, column: scope.column, rowIndex: scope.rowIndex })
+            : fallbackCell(scope);
       }
 
       // 自定义筛选面板插槽：仅当外部提供时才覆盖 vxe 默认面板

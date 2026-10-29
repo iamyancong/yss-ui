@@ -58,6 +58,7 @@ export function useColumnProps(baseProps: any, resolveActionConfig: (column?: YT
       filterMultiple,
       filterRender,
       formatter: columnFormatter,
+      children: _children,
       ...rest
     } = column as any;
 
