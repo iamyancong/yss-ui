@@ -1081,9 +1081,9 @@ import { YFilePreview, YFilePreviewModal, useFilePreview } from '@yss-ui/compone
 | 图片 | `<img>` 显示，默认适应容器（小图不放大），底部工具栏可缩放、1:1 / 适应切换、旋转、重置 | 无 |
 | `pptx` | [@aiden0z/pptx-renderer](https://github.com/aiden0z/pptx-renderer) 逐页绘制成 HTML，幻灯片纵向排列滚动查看 | 业务项目自行安装 `@aiden0z/pptx-renderer`，并调用 `registerPptxRenderer()`，见 [启用 PPTX 预览](#启用-pptx-预览) |
 
-图片支持 `png`、`jpg`（`jpeg`）、`gif`、`webp`、`svg`、`bmp`、`ico`。PPTX 为实验性，默认不启用。
+图片支持 `png`、`jpg`（`jpeg`）、`gif`、`webp`、`svg`、`bmp`、`ico`；解码完成前显示稳定占位，失败显示错误态，SVG/ICO 会先读取尺寸并套用像素安全上限；没有宽高声明的 SVG 按容器尺寸显示，超过 5MB 时上方显示「SVG 文件较大，显示可能较慢」（不拦截）。PPTX 为实验性，默认不启用。
 
-文本类文件（txt、csv、md）都会自动识别 UTF-8 / GBK 编码（以及带 BOM 或以西文为主的 UTF-16）。
+文本类文件（txt、csv、md）都会自动识别 UTF-8 / GBK 编码（以及带 BOM 或以西文为主的 UTF-16）；大文本按行边界追加，单行过长时也不会切断 UTF-8 字符。
 
 **图片操作**：按钮缩放，或按住 `Ctrl` / `⌘` 滚动滚轮（触控板双指捏合）以指针位置为中心缩放，普通滚轮照常滚动；图片比区域大时可拖动平移，双击在适应窗口和原始尺寸之间切换。点击图片区域后可用键盘 `+` / `-` 缩放、`0` 重置、`r` / `R` 旋转，← → 仍用于弹窗翻页。SVG 也按图片加载（`<img src="blob:...">`），不会插入页面 DOM，其中的脚本和事件属性不会执行。
 
@@ -1214,13 +1214,13 @@ xlsx / xls 和图片可以缩放。弹窗标题栏在业务操作区（`#actions
 | 放大 / 缩小按钮、快捷键 | 表格约 150ms 平滑过渡，保持左上角；系统开启“减少动态效果”时直接跳到新比例 |
 | 触摸屏双指捏合 | 连续缩放 |
 
-- **Excel**：按比例重新绘制表格（行高、列宽、字号一起变），不是把画布拉伸，所以高清屏下文字和边框保持清晰；图表、图片、形状等叠加内容按同一比例定位和缩放，冻结窗格和滚动同步不变；缩放后左上角仍停在原来的单元格。大表格（约 2 万行以上）连续缩放时会稍等片刻再重绘。
+- **Excel**：按比例重新绘制表格（行高、列宽、字号一起变），不是把画布拉伸，所以高清屏下文字和边框保持清晰；图表、图片、形状等叠加内容按同一比例定位和缩放，冻结窗格和滚动同步不变；缩放后左上角仍停在原来的单元格。大表格（约 2 万行以上）连续缩放时会稍等片刻再重绘。用户拖动过的行高、列宽会保留：拖动后的尺寸按当时的比例换算成 100% 的尺寸，之后放大、缩小都按拖动后的尺寸换算。
 - **图片**：标题栏控件与图片工具栏共用同一个比例，图片工具栏只保留适应窗口、旋转和重置。图片打开时先适应窗口，范围默认 5%–800%（设置了 `zoomMin` / `zoomMax` 时按设置）。
 - **PDF** 用浏览器内置查看器显示，查看器自带缩放，不显示这个控件。docx、pptx、文本、CSV 暂不支持缩放。
 - 比例按文件分别记住：切换到别的文件时用那个文件自己的比例（第一次打开为 `zoom` 或 `zoomFit` 指定的比例），切回来时恢复。
 - 内嵌的 `YFilePreview` 不自带标题栏控件，用 `toolbar` 插槽参数或实例方法自己放按钮；此时图片继续显示自带的缩放按钮。
 
-```vue
+```vue | pure
 <YFilePreviewModal v-model:open="open" v-model:zoom="zoom" :files="files" :zoomable="['xlsx', 'xls']" />
 ```
 
@@ -1267,10 +1267,14 @@ xlsx / xls 和图片可以缩放。弹窗标题栏在业务操作区（`#actions
 | source | 文件来源：URL、`File`、`Blob`、`ArrayBuffer`、`Uint8Array`，或懒加载函数 `FileSourceLoader` | `FileSource` | - |
 | fileName | 文件名，用于识别类型和下载。`File` 会自动取 `name`，URL 会取路径最后一段 | `string` | - |
 | fileType | 显式指定类型，优先级高于后缀和 MIME，仍会校验文件内容。可以是自定义渲染器注册的类型 | `FilePreviewFileType` | - |
-| maxSize | 最大预览字节数 | `number` | `20 * 1024 * 1024` |
+| maxSize | 最大预览字节数，恰好等于时可以预览；`Infinity` 不限制，`0`、负数、`NaN` 按默认值 | `number` | `20 * 1024 * 1024` |
+| largeFileWarnSize | 大文件提示阈值（字节）：超过时照常直接预览，在内容上方显示提示条「文件较大，滚动可能略慢」，不拦截。作用于 xlsx / xls / docx / pptx（恰好等于时不提示）；`0`、负数、`NaN` 或 `Infinity` 不按大小提示。见 [大文件](#大文件) | `number` | `10 * 1024 * 1024` |
+| excelMaxCells | Excel 单元格数阈值（按实际读到的单元格数）：超过 `warn` 在表格上方显示提示条；超过 `max` 只显示前面的行，提示条显示「仅显示前 N 行，完整内容请下载后查看」。都不拦截预览。传数字只设置 `max`；`Infinity` 不限制 | `number \| { warn?: number; max?: number }` | `{ warn: 300000, max: 5000000 }` |
 | textEncoding | 文本编码：`'auto'`、`'utf-8'`、`'gbk'` | `TextEncoding` | `'auto'` |
 | csvMode | CSV 初始显示方式：`'table'` 表格、`'text'` 源文本。预览时也可以点右上角按钮切换 | `CsvMode` | `'table'` |
 | csvRowNumber | CSV 表格是否显示行号列 | `boolean` | `false` |
+| csvMaxRows | CSV 表格最多显示的数据行数：达到后不再「加载更多」，顶部显示非阻塞提示并提示下载后查看。小于 1、`NaN` 按默认值，小数向下取整，`Infinity` 不限制 | `number` | `50000` |
+| timeout | 加载超时（毫秒）：从开始读取到读完（包括懒加载来源与 URL 下载）超过该时间时中止，显示「文件加载超时」与「重试」。`0`、负数、`NaN`、`Infinity` 不限制 | `number` | `60000` |
 | height | 预览区高度，数字按 px 处理 | `number \| string` | `'100%'` |
 | showDownload | 是否允许下载：控制「文件过大」「暂不支持」「加载失败」等提示里的下载按钮；为 `false` 时 PDF 还会尽量隐藏内置查看器工具栏 | `boolean` | `true` |
 | customDownload | 自定义下载（权限、留痕、签名 URL）。不调用 `ctx.defaultDownload()` 就不下载；设置后 PDF 隐藏内置查看器工具栏 | `(ctx: FilePreviewDownloadContext) => void \| Promise<void>` | - |
@@ -1280,7 +1284,7 @@ xlsx / xls 和图片可以缩放。弹窗标题栏在业务操作区（`#actions
 | zoomStep | 放大 / 缩小按钮与快捷键的步长 | `number` | `0.1` |
 | zoomFit | 第一次打开某个文件时的比例：`'width'` 适应宽度、`'page'` 适应整页、`'none'` 使用 `zoom`（没有设置时 Excel 为 100%，图片适应窗口） | `'width' \| 'page' \| 'none'` | `'none'` |
 
-`source`、`fileName`、`fileType`、`maxSize`、`textEncoding`、`csvMode`、`csvRowNumber`、`showDownload` 任意一项变化，或 `customDownload` 从无到有（反之亦然）都会重新加载。缩放相关属性变化不会重新加载。
+`source`、`fileName`、`fileType`、`maxSize`、`largeFileWarnSize`、`excelMaxCells`（对象形式按取值比较）、`textEncoding`、`csvMode`、`csvRowNumber`、`csvMaxRows`、`timeout`、`showDownload` 任意一项变化，或 `customDownload` 从无到有（反之亦然）都会重新加载。缩放相关属性变化不会重新加载。
 
 ### YFilePreview Events
 
@@ -1318,7 +1322,7 @@ xlsx / xls 和图片可以缩放。弹窗标题栏在业务操作区（`#actions
 | resetZoom | 恢复 100% | `() => void` |
 | fitZoom | 适应宽度（默认）或整页 | `(mode?: 'width' \| 'page') => void` |
 
-`FilePreviewStatus` 取值：`'idle' | 'loading' | 'ready' | 'oversize' | 'empty' | 'mismatch' | 'missing-dependency' | 'unsupported' | 'error'`。
+`FilePreviewStatus` 取值：`'idle' | 'loading' | 'ready' | 'oversize' | 'large-file' | 'empty' | 'mismatch' | 'missing-dependency' | 'unsupported' | 'error'`。
 
 ### YFilePreviewModal Props
 
@@ -1334,9 +1338,11 @@ xlsx / xls 和图片可以缩放。弹窗标题栏在业务操作区（`#actions
 | showDownload | 是否显示标题栏下载按钮。PDF 用浏览器内置查看器显示时不显示（查看器自带下载）；为 `false` 时还会尽量隐藏内置查看器工具栏 | `boolean` | `true` |
 | keyboard | 是否启用键盘操作（← → 切换、Esc 关闭；全屏时 Esc 先退出全屏；缩放快捷键不受此项控制，用 `zoomable` 关闭）。多个弹窗叠加时只有最上层响应；焦点在输入框或 Excel 表格内时方向键留给它们自己 | `boolean` | `true` |
 | maxSize | 最大预览字节数 | `number` | `20 * 1024 * 1024` |
+| largeFileWarnSize / excelMaxCells | 大文件提示阈值与 Excel 单元格数阈值，同 `YFilePreview` | - | `10 * 1024 * 1024` / `{ warn: 300000, max: 5000000 }` |
 | textEncoding | 文本编码 | `TextEncoding` | `'auto'` |
 | csvMode | CSV 初始显示方式 | `CsvMode` | `'table'` |
 | csvRowNumber | CSV 表格是否显示行号列 | `boolean` | `false` |
+| csvMaxRows / timeout | CSV 显示行数上限与加载超时，同 `YFilePreview` | `number` | `50000` / `60000` |
 | getContainer | 弹窗挂载节点 | `() => HTMLElement` | - |
 | customDownload | 自定义下载，同 `YFilePreview`；设置后 PDF 也显示标题栏下载按钮 | `(ctx: FilePreviewDownloadContext) => void \| Promise<void>` | - |
 | zoom (v-model) / zoomable / zoomMin / zoomMax / zoomStep / zoomFit | 缩放，同 `YFilePreview`。可以缩放时标题栏显示缩放控件 | - | - |
@@ -1404,7 +1410,7 @@ const lastIndex = await controller.afterClose; // 关闭后刷新列表等
 | 选项 | 说明 | 类型 |
 | --- | --- | --- |
 | fileName / fileType | 仅 `open` 生效 | `string` / `FilePreviewFileType` |
-| width 等 | 同 `YFilePreviewModal`：width、title、fileSwitcher、loop、maxSize、textEncoding、csvMode、csvRowNumber、showDownload、keyboard、customDownload、zoom、zoomable、zoomMin、zoomMax、zoomStep、zoomFit | - |
+| width 等 | 同 `YFilePreviewModal`：width、title、fileSwitcher、loop、maxSize、largeFileWarnSize、excelMaxCells、textEncoding、csvMode、csvRowNumber、csvMaxRows、timeout、showDownload、keyboard、customDownload、zoom、zoomable、zoomMin、zoomMax、zoomStep、zoomFit | - |
 | onChange | 当前文件变化（翻页、`update` 后） | `(ctx: FilePreviewContext) => void` |
 | onLoaded | 当前文件渲染完成 | `(payload: FilePreviewLoadedPayload, ctx: FilePreviewContext) => void` |
 | onError | 当前文件加载或解析失败 | `(error: Error, ctx: FilePreviewContext) => void` |
@@ -1478,7 +1484,7 @@ type FileSourceLoader = (ctx: { signal: AbortSignal; file: FilePreviewItem }) =>
 
 - 文件显示时才调用；返回字符串时按 URL 加载（例如先换取签名 URL）；
 - 切换文件、关闭弹窗、组件卸载时 `signal` 中止，迟到的结果会被丢弃；
-- 弹窗里同一次打开内缓存成功结果，`reload()` 会重新调用；
+- 弹窗里同一次打开内缓存成功结果（只保留当前文件和上一个、下一个文件的结果，逐个翻看很多大文件时内存不会一直增长），`reload()` 会重新调用；
 - 返回内容后仍会检查 `maxSize`（返回 `Blob` / `File` 时不读取内容就能判断）；
 - 抛出的错误进入加载失败状态，显示错误信息和「重试」。
 
@@ -1517,7 +1523,7 @@ registerPreviewRenderer({
 });
 ```
 
-- `render(container, data, ctx)`：`container` 是本次渲染专用的空节点；`ctx` 包含 `fileName`、`fileType`、`textEncoding`、`csvMode`、`csvRowNumber`、`showDownload`、`signal`（取消信号）、`t`（国际化函数）、`appContext`、`locale`（当前语言，如 `zh-CN`，可用于按语言格式化日期数字）；
+- `render(container, data, ctx)`：`container` 是本次渲染专用的空节点；`ctx` 包含 `fileName`、`fileType`、`textEncoding`、`csvMode`、`csvRowNumber`、`csvMaxRows`、`showDownload`、`signal`（取消信号）、`t`（国际化函数）、`appContext`、`locale`（当前语言，如 `zh-CN`，可用于按语言格式化日期数字）；
 - 渲染内容自己要用方向键（例如表格选区）时，给根节点加 `data-preview-keyboard="self"`，弹窗在用户点进该区域后不再用方向键切换文件；
 - `resize()`（可选）：预览区域尺寸变化后调用（全屏切换、窗口缩放、父容器变化，已防抖，渲染完成后才会调用）。内容随容器自适应的渲染器不需要实现，按初始化尺寸绘制 canvas 的渲染器在这里重新布局；
 - `zoom`（可选）：缩放能力，渲染完成后读取。实现了才显示缩放控件、响应快捷键；`ctx.zoom` 是这个文件要使用的初始比例（可直接按它渲染），`ctx.externalZoomControl` 为 `true` 时标题栏已有缩放控件，渲染器不要再显示自己的放大 / 缩小按钮：
@@ -1536,6 +1542,8 @@ registerPreviewRenderer({
   ```
 
 - `destroy()`：切换文件、卸载组件时调用，需要清理自己创建的 DOM、URL 和事件；
+- `preflight(data, ctx)`（可选，写在渲染器上，与 `create` 同级）：渲染前用很少的计算判断文件是否过大，`ctx` 包含 `fileName`、`fileType`、`signal`、`largeFileWarnSize`、`excelMaxCells`。返回 `{ level: 'warn' | 'block', reason: 'cells' | 'size' | 'dimension' | 'pages' | 'pixels', cells?, pages?, width?, height? }` 时先提示确认（`large-file`）或只提供下载（`oversize`），返回 `null` 直接渲染。内置渲染器只有图片用它（超过 1 亿像素只提供下载），Excel、Word 不拦截，改为在内容上方显示提示条；
+- `render` 的 `context` 还包含 `largeFileWarnSize`（已按默认值处理）、`excelMaxCells` 与可选的 `onProgress(value)`：解析耗时较长的渲染器可以报告 0~1 的进度，外壳在加载提示里显示「正在解析 N%」（只在 `render` 完成前有效）；
 - 注册内置类型（如 `pdf`）会覆盖内置渲染器；`unregisterPreviewRenderer(type)` 可以取消注册。
 
 ### PPTX 子路径（实验性）
@@ -1600,16 +1608,19 @@ rtf.js 的转换对简单的矢量图（矩形、椭圆、多边形、文字）�
 
 | 情况 | 表现 |
 | --- | --- |
-| 文件超过 `maxSize` | 默认 20MB。不读取内容，显示「文件过大，无法预览」和「仍要下载」。URL 来源会先看 `Content-Length`，超限直接取消下载 |
+| 文件超过 `maxSize` | 默认 20MB。不读取内容，显示「文件过大，无法预览」和「仍要下载」。URL 来源会先看 `Content-Length`，超限直接取消下载；没有 `Content-Length`（分块传输）或声明的大小不准时边下载边计数，超过 `maxSize` 立即取消，不会把整个文件读进内存 |
+| Excel 单元格很多 / 文件较大 | 见 [大文件](#大文件)：直接预览，解析时显示「正在解析 N%」；超过 30 万格或 10MB 时表格上方显示「文件较大，滚动和缩放可能略慢」；超过 500 万格只显示前面的行并提示下载查看完整内容 |
 | 空文件（0 字节） | 显示「文件内容为空」 |
-| 文本超过 2MB | 先显示前 512KB，底部「加载更多」继续加载；按流式解码，中文不会在分段处乱码 |
+| 文本超过 2MB | 先显示前 512KB，底部「加载更多」继续加载；按流式解码，中文不会在分段处乱码。累计显示到 8MB 后不再加载，提示下载后查看（一个文本块里的文字太多时页面会越来越重） |
 | CSV 解析 | 按 RFC 4180：支持引号包裹的逗号、换行和 `""` 转义，兼容 CRLF，自动去掉 BOM；自动识别逗号、分号、Tab 分隔；空行跳过，列数不一致的行用空单元格补齐 |
-| CSV 行数很多 | 每次渲染 1000 行，底部「加载更多」继续；只解析需要显示的部分 |
+| CSV 行数很多 | 每次渲染 1000 行，底部「加载更多」继续；只解析需要显示的部分。显示到 `csvMaxRows`（默认 20 万行）后不再加载，提示下载后查看 |
 | CSV 行号 | 默认不显示（数据通常自带 id 列）；`csvRowNumber` 开启后行号列横向滚动时固定在左侧，列宽贴合内容，不会盖住第一列 |
 | 默认下载 | 预览成功后直接保存已读取的内容，不重复请求；同源 URL 用 `<a download>`；跨域 URL 先 `fetch` 成 Blob 再保存（需要服务端允许 CORS，能预览就说明已允许），失败时在新标签页打开链接；文件过大的跨域 URL 直接打开链接，不读进内存 |
 | PDF 与下载按钮 | 浏览器内置查看器的工具栏已有下载，`YFilePreviewModal` 标题栏不再重复显示下载按钮（注册了自定义 pdf 渲染器、或配置了 `customDownload` 时照常显示）。`showDownload=false` 或配置了 `customDownload`（内置查看器的下载无法拦截）时 iframe 地址追加 `#toolbar=0&navpanes=0`，见本节末尾「PDF 工具栏说明」 |
 | 文本编码 | 默认 `auto`：有 BOM 按 BOM；没有 BOM 但一半字节是 0 的按 UTF-16（以西文为主的 UTF-16 文本）；否则检查前 64KB 是否为合法 UTF-8，不是则按 GBK。Big5、Shift_JIS 等其他编码和以中文为主的无 BOM UTF-16 识别不了 |
 | 网络错误 / HTTP 非 2xx | 显示错误信息和「重试」按钮 |
+| 加载超时 | 超过 `timeout`（默认 60 秒）时中止，显示「文件加载超时（60 秒）」与「重试」；懒加载来源不理会 `signal` 时也会按时结束。错误对象为 `FileLoadError`，`cause.name` 为 `'TimeoutError'` |
+| 下载进度 | URL 下载超过 5MB 时，加载提示显示「正在下载 3.2 MB / 12 MB」（没有 `Content-Length` 时只显示已下载的大小） |
 | 快速切换文件 | 上一个文件的加载和渲染会被取消，不会覆盖新文件 |
 | 组件卸载 / 弹窗关闭 | 取消进行中的加载，释放 Blob URL，清理渲染出的 DOM |
 | Excel 公式结果 | 公式没有保存计算结果、或 Excel 打开时会重算时，表格上方显示提示，单元格按文件里保存的结果显示，见 [Excel 显示说明](#excel-显示说明) |
@@ -1618,10 +1629,11 @@ rtf.js 的转换对简单的矢量图（矩形、椭圆、多边形、文字）�
 | docx 特殊图片 | TIFF / EMF / WMF 浏览器无法显示，按原尺寸显示带格式名的占位（悬停与读屏为「图片格式暂不支持预览（EMF）」），不出现裂图 |
 | docx 符号字体 | Symbol / Wingdings 字体的项目符号换成对应的 Unicode 符号（•、▪、➢、✓ 等），没有这些字体的系统（macOS、手机）不再显示方框 |
 | 图片损坏 | 浏览器无法解码时显示「文件解析失败」与原因，可重试或下载 |
-| 超大图片 | 如 8000×8000，适应窗口时按比例缩小显示；放大上限为原始尺寸的 8 倍，且显示尺寸不超过 32768px |
+| 超大图片 | 超过 4000 万像素（如 8000×8000）时先显示长边 2048px 的缩小版（在 Worker 里解码、缩小，主线程不阻塞；不支持时用 `createImageBitmap` 缩小），放大到缩小版细节不够时自动换成原图；其他图片解码完成后再显示。超过 1 亿像素时只提供下载（显示图片尺寸）。尺寸只读文件头（png / jpeg / gif / bmp / webp）。放大上限为原始尺寸的 8 倍，且显示尺寸不超过 32768px |
+| docx 页数很多 | 直接预览。文档属性（`docProps/app.xml`，Word 保存时写入）记录的页数超过 300 页，或文件超过 `largeFileWarnSize` 时，文档上方显示提示条「文档较长（约 N 页），滚动可能略慢」（滚动时固定在顶部）；视口外的页面不参与布局与绘制（`content-visibility: auto`）。程序生成的文件可能没有页数属性，此时只按文件大小判断 |
 | pptx 未启用 | 显示「暂不支持预览 pptx 格式」，提示安装 @aiden0z/pptx-renderer 并调用 `registerPptxRenderer()`，见 [启用 PPTX 预览](#启用-pptx-预览) |
 | pptx 幻灯片异常 | 没有幻灯片时显示「演示文稿中没有幻灯片」；损坏、缺少 `ppt/presentation.xml` 时显示「文件解析失败」，可重试或下载 |
-| pptx 页数很多 | 先绘制前 3 页，其余页滚动到附近时才绘制；单页绘制失败只在该页显示「此页无法显示」 |
+| pptx 页数很多 | 先绘制前 3 页，其余页滚动到附近时才绘制；单页绘制失败只在该页显示「此页无法显示」。超过 200 页或文件超过 `largeFileWarnSize` 时，幻灯片上方显示提示条「演示文稿较长（共 N 页），滚动可能略慢」（滚动时固定在顶部，不拦截） |
 | pptx 图片问题 | TIFF 转 PNG 显示；EMF、WMF、缺失、外链等显示带说明文字的占位（如「图片格式暂不支持（EMF）」），不出现裂图，见 [启用 PPTX 预览](#启用-pptx-预览) 的「图片」 |
 | pptx 文件过大 | 超出解压上限时显示「文件内容超出预览上限，请下载后查看」 |
 | 旧版办公格式 | `doc`、`ppt`、`rtf`、`wps` 等显示「暂不支持预览」，并提示由后端转换为 PDF，见 [旧格式与后端转换](#旧格式与后端转换) |
@@ -1635,6 +1647,41 @@ rtf.js 的转换对简单的矢量图（矩形、椭圆、多边形、文字）�
 | Safari | 没有常驻工具栏，悬停时出现的缩放等按钮不受参数影响（未实测） |
 
 这只是界面上不显示下载入口，**不是下载防护**：文件数据已经到了浏览器，用户仍然可以用右键菜单、`Ctrl/Cmd + S`、打印或开发者工具拿到文件。真正需要防下载时，请在服务端控制（例如只返回加水印的预览版或转成图片）。
+
+## 大文件
+
+在 `maxSize`（默认 20MB）以内的文件都**直接预览**，不再先弹出确认。大文件只在内容上方显示一条提示（与公式结果提示同样的浅黄色提示条，可以同时显示多条），不影响查看：
+
+| 情况 | 表现 |
+| --- | --- |
+| Excel 解析中 | 加载提示显示「正在解析 N%」（解析约占 80%，生成表格数据约占 20%） |
+| Excel 单元格数超过 `excelMaxCells.warn`（默认 30 万格），或文件超过 `largeFileWarnSize`（默认 10MB） | 表格上方显示「文件较大（约 N 个单元格），滚动和缩放可能略慢」 |
+| Excel 单元格数超过 `excelMaxCells.max`（默认 500 万格） | 只读取前面的行（显示的行都是完整的），表格上方显示「单元格超过 N 个，「工作表」仅显示前 M 行，完整内容请下载后查看」；之后的工作表只读取预算剩余的少量单元格（通常只显示开头几行，同样显示截断提示），不会再完整读取。@vue-office/excel 读取的回退流程（如 Excel 5.0 / 95 的 xls）按同样的规则截断 |
+| docx 页数超过 300 页，或文件超过 `largeFileWarnSize` | 文档上方显示「文档较长（约 N 页），滚动可能略慢」或「文件较大（大小），滚动可能略慢」 |
+
+单元格数按**实际读到的数量**计算，不看文件里写的范围（`<dimension>`、DIMENSIONS 记录）：范围可能只写 `A1`，也可能写成整张表，都不影响。超出 Excel 行列上限（1,048,576 行 / 16,384 列）的单元格不显示。`max` 防的是内容异常多的文件（例如压缩后不到 1MB、解压后几百 MB 的表格）：超过时显示前面的部分，而不是把页面拖垮；单个工作表解压后超过 256MB 时只读取前 256MB。
+
+所有阈值都是「超过」才生效：恰好等于阈值时按较轻的情况处理。`warn` 大于 `max` 时按 `max`；`0`、负数、`NaN` 按默认值；`Infinity` 不限制。
+
+pptx 按页懒渲染，不显示大文件提示；PDF（在 Worker 里按页渲染）、文本 / CSV / Markdown（分段渲染，分别有 8MB / `csvMaxRows` 的显示上限）与图片（超过 4000 万像素先显示缩小版，超过 1 亿像素只提供下载）不按大小提示。
+
+```vue | pure
+<!-- 放宽提示阈值，超过 100 万格只显示前面的行 -->
+<YFilePreview :source="file" :large-file-warn-size="30 * 1024 * 1024" :excel-max-cells="{ warn: 500000, max: 1000000 }" />
+```
+
+**在 Worker 里解析**：xlsx 与 BIFF8 xls（Excel 97 起的格式）在 Web Worker 里解析、生成表格数据，分段传回主线程，解析期间页面保持响应；切换文件或关闭时直接结束 Worker，立即释放解析占用的 CPU 与内存。Worker 代码内联在按需加载的 Excel 模块里，不增加入口体积，也不需要额外配置。浏览器不支持 Worker、Worker 出错，或页面的内容安全策略（CSP）不允许 `blob:` / `data:` Worker（需要 `worker-src blob:`）时，自动改在主线程分段解析；更早的 BIFF5 xls 或组件读取不了的文件改用 @vue-office/excel 自己的读取（主线程，不可中止）。
+
+参考数据（无头 Chrome，使用发布构建的应用，默认阈值）：
+
+| | xlsx 100,000 行 × 30 列（18.5MB） | xls 50,000 行 × 30 列（11.5MB） | 异常文件（4.8MB，解压后 6000 万格） |
+| --- | --- | --- | --- |
+| 选择文件到显示 | 约 5.0 秒 | 约 1.3 秒 | 约 6.0 秒（截断为前 166,666 行） |
+| 主线程最长一次阻塞 | 约 0.16 秒 | 约 0.18 秒 | 约 0.16 秒 |
+| 显示后 JS 堆内存 | 约 190MB | 约 105MB | 约 195MB |
+| 滚动 / 捏合缩放 | 60 / 约 53 帧每秒 | 60 / 约 57 帧每秒 | 60 / 约 51 帧每秒 |
+
+关闭预览后这些内存全部释放。
 
 ## 旧格式与后端转换
 
@@ -6430,7 +6477,7 @@ box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color, #3371ff) 15%, tran
 - 业务层禁止导入 `@formily/antdv` 或 `@formily/antd*` UI 组件；使用 `YFormily` 提供的 Schema 与组件边界。
 - 微前端子应用同样默认使用根入口具名导入；Vite 6 新模板继续采用官方插件，无插件消费的样式能力按下方版本契约判断。`lite` 是可选兼容入口，旧项目保留已验证的样式策略。
 - 对于 `YMonaco`、`YEcharts`、`YSheet` 等重型依赖组件，微应用可继续从 `@yss-ui/components` 正常消费（已异步化），也可直接从官方子路径 `@yss-ui/components/monaco`、`@yss-ui/components/echarts`、`@yss-ui/components/sheet` 导入，避免未使用的重型依赖及其全量 CSS 被打包到业务页面中。
-- 文件预览使用 `YFilePreview`（页面内嵌）、`YFilePreviewModal`（弹窗多文件）或 `useFilePreview`（函数式），只从子路径 `@yss-ui/components/file-preview` 导入，根入口和 `lite` 入口不导出；该子路径自 1.9.0 起提供，旧版本先核对 exports。默认支持 docx、xlsx、xls、pdf、txt、csv、md 和常见图片；xlsx 里的图表、图片、形状、批注、超链接、条件格式和迷你图由组件叠在表格上方显示（echarts 未安装时图表显示占位，不要为此引入公式计算库或换用别的表格预览）；pptx 是实验性 opt-in 能力，按下方「文件预览 PPTX（实验性 opt-in）」处理。不要再手写 iframe、`docx-preview`、`@vue-office/excel` 或 `@aiden0z/pptx-renderer` 预览。鉴权或按需取数用 `source: FileSourceLoader`（`({ signal, file }) => Promise<Blob | string>`），下载拦截用 `customDownload`，标题栏操作用 `#actions` 插槽或 `slots.actions`；`open / openList` 返回 `FilePreviewController`，增删文件用 `controller.update()`，不要直接改 hook 返回的只读状态。多文件弹窗的标题默认就是文件切换下拉（`fileSwitcher`，默认 `true`；设置 `title` 会改为普通标题），不要自己再做文件列表下拉；URL / 懒加载来源要在下拉里显示大小时传 `fileSize`；需要首尾循环翻页时传 `loop: true`（默认首尾禁用）。xlsx / xls / 图片自带缩放（弹窗标题栏 `[ − ] [ 100% ▾ ] [ + ]`、Ctrl / ⌘ + `=` `-` `0`、Ctrl + 滚轮），用 `v-model:zoom`、`zoomable`（布尔或类型列表）、`zoomMin` / `zoomMax` / `zoomStep` / `zoomFit` 配置，不要用 CSS `transform` / `zoom` 缩放预览容器，也不要自己再做缩放按钮；PDF 用浏览器查看器自带的缩放。`useFilePreview()` 必须在组件 `setup` 中调用：弹窗继承调用位置的 `ConfigProvider` 主题 / 语言、`YConfigProvider` 与 `provide` 的值（含 slots 内的 inject），不要为了暗色主题或国际化改写成组件形式。
+- 文件预览使用 `YFilePreview`（页面内嵌）、`YFilePreviewModal`（弹窗多文件）或 `useFilePreview`（函数式），只从子路径 `@yss-ui/components/file-preview` 导入，根入口和 `lite` 入口不导出；该子路径自 1.9.0 起提供，旧版本先核对 exports。默认支持 docx、xlsx、xls、pdf、txt、csv、md 和常见图片；xlsx 里的图表、图片、形状、批注、超链接、条件格式和迷你图由组件叠在表格上方显示（echarts 未安装时图表显示占位，不要为此引入公式计算库或换用别的表格预览）；pptx 是实验性 opt-in 能力，按下方「文件预览 PPTX（实验性 opt-in）」处理。不要再手写 iframe、`docx-preview`、`@vue-office/excel` 或 `@aiden0z/pptx-renderer` 预览。鉴权或按需取数用 `source: FileSourceLoader`（`({ signal, file }) => Promise<Blob | string>`），下载拦截用 `customDownload`，标题栏操作用 `#actions` 插槽或 `slots.actions`；`open / openList` 返回 `FilePreviewController`，增删文件用 `controller.update()`，不要直接改 hook 返回的只读状态。多文件弹窗的标题默认就是文件切换下拉（`fileSwitcher`，默认 `true`；设置 `title` 会改为普通标题），不要自己再做文件列表下拉；URL / 懒加载来源要在下拉里显示大小时传 `fileSize`；需要首尾循环翻页时传 `loop: true`（默认首尾禁用）。xlsx / xls / 图片自带缩放（弹窗标题栏 `[ − ] [ 100% ▾ ] [ + ]`、Ctrl / ⌘ + `=` `-` `0`、Ctrl + 滚轮），用 `v-model:zoom`、`zoomable`（布尔或类型列表）、`zoomMin` / `zoomMax` / `zoomStep` / `zoomFit` 配置，不要用 CSS `transform` / `zoom` 缩放预览容器，也不要自己再做缩放按钮；PDF 用浏览器查看器自带的缩放。xlsx / xls / docx 大文件由组件处理：`maxSize`（默认 20MB）以内直接预览，解析时显示进度，超过 30 万单元格或 10MB（docx 超过 300 页）时在内容上方显示「文件较大」提示条，超过 500 万单元格只显示前面的行并提示下载，用 `largeFileWarnSize`、`excelMaxCells` 调整阈值，不要自己再按文件大小拦截、弹确认框或换用别的表格预览库。`useFilePreview()` 必须在组件 `setup` 中调用：弹窗继承调用位置的 `ConfigProvider` 主题 / 语言、`YConfigProvider` 与 `provide` 的值（含 slots 内的 inject），不要为了暗色主题或国际化改写成组件形式。
 - 禁止因文档暂时不可达就把猜测的 `Y*` 组件改成 Ant Design Vue “先落地”。只能复用当前仓库已证明可用的导入，或明确报告待确认项。
 - 接口错误提示由 `mutator.ts` 的响应拦截器统一处理。API Hook 不得在 `success === false` 分支或 `catch` 内重复调用 `message.error`；`message` 只用于非 API 错误的本地交互反馈或成功提示。
 

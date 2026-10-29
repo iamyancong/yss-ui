@@ -10,6 +10,42 @@ toc: content
 
 YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
+## v1.11.0
+
+`2026-10-29`
+
+> 版本号为次版本：YFilePreview 新增 `largeFileWarnSize`、`excelMaxCells`、`csvMaxRows`、`timeout` 四个属性与大文件提示条，并新增若干默认安全上限（CSV 5 万行、文本 8MB、加载超时 60 秒），属于新功能与默认行为变化，详见下方「行为变化与升级说明」。
+
+### ✨ Features
+
+- **YFilePreview 大文件 Excel**：xlsx / xls 在 Web Worker 中解析并分段传回主线程，解析期间显示「正在解析 N%」，切换文件或关闭时立即终止 Worker；不支持 Worker（如 CSP 限制）时自动回退主线程。发布包已内联 Worker，消费项目无需额外配置。
+- **YFilePreview 大文件提示**：新增 `largeFileWarnSize`（默认 10MB）与 `excelMaxCells`（默认 `{ warn: 300000, max: 5000000 }`）。`maxSize`（默认 20MB）以内的文件都直接预览，超过阈值时在内容上方显示非阻塞提示条（Excel、docx 300 页以上、pptx 200 页以上）；Excel 超过 `max` 只显示前面的行并提示下载查看完整内容，不白屏。
+- **YFilePreview Excel 缩放**：触控板双指捏合实时缩放，大表格连续缩放防抖重绘；用户拖动过的行高、列宽在缩放后保留；稀疏表格补行有上限，内存更稳定。
+- **YFilePreview 超大图片**：超过 4000 万像素的图片先在 Worker 中生成缩小版显示，放大到需要细节时再换原图；解码完成前显示稳定占位，解码失败显示错误态。
+- **YFilePreview 加载进度与超时**：URL 下载超过 5MB 时显示下载进度；新增 `timeout`（默认 60 秒），覆盖下载与解析阶段，超时后终止并显示可重试的错误态。
+- **YFilePreview CSV 上限**：新增 `csvMaxRows`（默认 50000），达到上限时顶部显示非阻塞提示并提示下载查看其余内容。
+
+### 🐛 Bug Fixes
+
+- **YFilePreview 回退流程截断**：@vue-office/excel 读取的回退流程（如 Excel 5.0 / 95 的 xls）同样按 `excelMaxCells.max` 截断并显示提示。
+- **YFilePreview 文本截断**：大文本分段加载按行边界切分，单行过长时也不会切断 UTF-8 多字节字符（中文、emoji），BOM / CRLF 正常显示。
+- **YFilePreview SVG / ICO 尺寸保护**：读取 SVG 宽高 / viewBox 与 ICO 目录尺寸并套用像素上限；没有宽高的 SVG 按容器显示，超过 5MB 时显示提示。
+- **YFilePreview 切换与销毁**：快速连续切换文件、超时或关闭时，过期的渲染结果不再写入新文件，Worker、Blob URL 与提示条全部清理。
+- **YFilePreview 语言包**：新增提示文案补齐简体、繁体、英文三语。
+
+### ⚠️ 行为变化与升级说明
+
+- CSV 表格以前可以无限「加载更多」，现在默认最多显示 50000 行（20MB 级 CSV 首批解析耗时与内存约为 20 万行的 1/4）；需要更多行可设置 `csvMaxRows`，传 `Infinity` 不限制。
+- 文本「加载更多」累计最多显示 8MB，之后提示下载查看。
+- 加载与解析默认 60 秒超时；网络很慢或文件解析很久的场景可调大 `timeout`，传 `0` 不限制。
+- 超过 1 亿像素的图片只提供下载，不再尝试解码。
+
+### 📝 Documentation
+
+- **YFilePreview 文档**：新增「大文件」章节、提示条与截断规则、新增属性说明；修正 Excel 截断后后续工作表的读取说明（只读取预算剩余的少量单元格）；同步 Skills 与 llms。
+
+---
+
 ## v1.10.0
 
 `2026-10-29`
