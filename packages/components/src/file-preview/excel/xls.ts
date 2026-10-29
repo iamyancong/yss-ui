@@ -11,9 +11,11 @@ import { INDEXED } from './cf';
 import {
   createSheetModel,
   setCell,
+  trimTruncatedSheet,
   type BorderSide,
   type CellStyleModel,
   type RawCell,
+  type CellBudget,
   type SheetModel,
   type WorkbookModel,
 } from './model';
@@ -335,7 +337,20 @@ function xfToStyle(
 }
 
 /** 解析 BIFF8 xls；不是 BIFF8 或解析失败时返回 null */
-export function parseXlsModel(data: ArrayBuffer, { locale = 'zh-CN' }: { locale?: string } = {}): WorkbookModel | null {
+export function parseXlsModel(
+  data: ArrayBuffer,
+  {
+    locale = 'zh-CN',
+    budget,
+    onProgress,
+  }: {
+    locale?: string;
+    /** 单元格总数上限，超过时截断（见 CellBudget） */
+    budget?: CellBudget;
+    /** 解析进度（0~1，按记录在文件中的位置估算） */
+    onProgress?: (fraction: number) => void;
+  } = {}
+): WorkbookModel | null {
   const stream = readCompoundStream(data, ['Workbook', 'Book']);
   if (!stream) return null;
   const first = records(stream).next().value as BiffRecord | undefined;
@@ -463,6 +478,7 @@ export function parseXlsModel(data: ArrayBuffer, { locale = 'zh-CN' }: { locale?
 
   for (const info of sheets) {
     const sheet = createSheetModel(info.name, info.state);
+    if (budget) sheet.budget = budget;
     const cell = (ixfe: number, t: RawCell['t'], v: RawCell['v'], f = false): RawCell => {
       const c: RawCell = { t, v, fmt: xfFmt[ixfe] ?? 'General', sz: xfSize[ixfe] };
       if (cellStyles[ixfe]) c.style = ixfe;
@@ -474,8 +490,10 @@ export function parseXlsModel(data: ArrayBuffer, { locale = 'zh-CN' }: { locale?
     };
     let pendingString: { row: number; col: number; ixfe: number } | null = null;
     let frozen = false;
+    let seen = 0;
     for (const rec of records(stream, info.offset)) {
       const d = rec.data;
+      if (onProgress && (++seen & 0xffff) === 0) onProgress(rec.offset / stream.length);
       if (rec.type === 0x000a) break;
       if (pendingString && rec.type === 0x0207) {
         setCell(sheet, pendingString.row, pendingString.col, cell(pendingString.ixfe, 's', xlString(d, 0), true));
@@ -583,7 +601,11 @@ export function parseXlsModel(data: ArrayBuffer, { locale = 'zh-CN' }: { locale?
           break;
       }
     }
+    delete sheet.budget;
+    trimTruncatedSheet(sheet);
     model.sheets.push(sheet);
   }
+  if (budget) model.cellCount = budget.count;
+  onProgress?.(1);
   return model;
 }

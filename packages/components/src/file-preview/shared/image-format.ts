@@ -48,36 +48,5 @@ export const detectImageFormat = (bytes: Uint8Array): ImageFormat => {
   return 'unknown';
 };
 
-/** 读取常见格式的像素尺寸（只读文件头），读不到返回 null */
-export const imageDimensions = (bytes: Uint8Array, format: ImageFormat): { width: number; height: number } | null => {
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  try {
-    if (format === 'png' && bytes.length >= 24) return { width: view.getUint32(16), height: view.getUint32(20) };
-    if (format === 'gif' && bytes.length >= 10)
-      return { width: view.getUint16(6, true), height: view.getUint16(8, true) };
-    if (format === 'bmp' && bytes.length >= 26)
-      return { width: Math.abs(view.getInt32(18, true)), height: Math.abs(view.getInt32(22, true)) };
-    if (format === 'jpeg') {
-      let i = 2;
-      while (i + 9 < bytes.length) {
-        if (bytes[i] !== 0xff) {
-          i += 1;
-          continue;
-        }
-        const marker = bytes[i + 1];
-        // SOF0~SOF15（不含 DHT C4、JPG C8、DAC CC）
-        if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc)
-          return { height: view.getUint16(i + 5), width: view.getUint16(i + 7) };
-        if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
-          i += 2;
-          continue;
-        }
-        i += 2 + view.getUint16(i + 2);
-      }
-    }
-  } catch {
-    // 文件头不完整
-  }
-  return null;
-};
+export { imageDimensions } from './image-size';
 

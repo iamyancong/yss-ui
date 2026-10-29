@@ -3,7 +3,7 @@
  */
 import type { AppContext } from 'vue';
 import type { YssFilePreviewLocale } from '../../locale/types';
-import type { CsvMode, TextEncoding } from '../types';
+import type { CsvMode, FilePreviewExcelMaxCells, TextEncoding } from '../types';
 
 /** 文案翻译函数 */
 export type FilePreviewTranslate = (
@@ -23,6 +23,8 @@ export interface RenderContext {
   csvMode?: CsvMode;
   /** CSV 表格是否显示行号列 */
   csvRowNumber?: boolean;
+  /** CSV 表格最多显示的数据行数，默认 200000 */
+  csvMaxRows?: number;
   /**
    * 是否允许下载。为 false 时内置 PDF 渲染器会尽量隐藏浏览器 PDF 查看器的工具栏
    * （仅 Chromium 内核支持，不是下载防护）。
@@ -43,6 +45,18 @@ export interface RenderContext {
    * 其他工具（如图片旋转）照常显示
    */
   externalZoomControl?: boolean;
+  /**
+   * 大文件提示阈值（字节，已按默认值处理；Infinity 表示不按大小提示）。
+   * 渲染器可在预览上方显示提示条（不拦截预览），内置 Excel、Word 渲染器使用
+   */
+  largeFileWarnSize?: number;
+  /** Excel 单元格数阈值，见 excelMaxCells；内置 Excel 渲染器使用 */
+  excelMaxCells?: FilePreviewExcelMaxCells;
+  /**
+   * 报告解析进度（0~1）：外壳在加载提示里显示「正在解析 N%」。可选；
+   * 只在 render 完成前调用有效
+   */
+  onProgress?: (value: number) => void;
 }
 
 /** 渲染器的缩放能力：外壳只负责 UI 与快捷键，实际怎么缩放由渲染器决定 */
@@ -90,10 +104,42 @@ export interface PreviewRendererInstance {
   destroy?(): void;
 }
 
+/** 渲染前的大文件检查上下文 */
+export interface PreviewPreflightContext {
+  fileName: string;
+  fileType: string;
+  signal: AbortSignal;
+  /** 大文件提示阈值（字节），见 largeFileWarnSize */
+  largeFileWarnSize: number;
+  /** Excel 单元格数阈值，见 excelMaxCells */
+  excelMaxCells?: FilePreviewExcelMaxCells;
+}
+
+/**
+ * 大文件检查结果：warn 时先提示可能卡顿，用户确认后再渲染；block 时不渲染，只提供下载
+ */
+export interface PreviewPreflightResult {
+  level: 'warn' | 'block';
+  /** 原因：cells 单元格数、size 文件大小、dimension 行列数超出格式上限、pages 页数（docx）、pixels 像素数（图片） */
+  reason: 'cells' | 'size' | 'dimension' | 'pages' | 'pixels';
+  /** 估算的单元格数（Excel） */
+  cells?: number;
+  /** 页数（docx，来自文档属性） */
+  pages?: number;
+  /** 图片宽高（像素） */
+  width?: number;
+  height?: number;
+}
+
 /** 渲染器：声明支持的类型，并为每次渲染创建独立实例 */
 export interface PreviewRenderer {
   /** 支持的文件类型，例如 ['docx'] 或 ['txt', 'csv', 'md'] */
   types: string[];
+  /**
+   * 可选：渲染前用很少的计算判断文件是否过大（如 Excel 估算单元格数）。
+   * 返回 null 时直接渲染；抛错时按 null 处理
+   */
+  preflight?(data: ArrayBuffer, context: PreviewPreflightContext): Promise<PreviewPreflightResult | null>;
   /** 创建渲染实例 */
   create(): PreviewRendererInstance;
 }

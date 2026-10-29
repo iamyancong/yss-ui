@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue';
 import { resolve, isAbsolute } from 'node:path';
 import legacy from './vite.config';
 import { consumptionEntries, readEntries } from './build/entries';
+import { inlineWorkers } from './build/inline-workers';
 
 /** 新入口复用旧公开语言模块，避免重复创建注入 Symbol 与全局 Ref。 */
 const sharedLocale: Plugin = {
@@ -20,7 +21,8 @@ const sharedLocale: Plugin = {
 
 /** 公开根入口构建；旧 dist/index、lite、sheet 产物保留，兼容历史工具读取。 */
 export default defineConfig({
-  plugins: [consumptionEntries(__dirname), sharedLocale, vue()],
+  plugins: [inlineWorkers(__dirname), consumptionEntries(__dirname), sharedLocale, vue()],
+  worker: legacy.worker,
   build: {
     ...legacy.build,
     outDir: 'dist/root',
@@ -64,6 +66,8 @@ export default defineConfig({
           if (id.startsWith(`${root}file-preview/excel/`)) return;
           /** pptx 子路径与 Excel 渲染器共用的图片解码、文字测量，按引用方自动分块，不进入主 chunk */
           if (id.startsWith(`${root}file-preview/shared/`)) return;
+          /** 超大图片的尺寸读取与缩小（含内联 Worker）只在打开图片时按需加载 */
+          if (id.startsWith(`${root}file-preview/renderers/image/`)) return;
           const component = id.slice(root.length).split('/')[0];
           if (!component || component.includes('.') || component === 'locale' || component === 'sheet') return;
           return `components/${component}`;

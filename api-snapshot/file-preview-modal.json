@@ -1,6 +1,6 @@
 {
   "name": "file-preview-modal",
-  "propsCount": 33,
+  "propsCount": 37,
   "props": {
     "open": {
       "name": "open",
@@ -82,6 +82,22 @@
       "default": "DEFAULT_MAX_FILE_SIZE",
       "isCore": true
     },
+    "largeFileWarnSize": {
+      "name": "largeFileWarnSize",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "DEFAULT_LARGE_FILE_WARN_SIZE",
+      "isCore": true
+    },
+    "excelMaxCells": {
+      "name": "excelMaxCells",
+      "type": "any",
+      "tsType": "FilePreviewExcelMaxCells",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
     "textEncoding": {
       "name": "textEncoding",
       "type": "any",
@@ -104,6 +120,22 @@
       "tsType": "boolean",
       "required": false,
       "default": "false",
+      "isCore": true
+    },
+    "csvMaxRows": {
+      "name": "csvMaxRows",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "DEFAULT_CSV_MAX_ROWS",
+      "isCore": true
+    },
+    "timeout": {
+      "name": "timeout",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "DEFAULT_LOAD_TIMEOUT",
       "isCore": true
     },
     "getContainer": {

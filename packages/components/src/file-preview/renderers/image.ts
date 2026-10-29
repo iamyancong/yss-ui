@@ -16,14 +16,20 @@ import {
 } from '@ant-design/icons-vue';
 import { createVNode, render as vueRender, type Component } from 'vue';
 import {
+  formatFileSize,
+  SVG_WARN_BYTES,
   IMAGE_FILE_TYPES,
   IMAGE_MAX_DISPLAY_SIZE,
+  IMAGE_MAX_PIXELS,
   IMAGE_MAX_SCALE,
   IMAGE_MIME_MAP,
   IMAGE_MIN_SCALE,
+  IMAGE_PREVIEW_PIXELS,
   IMAGE_ZOOM_STEP,
 } from '../constant';
 import type { ImageFileType } from '../types';
+import { readImageSize } from '../shared/image-size';
+import { createNoticeBar } from './notice-bar';
 import { sniffImageKind } from '../utils/detect';
 import { isWheelNotch, PINCH_IDLE_MS, PINCH_ZOOM_SENSITIVITY, wheelDeltaPx } from '../utils/zoom';
 import type { PreviewRenderer, PreviewRendererInstance, PreviewZoomController, RenderContext } from './types';
@@ -61,8 +67,36 @@ function createButton(label: string, icon: Component | null, text?: string): HTM
   return button;
 }
 
+/** 生成缩小版的代码（含 Worker）按需加载，不进入主入口 */
+const loadLarge = () => import('./image/large');
+
+/** 等待图片加载并解码完成；中止时返回 false，加载失败时抛错 */
+function loadImage(img: HTMLImageElement, src: string, signal: AbortSignal, failText: string): Promise<boolean> {
+  return new Promise<boolean>((resolve, reject) => {
+    const onAbort = () => resolve(false);
+    signal.addEventListener('abort', onAbort, { once: true });
+    img.onload = () => {
+      signal.removeEventListener('abort', onAbort);
+      // decode() 在后台线程解码，完成后再显示
+      const decoded = typeof img.decode === 'function' ? img.decode() : Promise.resolve();
+      void decoded.then(() => resolve(!signal.aborted));
+    };
+    img.onerror = () => {
+      signal.removeEventListener('abort', onAbort);
+      reject(new Error(failText));
+    };
+    img.src = src;
+  });
+}
+
 export const imageRenderer: PreviewRenderer = {
   types: [...IMAGE_FILE_TYPES],
+  // 超过 IMAGE_MAX_PIXELS 的图片只提供下载（解码需要数百 MB 内存）
+  async preflight(data) {
+    const size = readImageSize(data);
+    if (size && size.width * size.height > IMAGE_MAX_PIXELS) return { level: 'block', reason: 'pixels', ...size };
+    return null;
+  },
   create() {
     let root: HTMLElement | null = null;
     let url: string | null = null;
@@ -76,6 +110,12 @@ export const imageRenderer: PreviewRenderer = {
       iconHolders.length = 0;
       if (url) URL.revokeObjectURL(url);
       url = null;
+      // 尽快释放解码后的位图：缩小版 canvas 清空画布，原图去掉 src
+      root?.querySelectorAll('canvas').forEach(canvas => {
+        canvas.width = 0;
+        canvas.height = 0;
+      });
+      root?.querySelectorAll('img').forEach(image => image.removeAttribute('src'));
       root?.remove();
       root = null;
       relayout = null;
@@ -111,12 +151,16 @@ export const imageRenderer: PreviewRenderer = {
         viewport.dataset.previewZoom = 'self';
         const stage = document.createElement('div');
         stage.className = 'yss-file-preview-image__stage';
+        const placeholder = document.createElement('div');
+        placeholder.className = 'yss-file-preview-image__placeholder';
+        placeholder.setAttribute('role', 'status');
+        placeholder.textContent = t('imageLoading');
         const img = document.createElement('img');
         img.className = 'yss-file-preview-image__img';
         img.alt = context.fileName;
         img.draggable = false;
         img.decoding = 'async';
-        stage.appendChild(img);
+        stage.append(placeholder, img);
         viewport.appendChild(stage);
 
         const toolbar = document.createElement('div');
@@ -145,36 +189,69 @@ export const imageRenderer: PreviewRenderer = {
         // 缩放控件在外壳（弹窗头部）时，这里只保留适应 / 原始尺寸、旋转与重置
         if (context.externalZoomControl) toolbar.classList.add('is-zoom-external');
         else toolbar.append(buttons.zoomOut, percent, buttons.zoomIn, divider);
-        toolbar.append(
-          buttons.toggleFit,
-          buttons.rotateLeft,
-          buttons.rotateRight,
-          buttons.reset
-        );
+        toolbar.append(buttons.toggleFit, buttons.rotateLeft, buttons.rotateRight, buttons.reset);
 
         root.append(viewport, toolbar);
+        // 矢量内容的复杂度无法从文件头估算：较大的 SVG 照常显示，上方给出非阻塞提示
+        if (context.fileType === 'svg' && data.byteLength > SVG_WARN_BYTES) {
+          root.insertBefore(createNoticeBar(t('imageSvgLargeNotice', { size: formatFileSize(data.byteLength) })), viewport);
+        }
         container.appendChild(root);
 
-        url = URL.createObjectURL(new Blob([data], { type: resolveImageMime(data, context.fileType) }));
-        const loaded = await new Promise<boolean>((resolve, reject) => {
-          const onAbort = () => resolve(false);
-          context.signal.addEventListener('abort', onAbort, { once: true });
-          img.onload = () => {
-            context.signal.removeEventListener('abort', onAbort);
-            resolve(true);
-          };
-          img.onerror = () => {
-            context.signal.removeEventListener('abort', onAbort);
-            reject(new Error(t('imageLoadFailed')));
-          };
-          img.src = url!;
-        });
-        if (!loaded || context.signal.aborted || !root) return;
+        const blob = new Blob([data], { type: resolveImageMime(data, context.fileType) });
+        url = URL.createObjectURL(blob);
+        const header = readImageSize(data);
+        // 超大图片先显示缩小版：浏览器在后台解码、缩小，主线程不再为几千万像素的解码与绘制阻塞
+        let preview: HTMLCanvasElement | null = null;
+        if (header && header.width * header.height > IMAGE_PREVIEW_PIXELS) {
+          const { createPreview } = await loadLarge();
+          preview = await createPreview(blob, header.width, header.height, context.signal);
+          if (context.signal.aborted || !root) {
+            if (preview) preview.width = preview.height = 0;
+            return;
+          }
+        }
+        let shown: HTMLImageElement | HTMLCanvasElement = img;
+        if (preview) {
+          placeholder.remove();
+          preview.className = 'yss-file-preview-image__img';
+          preview.setAttribute('role', 'img');
+          preview.setAttribute('aria-label', context.fileName);
+          stage.replaceChild(preview, img);
+          shown = preview;
+        } else {
+          // 解码完成前不显示，避免第一次绘制时在主线程上同步解码
+          img.style.visibility = 'hidden';
+          const loaded = await loadImage(img, url, context.signal, t('imageLoadFailed'));
+          if (!loaded || context.signal.aborted || !root) return;
+          img.style.visibility = '';
+          placeholder.remove();
+        }
 
         // ---- 状态 ----
         // 没有固有尺寸的 SVG（只有 viewBox）naturalWidth 为 0，按容器大小显示
-        const naturalWidth = img.naturalWidth || Math.max(1, viewport.clientWidth - FIT_PADDING_X) || 300;
-        const naturalHeight = img.naturalHeight || Math.max(1, viewport.clientHeight - FIT_PADDING_Y) || 150;
+        const naturalWidth =
+          (preview ? header!.width : img.naturalWidth) || Math.max(1, viewport.clientWidth - FIT_PADDING_X) || 300;
+        const naturalHeight =
+          (preview ? header!.height : img.naturalHeight) || Math.max(1, viewport.clientHeight - FIT_PADDING_Y) || 150;
+        /** 缩小版放大到细节不够时换成原图（只换一次） */
+        let upgrading = false;
+        const upgradeIfNeeded = () => {
+          if (!preview || upgrading || !root) return;
+          const needed = naturalWidth * scale * (globalThis.devicePixelRatio || 1);
+          if (needed <= preview.width * 1.05) return;
+          upgrading = true;
+          void loadImage(img, url!, context.signal, t('imageLoadFailed'))
+            .then(ok => {
+              if (!ok || !root || !preview) return;
+              stage.replaceChild(img, preview);
+              preview.width = 0;
+              preview = null;
+              shown = img;
+              apply();
+            })
+            .catch(() => undefined);
+        };
         let rotation = 0;
         let fit = true;
         let scale = 1;
@@ -205,9 +282,10 @@ export const imageRenderer: PreviewRenderer = {
           const width = naturalWidth * scale;
           const height = naturalHeight * scale;
           const [boxWidth, boxHeight] = rotation % 180 === 0 ? [width, height] : [height, width];
-          img.style.width = `${width}px`;
-          img.style.height = `${height}px`;
-          img.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+          shown.style.width = `${width}px`;
+          shown.style.height = `${height}px`;
+          shown.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+          upgradeIfNeeded();
           stage.style.width = `${Math.max(boxWidth, viewport.clientWidth)}px`;
           stage.style.height = `${Math.max(boxHeight, viewport.clientHeight)}px`;
           const pannable = boxWidth > viewport.clientWidth || boxHeight > viewport.clientHeight;

@@ -144,9 +144,17 @@ export interface ApplyOptions {
   mdw?: number;
   /** 测量文字宽度，用于估算没有行高的换行行；不传时不估算 */
   measure?: (text: string, fontPx: number, fontName?: string, bold?: boolean) => number;
+  /**
+   * 没有原样式的单元格按（字号、显示类型、格式颜色）共用样式，不再每格一个（直接生成数据时使用，见 ./build.ts）。
+   * 大表的样式表从上百万个降到几个，传输与缩放都快得多
+   */
+  shareStyles?: boolean;
 }
 
 const MAX_AUTO_ROW_PX = 409 * (4 / 3);
+/** 行列合成一个数字键（列数上限 16384），热循环里不拼字符串 */
+const COLS = 16384;
+const cellKey = (r: number, c: number) => r * COLS + c;
 /** 换行列宽低于此值时不再按 1px 估算行数（隐藏列 colPx=0 会变成几千行） */
 const MIN_WRAP_WIDTH_PX = 8;
 
@@ -165,12 +173,12 @@ export function applySheetModel(
   let count = 0;
 
   // 合并区域里被覆盖的单元格（非左上角）：exceljs 会把主单元格的值复制给它们，x-spreadsheet 会重复绘制
-  const covered = new Set<string>();
+  const covered = new Set<number>();
   for (const m of sheet.merges) {
     for (let r = m.r0; r <= m.r1; r++) {
       for (let c = m.c0; c <= m.c1; c++) {
         if (r === m.r0 && c === m.c0) continue;
-        covered.add(`${r},${c}`);
+        covered.add(cellKey(r, c));
         const row = rows[r];
         const cell = row && typeof row === 'object' ? row.cells?.[c] : undefined;
         if (cell) cell.text = '';
@@ -187,30 +195,46 @@ export function applySheetModel(
   };
 
   // 模型自带样式（老版 xls）：按「原样式 + 模型样式 + 显示类型」生成独立样式，避免改到共用同一样式的其他单元格
-  const ownStyles = new Map<string, number>();
-  const modelStyleOf = (cell: XsCell, index: number, kind: string): XsStyle => {
+  // 键：(原样式 + 1, 模型样式, 显示类型) 合成一个数字（大表每个单元格都会查一次，不拼字符串）
+  // 键里含格式颜色（如「0;[Red]-0」的负数为红色），同一样式的单元格颜色可能不同
+  const ownStyles = new Map<number, number>();
+  const kinds = new Map<string, number>();
+  const colors = new Map<string, number>();
+  const idOf = (map: Map<string, number>, v: string) => {
+    let id = map.get(v);
+    if (id === undefined) map.set(v, (id = map.size));
+    return id;
+  };
+  const styleSpan = (model.cellStyles?.length ?? 0) + 2;
+  /** 返回样式与是否新建（新建的需要按单元格修正一次，共用的已经修正过） */
+  const modelStyleOf = (cell: XsCell, index: number, kind: string, color: string | undefined) => {
     const base = typeof cell.style === 'number' && styles[cell.style] ? cell.style : -1;
-    const key = `${base}|${index}|${kind}`;
+    const key = (((base + 1) * styleSpan + index + 1) * 16 + idOf(kinds, kind)) * 64 + idOf(colors, color ?? '');
     let at = ownStyles.get(key);
+    const created = at === undefined;
     if (at === undefined) {
-      styles.push(withModelStyle(base >= 0 ? styles[base] : {}, model.cellStyles![index]));
+      styles.push(index >= 0 ? withModelStyle(base >= 0 ? styles[base] : {}, model.cellStyles![index]) : {});
       at = styles.length - 1;
       ownStyles.set(key, at);
     }
     cell.style = at;
-    return styles[at];
+    return { style: styles[at], created };
   };
+  /** 共用样式还按字号区分 */
+  const plainStyles = new Map<string, number>();
 
   const rowMaxFont = new Map<number, number>();
   const wrapped: Array<{ r: number; c: number; text: string; px: number; font?: string; bold?: boolean }> = [];
 
+  const hasCovered = covered.size > 0;
   for (const [r, cells] of sheet.cells) {
     let row = rows[r];
     if (!row || typeof row !== 'object') row = rows[r] = { cells: {} };
     const xsCells = row.cells ?? (row.cells = {});
+    let rowFont = 0;
     for (const [c, raw] of cells) {
       let cell = xsCells[c];
-      if (raw.covered || covered.has(`${r},${c}`)) {
+      if (raw.covered || (hasCovered && covered.has(cellKey(r, c)))) {
         if (cell) cell.text = '';
         continue;
       }
@@ -222,15 +246,34 @@ export function applySheetModel(
       const out: FormattedCell = formatter.format(raw);
       cell.text = out.text;
       count++;
-      const style = ownStyle !== undefined ? modelStyleOf(cell, ownStyle, out.kind) : styleOf(cell);
-      fixStyle(style, raw, out, model.themeColors);
+      let style: XsStyle;
+      if (ownStyle !== undefined) {
+        const own = modelStyleOf(cell, ownStyle, out.kind, out.color);
+        style = own.style;
+        if (own.created || !options.shareStyles) fixStyle(style, raw, out, model.themeColors);
+      } else if (options.shareStyles && typeof cell.style !== 'number') {
+        const key = `${raw.sz ?? ''}|${out.kind}|${out.color ?? ''}`;
+        let at = plainStyles.get(key);
+        if (at === undefined) {
+          const fresh: XsStyle = {};
+          fixStyle(fresh, raw, out, model.themeColors);
+          styles.push(fresh);
+          plainStyles.set(key, (at = styles.length - 1));
+        }
+        cell.style = at;
+        style = styles[at];
+      } else {
+        style = styleOf(cell);
+        fixStyle(style, raw, out, model.themeColors);
+      }
       const sz = raw.sz ?? defaultSz;
-      rowMaxFont.set(r, Math.max(rowMaxFont.get(r) ?? 0, sz));
+      if (sz > rowFont) rowFont = sz;
       // 隐藏列上的换行 Excel / WPS 不参与自动行高；按 0 宽估算会把该行撑到上限
       if (style.textwrap && out.text && options.measure && !sheet.hiddenCols.has(c)) {
         wrapped.push({ r, c, text: out.text, px: (sz * 4) / 3, font: style.font?.name, bold: !!style.font?.bold });
       }
     }
+    if (rowFont > 0) rowMaxFont.set(r, rowFont);
   }
 
   // 条件格式：按单元格复制一份样式再覆盖（样式是多个单元格共用的）
@@ -300,9 +343,13 @@ export function applySheetModel(
 
   // 行高：pt → px；文件没写行高的行按字号与换行估算（Excel 打开时会自动调整这些行）
   const wrapLines = new Map<number, number>();
+  const mergeAt = new Map<number, (typeof sheet.merges)[number]>();
+  if (wrapped.length) {
+    for (const m of sheet.merges) if (!mergeAt.has(cellKey(m.r0, m.c0))) mergeAt.set(cellKey(m.r0, m.c0), m);
+  }
   for (const w of wrapped) {
     if (sheet.rowHeights.has(w.r)) continue;
-    const merged = sheet.merges.find(m => m.r0 === w.r && m.c0 === w.c);
+    const merged = mergeAt.get(cellKey(w.r, w.c));
     const width = wrapContentWidth(sheet, colPx, w.c, merged ? merged.c1 : w.c);
     const lineWidth = width - 4;
     if (lineWidth < MIN_WRAP_WIDTH_PX) continue;
@@ -421,10 +468,14 @@ function fixStyle(style: XsStyle, raw: RawCell, out: FormattedCell, theme: strin
   const font = style.font;
   if (font) {
     const sz = raw.sz ?? undefined;
-    if (sz) style.font = { ...font, size: xsFontSize(sz) };
     // x-spreadsheet 直接用「字号px 字体名」设置画布字体，系统没有该字体时会退回衬线字体，补上无衬线后备
-    if (typeof font.name === 'string' && font.name && !font.name.includes(',')) {
-      style.font = { ...style.font, name: `"${font.name.replace(/"/g, '')}", sans-serif` };
+    const fallback = typeof font.name === 'string' && font.name && !font.name.includes(',');
+    if (sz || fallback) {
+      // 复制一份再改（字体对象可能被多个样式共用）；只复制一次，大表每个单元格都会走到这里
+      const next = Object.assign({}, font);
+      if (sz) next.size = xsFontSize(sz);
+      if (fallback) next.name = `"${(font.name as string).replace(/"/g, '')}", sans-serif`;
+      style.font = next;
     }
     if (font.underline && font.underline !== 'none') style.underline = true;
     if (font.strike) style.strike = true;

@@ -197,6 +197,45 @@ export interface YssFilePreviewLocale {
   counter: string;
   oversizeTitle: string;
   oversizeDesc: string;
+  largeFileTitle: string;
+  largeFileCellsDesc: string;
+  /** 加载超时 */
+  loadTimeout: string;
+  /** 下载进度（已知总大小） */
+  loadingProgress: string;
+  /** 下载进度（未知总大小） */
+  loadingProgressUnknown: string;
+  /** 文本累计显示达到上限 */
+  textLimit: string;
+  /** CSV 显示行数达到上限 */
+  csvLimit: string;
+  csvLimitNotice: string;
+  /** docx 页数较多的提示 */
+  largeFilePagesDesc: string;
+  /** 图片像素数超过上限 */
+  oversizeImageDesc: string;
+  /** 解析进度（如 Excel 在 Worker 里解析），{percent} 为 0~100 */
+  parsingProgress: string;
+  /** 表格单元格较多的提示条，{cells} 为单元格数 */
+  excelLargeNotice: string;
+  /** 表格文件较大的提示条（读不到单元格数时），{size} 为文件大小 */
+  excelLargeSizeNotice: string;
+  /** 表格单元格超过上限、只显示前面的行，{limit} 上限，{sheet} 工作表名，{rows} 显示的行数 */
+  excelTruncatedNotice: string;
+  /** 还有其他工作表也被截断，{count} 为数量 */
+  excelTruncatedMore: string;
+  /** Word 页数较多的提示条，{pages} 为页数 */
+  docxLargePagesNotice: string;
+  /** Word 文件较大的提示条，{size} 为文件大小 */
+  docxLargeSizeNotice: string;
+  /** pptx 页数较多时的提示条：{slides} 页数 */
+  pptxLargeSlidesNotice: string;
+  /** pptx 文件较大时的提示条：{size} 文件大小 */
+  pptxLargeSizeNotice: string;
+  largeFileSizeDesc: string;
+  continuePreview: string;
+  oversizeCellsDesc: string;
+  oversizeDimensionDesc: string;
   emptyTitle: string;
   emptyDesc: string;
   mismatchTitle: string;
@@ -284,6 +323,8 @@ export interface YssFilePreviewLocale {
   imageReset: string;
   /** 图片：浏览器无法解码 */
   imageLoadFailed: string;
+  imageLoading: string;
+  imageSvgLargeNotice: string;
   /** 缩放：放大 */
   zoomIn: string;
   /** 缩放：缩小 */

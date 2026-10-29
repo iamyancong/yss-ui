@@ -2,9 +2,11 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import dts from 'vite-plugin-dts';
 import { resolve } from 'path';
+import { inlineWorkers } from './build/inline-workers';
 
 export default defineConfig({
   plugins: [
+    inlineWorkers(__dirname),
     vue(),
     dts({
       entryRoot: resolve(__dirname, 'src'),
@@ -16,6 +18,8 @@ export default defineConfig({
       exclude: ['**/docs/**', '../../docs/**'],
     }),
   ],
+  // Excel 解析 Worker（内联）：自带依赖，不受主包 external 影响
+  worker: { format: 'iife', rollupOptions: { output: { inlineDynamicImports: true } } },
   build: {
     lib: {
       entry: {

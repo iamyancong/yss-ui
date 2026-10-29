@@ -74,7 +74,23 @@ export interface SheetModel {
   extras?: SheetExtras;
   /** 条件格式的计算结果（见 ./cf.ts） */
   cf?: CfResult;
+  /** 单元格总数上限（所有工作表共用，见 CellBudget）；没有时不限制 */
+  budget?: CellBudget;
+  /** 超过单元格上限被截断：只保留前 truncatedRows 行（0 起的行号小于它的行） */
+  truncatedRows?: number;
 }
+
+/**
+ * 读取时的单元格计数与上限：所有工作表共用。超过 max 时当前工作表从这一行起截断，之后的工作表不再读取单元格。
+ * 内容异常多（解压后体积巨大）的文件不会把页面拖垮，仍能显示前面的部分
+ */
+export interface CellBudget {
+  max: number;
+  /** 已读取的单元格数 */
+  count: number;
+}
+
+export const createCellBudget = (max = Infinity): CellBudget => ({ max, count: 0 });
 
 /** 读取 xlsx 里图片等二进制部件 */
 export interface WorkbookAssets {
@@ -103,6 +119,8 @@ export interface WorkbookModel {
   assets?: WorkbookAssets;
   /** 单元格样式表（RawCell.style 指向这里）；老版 xls 转换时 SheetJS 丢掉了全部样式，从 BIFF 的 XF 记录读取 */
   cellStyles?: CellStyleModel[];
+  /** 读取到的单元格总数（截断时为保留的数量） */
+  cellCount?: number;
 }
 
 export const createSheetModel = (name: string, state: SheetModel['state'] = 'visible'): SheetModel => ({
@@ -119,11 +137,45 @@ export const createSheetModel = (name: string, state: SheetModel['state'] = 'vis
   formulaCells: 0,
 });
 
+/** Excel 的行列上限（0 起的行号、列号不能达到） */
+const MAX_ROW = 1_048_576;
+const MAX_COL = 16_384;
+
 export const setCell = (sheet: SheetModel, row: number, col: number, cell: RawCell) => {
+  // 超出 Excel 行列范围的单元格（文件异常）不显示
+  if (!(row >= 0 && row < MAX_ROW && col >= 0 && col < MAX_COL)) return;
+  if (sheet.truncatedRows !== undefined && row >= sheet.truncatedRows) return;
+  const budget = sheet.budget;
+  if (budget) {
+    if (budget.count >= budget.max) {
+      // 达到上限：这一行（可能已读了一部分）及之后都不显示，保证显示的行是完整的
+      sheet.truncatedRows = row;
+      const partial = sheet.cells.get(row);
+      if (partial) {
+        budget.count -= partial.size;
+        sheet.cells.delete(row);
+      }
+      return;
+    }
+    if (!sheet.cells.get(row)?.has(col)) budget.count++;
+  }
   let cells = sheet.cells.get(row);
   if (!cells) sheet.cells.set(row, (cells = new Map()));
   cells.set(col, cell);
 };
+
+/** 截断的工作表去掉截断行及之后的行高、隐藏行、合并区域（合并区域跨过截断行时截到最后一行） */
+export function trimTruncatedSheet(sheet: SheetModel) {
+  const cut = sheet.truncatedRows;
+  if (cut === undefined) return;
+  for (const r of [...sheet.cells.keys()]) if (r >= cut) sheet.cells.delete(r);
+  for (const r of [...sheet.rowHeights.keys()]) if (r >= cut) sheet.rowHeights.delete(r);
+  for (const r of [...sheet.hiddenRows]) if (r >= cut) sheet.hiddenRows.delete(r);
+  sheet.merges = sheet.merges
+    .filter(m => m.r0 < cut)
+    .map(m => (m.r1 >= cut ? { ...m, r1: cut - 1 } : m))
+    .filter(m => m.r1 > m.r0 || m.c1 > m.c0);
+}
 
 /** A1 → { row, col }（0 起）；无效时返回 null */
 export function parseCellRef(ref: string): { row: number; col: number } | null {

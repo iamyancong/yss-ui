@@ -10,7 +10,13 @@ import {
 import { Button, Modal, theme, Tooltip } from 'ant-design-vue';
 import { computed, onBeforeUnmount, provide, ref, shallowRef, watch } from 'vue';
 import { useLocale } from '../locale/useLocale';
-import { DEFAULT_MAX_FILE_SIZE, EXTENSION_TYPE_MAP } from './constant';
+import {
+  DEFAULT_CSV_MAX_ROWS,
+  DEFAULT_LARGE_FILE_WARN_SIZE,
+  DEFAULT_LOAD_TIMEOUT,
+  DEFAULT_MAX_FILE_SIZE,
+  EXTENSION_TYPE_MAP,
+} from './constant';
 import FileSwitcher from './components/FileSwitcher.vue';
 import ZoomControl from './components/ZoomControl.vue';
 import { FILE_PREVIEW_ZOOM_HOST } from './hooks/usePreviewZoom';
@@ -48,9 +54,13 @@ const props = withDefaults(defineProps<FilePreviewModalProps>(), {
   showDownload: true,
   keyboard: true,
   maxSize: DEFAULT_MAX_FILE_SIZE,
+  largeFileWarnSize: DEFAULT_LARGE_FILE_WARN_SIZE,
+  excelMaxCells: undefined,
   textEncoding: 'auto',
   csvMode: 'table',
   csvRowNumber: false,
+  csvMaxRows: DEFAULT_CSV_MAX_ROWS,
+  timeout: DEFAULT_LOAD_TIMEOUT,
   getContainer: undefined,
   customDownload: undefined,
   fileSwitcher: true,
@@ -138,7 +148,19 @@ const showSwitcher = computed(() => props.fileSwitcher && props.title === undefi
 
 type ResolvedSource = Awaited<ReturnType<FileSourceLoader>>;
 let loaderWrappers = new WeakMap<FilePreviewItem, FileSourceLoader>();
-let loaderResults = new WeakMap<FilePreviewItem, ResolvedSource>();
+/** 只保留当前文件与相邻文件的结果：逐个翻看很多大文件时内存不会一直增长 */
+const loaderResults = new Map<FilePreviewItem, ResolvedSource>();
+
+/** 丢掉当前、上一个、下一个之外的懒加载结果 */
+const pruneLoaderCache = () => {
+  if (loaderResults.size === 0) return;
+  const keep = new Set<FilePreviewItem | undefined>([
+    currentFile.value,
+    items.value[prevIndex.value],
+    items.value[nextIndex.value],
+  ]);
+  for (const item of [...loaderResults.keys()]) if (!keep.has(item)) loaderResults.delete(item);
+};
 
 const sourceOf = (item: FilePreviewItem): FileSource => {
   const { source } = item;
@@ -150,7 +172,10 @@ const sourceOf = (item: FilePreviewItem): FileSource => {
       if (cached !== undefined) return cached;
       // 业务 loader 收到的是调用方传入的原对象，可读取 id 等字段
       const result = await source({ signal, file: item });
-      if (!signal.aborted) loaderResults.set(item, result);
+      if (!signal.aborted) {
+        loaderResults.set(item, result);
+        pruneLoaderCache();
+      }
       return result;
     };
     loaderWrappers.set(item, wrapper);
@@ -160,8 +185,10 @@ const sourceOf = (item: FilePreviewItem): FileSource => {
 
 const resetLoaderCache = () => {
   loaderWrappers = new WeakMap();
-  loaderResults = new WeakMap();
+  loaderResults.clear();
 };
+
+watch(activeIndex, pruneLoaderCache);
 
 /* ---------------- 导航与上下文 ---------------- */
 
@@ -611,9 +638,13 @@ onBeforeUnmount(() => {
         :file-name="currentFile.fileName"
         :file-type="currentFile.fileType"
         :max-size="maxSize"
+        :large-file-warn-size="largeFileWarnSize"
+        :excel-max-cells="excelMaxCells"
         :text-encoding="textEncoding"
         :csv-mode="csvMode"
         :csv-row-number="csvRowNumber"
+        :csv-max-rows="csvMaxRows"
+        :timeout="timeout"
         :show-download="showDownload"
         :custom-download="previewCustomDownload"
         :zoomable="zoomable"

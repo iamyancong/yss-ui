@@ -13,9 +13,11 @@ export {
   unregisterPreviewRenderer,
 } from './renderers/registry';
 export { FileLoadError, MissingDependencyError } from './errors';
-export { DEFAULT_MAX_FILE_SIZE, SUPPORTED_FILE_TYPES } from './constant';
+export { DEFAULT_LARGE_FILE_WARN_SIZE, DEFAULT_MAX_FILE_SIZE, SUPPORTED_FILE_TYPES } from './constant';
 export type {
   FilePreviewTranslate,
+  PreviewPreflightContext,
+  PreviewPreflightResult,
   PreviewRenderer,
   PreviewRendererInstance,
   PreviewZoomController,

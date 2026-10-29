@@ -61,7 +61,7 @@ export function listZipEntries(data: ArrayBuffer): Map<string, ZipEntry> | null 
 export const MAX_ENTRY_BYTES = 256 * 1024 * 1024;
 
 /** 边解压边计数：超过 max 立即中止并返回 null，不会先把整个条目解压到内存 */
-async function inflateRaw(input: Uint8Array, max: number): Promise<Uint8Array | null> {
+async function inflateRaw(input: Uint8Array, max: number, head = false): Promise<Uint8Array | null> {
   const stream = new Blob([input as BlobPart]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
@@ -71,6 +71,11 @@ async function inflateRaw(input: Uint8Array, max: number): Promise<Uint8Array | 
       const { done, value } = await reader.read();
       if (done) break;
       total += value.byteLength;
+      if (head && total >= max) {
+        chunks.push(value);
+        await reader.cancel().catch(() => undefined);
+        break;
+      }
       if (total > max) {
         await reader.cancel().catch(() => undefined);
         return null;
@@ -103,6 +108,57 @@ export async function readZipEntry(data: ArrayBuffer, entry: ZipEntry): Promise<
   // 目录里声明的解压大小（未声明时按上限）；实际解压结果不应超过它
   const declared = entry.size > 0 && entry.size !== 0xffffffff ? entry.size : MAX_ENTRY_BYTES;
   return inflateRaw(raw, Math.min(declared, MAX_ENTRY_BYTES));
+}
+
+/**
+ * 只解压条目开头的约 bytes 字节（够读到工作表 XML 开头的 <dimension>），不解压整个条目；读不了时返回 null
+ */
+export async function readZipEntryHead(data: ArrayBuffer, entry: ZipEntry, bytes: number): Promise<Uint8Array | null> {
+  const view = new DataView(data);
+  const at = entry.localOffset;
+  if (at + 30 > data.byteLength || view.getUint32(at, true) !== LOCAL_SIGNATURE) return null;
+  const start = at + 30 + view.getUint16(at + 26, true) + view.getUint16(at + 28, true);
+  const raw = new Uint8Array(data, start, Math.max(0, Math.min(entry.compressedSize, data.byteLength - start)));
+  if (entry.method === 0) return raw.subarray(0, bytes);
+  if (entry.method !== 8 || typeof DecompressionStream === 'undefined') return null;
+  const out = await inflateRaw(raw, bytes, true);
+  return out ? out.subarray(0, bytes) : null;
+}
+
+/**
+ * 边解压边把数据交给 visit，不保留解压结果（只扫描、计数）；visit 返回 false 时提前结束。
+ * 不能解压时返回 false
+ */
+export async function scanZipEntry(
+  data: ArrayBuffer,
+  entry: ZipEntry,
+  visit: (chunk: Uint8Array) => boolean | void
+): Promise<boolean> {
+  const view = new DataView(data);
+  const at = entry.localOffset;
+  if (at + 30 > data.byteLength || view.getUint32(at, true) !== LOCAL_SIGNATURE) return false;
+  const start = at + 30 + view.getUint16(at + 26, true) + view.getUint16(at + 28, true);
+  const raw = new Uint8Array(data, start, Math.max(0, Math.min(entry.compressedSize, data.byteLength - start)));
+  if (entry.method === 0) {
+    visit(raw);
+    return true;
+  }
+  if (entry.method !== 8 || typeof DecompressionStream === 'undefined') return false;
+  const reader = new Blob([raw as BlobPart]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader();
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) return true;
+      total += value.byteLength;
+      if (total > MAX_ENTRY_BYTES || visit(value) === false) {
+        await reader.cancel().catch(() => undefined);
+        return true;
+      }
+    }
+  } catch {
+    return false;
+  }
 }
 
 /** 读取条目为 UTF-8 文本；不存在或无法解压时返回 null */
@@ -185,6 +241,59 @@ export function replaceZipEntries(data: ArrayBuffer, entries: Map<string, ZipEnt
     cv.setUint32(16, crc, true);
     cv.setUint32(20, body.length, true);
     cv.setUint32(24, size, true);
+    cv.setUint16(28, name.length, true);
+    cv.setUint32(42, offset, true);
+    cd.set(name, 46);
+    parts.push(local, body);
+    central.push(cd);
+    offset += local.length + body.length;
+  }
+  const cdSize = central.reduce((n, c) => n + c.length, 0);
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, EOCD_SIGNATURE, true);
+  ev.setUint16(8, central.length, true);
+  ev.setUint16(10, central.length, true);
+  ev.setUint32(12, cdSize, true);
+  ev.setUint32(16, offset, true);
+  const out = new Uint8Array(offset + cdSize + 22);
+  let p = 0;
+  for (const part of [...parts, ...central, eocd]) {
+    out.set(part, p);
+    p += part.length;
+  }
+  return out.buffer;
+}
+
+/** 生成不压缩的 zip（只用于很小的文件） */
+export function createStoredZip(files: Array<[name: string, content: string]>): ArrayBuffer {
+  const encoder = new TextEncoder();
+  const parts: Uint8Array[] = [];
+  const central: Uint8Array[] = [];
+  let offset = 0;
+  for (const [path, content] of files) {
+    const body = encoder.encode(content);
+    const name = encoder.encode(path);
+    const crc = crc32(body);
+    const local = new Uint8Array(30 + name.length);
+    const lv = new DataView(local.buffer);
+    lv.setUint32(0, LOCAL_SIGNATURE, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0x0800, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, body.length, true);
+    lv.setUint32(22, body.length, true);
+    lv.setUint16(26, name.length, true);
+    local.set(name, 30);
+    const cd = new Uint8Array(46 + name.length);
+    const cv = new DataView(cd.buffer);
+    cv.setUint32(0, CENTRAL_SIGNATURE, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0x0800, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, body.length, true);
+    cv.setUint32(24, body.length, true);
     cv.setUint16(28, name.length, true);
     cv.setUint32(42, offset, true);
     cd.set(name, 46);

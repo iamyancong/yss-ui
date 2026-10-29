@@ -39,12 +39,20 @@ export type TextEncoding = 'auto' | 'utf-8' | 'gbk';
 /** CSV 显示方式：table 表格，text 源文本 */
 export type CsvMode = 'table' | 'text';
 
+/**
+ * Excel 单元格数阈值（按实际读到的单元格数）：数字表示上限 max；对象可分别设置提示阈值 warn 与上限 max。
+ * 超过 warn 时表格上方显示提示条，超过 max 时只显示前面的行并提示下载查看。
+ * 默认 { warn: 300000, max: 5000000 }，Infinity 表示不限制
+ */
+export type FilePreviewExcelMaxCells = number | { warn?: number; max?: number };
+
 /** 预览状态 */
 export type FilePreviewStatus =
   | 'idle'
   | 'loading'
   | 'ready'
   | 'oversize'
+  | 'large-file'
   | 'empty'
   | 'mismatch'
   | 'missing-dependency'
@@ -116,14 +124,31 @@ export interface FilePreviewProps {
   fileName?: string;
   /** 显式指定文件类型，优先于后缀和 MIME 推断，但仍会校验文件头 */
   fileType?: FilePreviewFileType;
-  /** 允许预览的最大字节数，默认 20MB；超过时不读取内容，直接提示下载 */
+  /** 允许预览的最大字节数，默认 20MB；超过时不读取内容，直接提示下载。恰好等于时可以预览；Infinity 不限制；0、负数、NaN 按默认值 */
   maxSize?: number;
+  /**
+   * 大文件提示阈值（字节），默认 10MB。超过时直接预览，并在上方显示提示条「文件较大，滚动可能略慢」（作用于 xlsx / xls / docx / pptx，恰好等于时不提示）；
+   * 0、负数、NaN 或 Infinity 表示不按大小提示
+   */
+  largeFileWarnSize?: number;
+  /**
+   * Excel 单元格数阈值，默认 { warn: 300000, max: 5000000 }，都不拦截预览：超过 warn 在表格上方显示提示条，
+   * 超过 max 只读取前面的行（显示「仅显示前 N 行」提示条）。按实际读到的单元格数，不看文件里写的范围
+   */
+  excelMaxCells?: FilePreviewExcelMaxCells;
   /** 文本解码策略，默认 'auto' */
   textEncoding?: TextEncoding;
   /** CSV 初始显示方式，默认 'table'；预览中也可以随时切换 */
   csvMode?: CsvMode;
   /** CSV 表格是否显示行号列，默认 false（数据通常自带 id） */
   csvRowNumber?: boolean;
+  /** CSV 表格最多显示的数据行数，默认 200000；达到后不再「加载更多」，提示下载。小于 1、NaN 按默认值，小数向下取整，Infinity 不限制 */
+  csvMaxRows?: number;
+  /**
+   * 加载超时（毫秒），默认 60000：从开始读取到读完（包括懒加载来源与 URL 下载）超过该时间时中止，显示超时错误与「重试」。
+   * 0、负数、NaN 或 Infinity 不限制
+   */
+  timeout?: number;
   /** 预览区域高度，数字按 px 处理，默认 '100%'（最小 240px） */
   height?: string | number;
   /**
@@ -255,12 +280,20 @@ export interface FilePreviewModalProps {
   keyboard?: boolean;
   /** 允许预览的最大字节数，默认 20MB */
   maxSize?: number;
+  /** 大文件提示阈值（字节），默认 10MB，同 YFilePreview */
+  largeFileWarnSize?: number;
+  /** Excel 单元格数阈值，同 YFilePreview */
+  excelMaxCells?: FilePreviewExcelMaxCells;
   /** 文本解码策略，默认 'auto' */
   textEncoding?: TextEncoding;
   /** CSV 初始显示方式，默认 'table' */
   csvMode?: CsvMode;
   /** CSV 表格是否显示行号列，默认 false */
   csvRowNumber?: boolean;
+  /** CSV 表格最多显示的数据行数，默认 200000，同 YFilePreview */
+  csvMaxRows?: number;
+  /** 加载超时（毫秒），默认 60000，同 YFilePreview */
+  timeout?: number;
   /** 弹窗挂载节点，同 ant-design-vue Modal 的 getContainer */
   getContainer?: string | HTMLElement | (() => HTMLElement) | false;
   /** 自定义下载，同 YFilePreview；设置后 PDF 也显示标题栏下载按钮 */
@@ -340,12 +373,20 @@ export interface UseFilePreviewOptions {
   loop?: boolean;
   /** 允许预览的最大字节数 */
   maxSize?: number;
+  /** 大文件提示阈值（字节） */
+  largeFileWarnSize?: number;
+  /** Excel 单元格数阈值 */
+  excelMaxCells?: FilePreviewExcelMaxCells;
   /** 文本解码策略 */
   textEncoding?: TextEncoding;
   /** CSV 初始显示方式 */
   csvMode?: CsvMode;
   /** CSV 表格是否显示行号列 */
   csvRowNumber?: boolean;
+  /** CSV 表格最多显示的数据行数 */
+  csvMaxRows?: number;
+  /** 加载超时（毫秒） */
+  timeout?: number;
   /** 是否显示下载按钮，规则同 YFilePreviewModal */
   showDownload?: boolean;
   /** 是否允许方向键切换 */

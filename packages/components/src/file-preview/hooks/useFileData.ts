@@ -21,6 +21,8 @@ export interface LoadFileDataOptions {
   t: FilePreviewTranslate;
   /** 懒加载来源收到的当前文件 */
   file?: FilePreviewItem;
+  /** URL 下载进度：已读字节数与声明的总字节数（没有 Content-Length 时为 undefined） */
+  onProgress?: (loaded: number, total?: number) => void;
 }
 
 /** 加载结果 */
@@ -90,19 +92,57 @@ export async function loadFileData(source: FileSource, options: LoadFileDataOpti
     if (!res.ok) {
       throw new FileLoadError(t('httpError', { status: res.status }), res.status);
     }
-    const declaredSize = Number(res.headers.get('content-length'));
+    const header = res.headers.get('content-length');
+    const declaredSize = header === null || header.trim() === '' ? NaN : Number(header);
     if (Number.isFinite(declaredSize) && declaredSize > maxSize) {
       await res.body?.cancel().catch(() => undefined);
       return { kind: 'oversize', fileName, size: declaredSize };
     }
-    const buffer = await res.arrayBuffer();
+    // 没有 Content-Length（分块传输）、声明偏小或内容被压缩时，边读边计数，超过 maxSize 立即取消，不把整个文件读进内存
+    const read = await readBody(res, maxSize, signal, loaded =>
+      options.onProgress?.(loaded, Number.isFinite(declaredSize) && declaredSize > 0 ? declaredSize : undefined)
+    );
     throwIfAborted(signal);
+    if (read.kind === 'oversize') return { kind: 'oversize', fileName, size: read.size };
+    const buffer = read.buffer;
     if (buffer.byteLength > maxSize) return { kind: 'oversize', fileName, size: buffer.byteLength };
     const mimeType = res.headers.get('content-type') || undefined;
     return { kind: 'ok', buffer, fileName, mimeType, size: buffer.byteLength };
   }
 
   throw new TypeError('Unsupported file source');
+}
+
+/** 读取响应内容；超过 maxSize 时取消并返回已读到的字节数 */
+async function readBody(
+  res: Response,
+  maxSize: number,
+  signal?: AbortSignal,
+  onProgress?: (loaded: number) => void
+): Promise<{ kind: 'ok'; buffer: ArrayBuffer } | { kind: 'oversize'; size: number }> {
+  const reader = res.body?.getReader?.();
+  if (!reader) return { kind: 'ok', buffer: await res.arrayBuffer() };
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxSize) {
+      await reader.cancel().catch(() => undefined);
+      return { kind: 'oversize', size: total };
+    }
+    chunks.push(value);
+    throwIfAborted(signal);
+    onProgress?.(total);
+  }
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const c of chunks) {
+    out.set(c, at);
+    at += c.byteLength;
+  }
+  return { kind: 'ok', buffer: out.buffer };
 }
 
 function clickLink(href: string, fileName?: string): void {

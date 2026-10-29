@@ -6,6 +6,22 @@ import type { FileType, ImageFileType } from './types';
 /** 默认最大允许预览的文件大小：20MB */
 export const DEFAULT_MAX_FILE_SIZE = 20 * 1024 * 1024;
 
+/** 默认的「大文件」提示阈值：10MB。超过时在预览上方显示提示条（滚动、缩放可能略慢），不拦截预览（作用于 xlsx / xls / docx / pptx） */
+export const DEFAULT_LARGE_FILE_WARN_SIZE = 10 * 1024 * 1024;
+
+/** Excel 单元格数超过该值时在表格上方显示提示条（滚动、缩放可能略慢），不拦截预览 */
+export const DEFAULT_EXCEL_WARN_CELLS = 300_000;
+
+/**
+ * Excel 最多读取的单元格数（实际读到的数量，不看文件里写的范围）：超过时只显示前面的行，并提示下载查看完整内容。
+ * 300 万个单元格约 4.5 秒、占用约 190MB；内容异常多（如解压后几百 MB 的文件）时不会把页面拖垮
+ */
+export const DEFAULT_EXCEL_MAX_CELLS = 5_000_000;
+
+/** Excel 的行列上限（超出范围的单元格不显示） */
+export const EXCEL_MAX_ROWS = 1_048_576;
+export const EXCEL_MAX_COLS = 16_384;
+
 /** 文本超过该大小时分段显示：2MB */
 export const TEXT_LARGE_FILE_THRESHOLD = 2 * 1024 * 1024;
 
@@ -131,6 +147,15 @@ export const IMAGE_ZOOM_STEP = 1.25;
 /** 图片放大后显示尺寸的上限（像素），避免超大图放大后元素尺寸失控 */
 export const IMAGE_MAX_DISPLAY_SIZE = 32768;
 
+/** 数量按语言加千分位（如 1,500,000） */
+export function formatCount(n: number, locale?: string): string {
+  try {
+    return Math.round(n).toLocaleString(locale || undefined);
+  } catch {
+    return String(Math.round(n));
+  }
+}
+
 /** 格式化文件字节大小 */
 export function formatFileSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
@@ -142,3 +167,56 @@ export function formatFileSize(bytes: number): string {
 
 /** 预览容器尺寸变化后通知渲染器重新布局的防抖时间（毫秒） */
 export const RESIZE_DEBOUNCE = 100;
+
+/** maxSize：正数为上限，Infinity 不限制；0、负数、NaN 等无效值按默认值 */
+export function resolveMaxSize(value: unknown): number {
+  return typeof value === 'number' && value > 0 ? value : DEFAULT_MAX_FILE_SIZE;
+}
+
+/** largeFileWarnSize：正的有限数为阈值；0、负数、NaN、Infinity 不按大小提示；未传时按默认值 */
+export function resolveLargeFileWarnSize(value: unknown): number {
+  if (value === undefined || value === null) return DEFAULT_LARGE_FILE_WARN_SIZE;
+  return typeof value === 'number' && value > 0 && Number.isFinite(value) ? value : Infinity;
+}
+
+/** 默认加载超时：60 秒（从开始读取到读完，包括懒加载来源与下载） */
+export const DEFAULT_LOAD_TIMEOUT = 60_000;
+
+/** timeout：正的有限数为毫秒数；0、负数、NaN、Infinity 不限制；未传时按默认值 */
+export function resolveLoadTimeout(value: unknown): number {
+  if (value === undefined || value === null) return DEFAULT_LOAD_TIMEOUT;
+  return typeof value === 'number' && value > 0 && Number.isFinite(value) ? value : Infinity;
+}
+
+/** URL 下载超过该字节数时显示下载进度 */
+export const PROGRESS_MIN_BYTES = 5 * 1024 * 1024;
+
+/** 文本「加载更多」累计显示的上限：8MB，之后只提示下载 */
+export const TEXT_MAX_DISPLAY_SIZE = 8 * 1024 * 1024;
+
+/** CSV 默认最多显示的数据行数，之后只提示下载 */
+export const DEFAULT_CSV_MAX_ROWS = 50_000;
+
+/** csvMaxRows：不小于 1 的数向下取整，Infinity 不限制；0、负数、小于 1、NaN、非数字按默认值 */
+export function resolveCsvMaxRows(value: unknown): number {
+  if (typeof value !== 'number' || Number.isNaN(value) || value < 1) return DEFAULT_CSV_MAX_ROWS;
+  return Number.isFinite(value) ? Math.floor(value) : Infinity;
+}
+
+/** SVG 超过该字节数时在图片上方显示非阻塞提示（矢量内容复杂度无法从文件头估算） */
+export const SVG_WARN_BYTES = 5 * 1024 * 1024;
+
+/** 图片预览的像素数上限：1 亿像素，超过时只提供下载（与 pptx / Excel 内嵌图片的上限一致） */
+export const IMAGE_MAX_PIXELS = 100_000_000;
+
+/** 图片超过该像素数时先显示缩小版（解码与绘制都更快），放大到需要更多细节时再换成原图 */
+export const IMAGE_PREVIEW_PIXELS = 40_000_000;
+
+/** 缩小版的长边像素数 */
+export const IMAGE_PREVIEW_SIDE = 2048;
+
+/** docx 页数超过该值时在文档上方显示提示条（滚动可能略慢），不拦截预览（页数取自文档属性 docProps/app.xml） */
+export const DOCX_WARN_PAGES = 300;
+
+/** pptx 页数超过该值时在上方显示提示条（按页懒绘制，阈值比 docx 低：每页都是一整块绘图） */
+export const PPTX_WARN_SLIDES = 200;

@@ -3,10 +3,11 @@
  * 编码判定与文本渲染器一致（BOM → UTF-8 严格校验 → GBK），分隔符自动识别（, ; Tab）。
  * 大文件每次只解析、渲染 CSV_PAGE_SIZE 行，点击「加载更多」继续。
  */
-import { CSV_PAGE_SIZE } from '../constant';
+import { CSV_PAGE_SIZE, resolveCsvMaxRows } from '../constant';
 import type { CsvMode } from '../types';
 import { createCsvRowReader, detectCsvDelimiter, type CsvRowReader } from '../utils/csv';
 import { decodeTextBuffer, textRenderer } from './text';
+import { createNoticeBar } from './notice-bar';
 import type { PreviewRenderer, PreviewRendererInstance, RenderContext } from './types';
 
 const NUMBER_RE = /^[-+]?(\d{1,3}(,\d{3})+|\d+)?(\.\d+)?%?$/;
@@ -25,7 +26,8 @@ function renderTable(
   body: HTMLElement,
   reader: CsvRowReader,
   context: RenderContext,
-  onSummary: (text: string) => void
+  onSummary: (text: string) => void,
+  onLimit: (rows: number) => void
 ) {
   const scroll = document.createElement('div');
   scroll.className = 'yss-file-preview-csv__scroll';
@@ -87,8 +89,11 @@ function renderTable(
     onSummary(reader.done ? context.t('csvSummary', params) : context.t('csvPartial', params));
   };
 
+  // 显示行数上限：0、负数、NaN 按默认值，Infinity 不限制，小数向下取整
+  const maxRows = resolveCsvMaxRows(context.csvMaxRows);
+  let limited = false;
   const appendRows = () => {
-    const rows = reader.next(CSV_PAGE_SIZE);
+    const rows = reader.next(Math.min(CSV_PAGE_SIZE, maxRows - rowCount));
     ensureColumns(rows.reduce((max, row) => Math.max(max, row.length), 0));
     const fragment = document.createDocumentFragment();
     for (const row of rows) {
@@ -122,11 +127,20 @@ function renderTable(
     }
     updateSummary();
     if (reader.done) more?.remove();
+    else if (rowCount >= maxRows && !limited) {
+      limited = true;
+      more?.remove();
+      const tip = document.createElement('div');
+      tip.className = 'yss-file-preview-csv__more yss-file-preview-csv__limit';
+      tip.textContent = context.t('csvLimit', { rows: rowCount.toLocaleString(context.locale || undefined) });
+      body.appendChild(tip);
+      onLimit(rowCount);
+    }
   };
 
   appendRows();
   let cleanup = () => undefined as void;
-  if (!reader.done) {
+  if (!reader.done && !limited) {
     more = document.createElement('div');
     more.className = 'yss-file-preview-csv__more';
     const button = createButton('yss-file-preview-csv__more-btn', context.t('loadMore'), appendRows);
@@ -142,6 +156,7 @@ export const csvRenderer: PreviewRenderer = {
   create() {
     let wrapper: HTMLElement | null = null;
     let disposeView: (() => void) | null = null;
+    let limitNotice: HTMLElement | null = null;
 
     const instance: PreviewRendererInstance = {
       async render(container, data, context) {
@@ -169,12 +184,17 @@ export const csvRenderer: PreviewRenderer = {
 
         const show = async () => {
           disposeView?.();
+          limitNotice?.remove();
+          limitNotice = null;
           body.replaceChildren();
           toggle.textContent = mode === 'table' ? context.t('csvViewSource') : context.t('csvViewTable');
           toggle.setAttribute('aria-pressed', String(mode === 'text'));
           if (mode === 'table') {
             disposeView = renderTable(body, createCsvRowReader(text, delimiter), context, value => {
               summary.textContent = value;
+            }, rows => {
+              limitNotice = createNoticeBar(context.t('csvLimitNotice', { rows: rows.toLocaleString(context.locale || undefined) }));
+              wrapper?.insertBefore(limitNotice, body);
             });
           } else {
             summary.textContent = '';
@@ -188,6 +208,8 @@ export const csvRenderer: PreviewRenderer = {
       destroy() {
         disposeView?.();
         disposeView = null;
+        limitNotice?.remove();
+        limitNotice = null;
         wrapper?.remove();
         wrapper = null;
       },

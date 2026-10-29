@@ -119,9 +119,11 @@ describe('excel 渲染器的显示修正', () => {
     expect(typeof state.received?.beforeTransformData).toBe('function');
     expect(typeof state.received?.transformData).toBe('function');
     expect(state.received?.xls).toBe(false);
-    expect(state.removed).toEqual([4]);
+    // 数据直接从文件生成（测试环境没有 Worker，在主线程生成），隐藏的工作表不在数据里，不用再从 exceljs 工作簿删除
+    expect(state.removed).toEqual([]);
     expect(state.clicked).toEqual(['formulas']);
     const root = container.querySelector('.yss-file-preview-excel')!;
+    expect((root as HTMLElement).dataset.excelEngine).toBe('main');
     expect(root.querySelector('.yss-file-preview-excel__sheet')).not.toBeNull();
     expect(root.querySelector('.yss-file-preview-excel__notice')).toBeNull();
     expect((root as unknown as Record<symbol, XsSheet[]>)[Symbol.for('yss.filePreview.excelData')]).toHaveLength(3);
@@ -147,7 +149,7 @@ describe('excel 渲染器的显示修正', () => {
     instance.destroy?.();
   });
 
-  it('有绘图的 xlsx 交给 vue-office 的是去掉绘图的副本，并接上切换工作表', async () => {
+  it('直接生成数据时交给 vue-office 的是空表，并接上切换工作表', async () => {
     state.names = ['Pictures', 'Notes & links', 'Formulas'];
     const data = fixture('xlsx-objects.xlsx');
     const instance = excelRenderer.create();

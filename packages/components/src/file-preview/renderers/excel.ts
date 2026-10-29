@@ -5,10 +5,63 @@
  * 这里通过它的 beforeTransformData / transformData 回调，按文件里保存的值和数字格式重写显示内容。
  * 修正代码与数字格式库 numfmt 都在打开表格时按需加载；修正失败时按库的原样显示，不影响预览。
  */
-import { createVNode, render as vueRender, type Component } from 'vue';
+import { createVNode, nextTick, render as vueRender, type Component } from 'vue';
 import { MissingDependencyError } from '../errors';
 import type { AxisView } from '../excel/zoom';
-import type { PreviewRenderer, PreviewRendererInstance, PreviewZoomController } from './types';
+import { formatCount, formatFileSize } from '../constant';
+import { createNoticeBar } from './notice-bar';
+import type { PreviewRenderer, PreviewRendererInstance, PreviewZoomController, RenderContext } from './types';
+
+type WindowListener = [
+  type: string,
+  listener: EventListenerOrEventListenerObject,
+  options?: boolean | AddEventListenerOptions,
+];
+
+/** 正在记录 window 监听的渲染实例（同一时刻通常只有一个） */
+const recorders = new Set<WindowListener[]>();
+let originalAdd: typeof window.addEventListener | null = null;
+/** window 自身原有的 addEventListener 属性（通常没有，来自 EventTarget.prototype） */
+let ownAddDescriptor: PropertyDescriptor | undefined;
+
+/**
+ * 记录 x-spreadsheet 挂在 window 上的监听（resize / keydown / click / paste / copy）。
+ * x-spreadsheet 没有 destroy，@vue-office/excel 卸载时也不解绑，这些监听会让整个工作簿一直留在内存里，
+ * 之后每次 window resize 还会重绘已经移除的表格。它在组件 onMounted 的 nextTick 里同步创建，
+ * 只需要在挂载到下一个 tick 之间记录，结束后由 destroy 逐个移除
+ */
+function recordWindowListeners(): { list: WindowListener[]; stop(): void } {
+  const list: WindowListener[] = [];
+  if (typeof window === 'undefined') return { list, stop: () => undefined };
+  if (!originalAdd) {
+    const add = window.addEventListener;
+    originalAdd = add;
+    ownAddDescriptor = Object.getOwnPropertyDescriptor(window, 'addEventListener');
+    const wrapper = function (
+      this: Window,
+      type: string,
+      listener: EventListenerOrEventListenerObject | null,
+      options?: boolean | AddEventListenerOptions
+    ) {
+      if (listener) for (const r of recorders) r.push([type, listener, options]);
+      return add.call(this, type, listener as EventListenerOrEventListenerObject, options);
+    } as typeof window.addEventListener;
+    Object.defineProperty(window, 'addEventListener', { value: wrapper, configurable: true, writable: true });
+  }
+  recorders.add(list);
+  return {
+    list,
+    stop() {
+      recorders.delete(list);
+      if (!recorders.size && originalAdd) {
+        if (ownAddDescriptor) Object.defineProperty(window, 'addEventListener', ownAddDescriptor);
+        else delete (window as { addEventListener?: unknown }).addEventListener;
+        ownAddDescriptor = undefined;
+        originalAdd = null;
+      }
+    },
+  };
+}
 
 async function loadExcelComponent(): Promise<Component> {
   try {
@@ -25,7 +78,76 @@ function isOleCompound(data: ArrayBuffer): boolean {
   return bytes[0] === 0xd0 && bytes[1] === 0xcf && bytes[2] === 0x11 && bytes[3] === 0xe0;
 }
 
+/** 正在渲染的表格数；大于 0 时过滤 @vue-office/excel 打印工作簿的日志 */
+let muted = 0;
+let originalLog: typeof console.log | null = null;
+/** 过滤的最长时间（@vue-office/excel 一直没有回调时也会恢复） */
+const MUTE_TIMEOUT = 120_000;
+
+/**
+ * @vue-office/excel 每次渲染都会 console.log(workbook, 'workbook')。浏览器（开着或之后打开开发者工具时）
+ * 会一直保留打印过的对象，整个 exceljs 工作簿因此释放不了，每打开一次大表格就多占几百 MB。
+ * 渲染期间只过滤这一条日志，其他日志照常输出
+ */
+function muteWorkbookLog(): () => void {
+  if (typeof console === 'undefined') return () => undefined;
+  if (!muted++) {
+    // eslint-disable-next-line no-console
+    const log = console.log;
+    originalLog = log;
+    // eslint-disable-next-line no-console
+    console.log = function (...args: unknown[]) {
+      if (args.length === 2 && args[1] === 'workbook') return;
+      return log.apply(this, args);
+    };
+  }
+  let done = false;
+  const timer = setTimeout(() => release(), MUTE_TIMEOUT);
+  function release() {
+    if (done) return;
+    done = true;
+    clearTimeout(timer);
+    if (!--muted && originalLog) {
+      // eslint-disable-next-line no-console
+      console.log = originalLog;
+      originalLog = null;
+    }
+  }
+  return release;
+}
+
 const loadFixup = () => import('../excel/index');
+
+type ExcelLimits = import('../excel/limits').ExcelLimits;
+
+/** 大表格提示条的文字；不需要提示时为空字符串 */
+function excelBigNotice(
+  model: import('../excel/model').WorkbookModel,
+  byteLength: number,
+  limits: ExcelLimits,
+  noticeOf: typeof import('../excel/limits').excelNoticeOf,
+  t: RenderContext['t'],
+  locale?: string
+): string {
+  const truncated = model.sheets
+    .filter(s => s.state === 'visible' && s.truncatedRows !== undefined)
+    .map(s => ({ sheet: s.name, rows: s.truncatedRows as number }));
+  const notice = noticeOf({ cells: model.cellCount, truncated }, byteLength, limits);
+  if (!notice) return '';
+  if (notice.kind === 'truncated') {
+    const text = t('excelTruncatedNotice', {
+      limit: formatCount(limits.maxCells, locale),
+      sheet: notice.sheet,
+      rows: formatCount(notice.rows, locale),
+    });
+    return notice.more ? `${text}；${t('excelTruncatedMore', { count: notice.more })}` : text;
+  }
+  if (notice.kind === 'cells') return t('excelLargeNotice', { cells: formatCount(notice.cells, locale) });
+  return t('excelLargeSizeNotice', { size: formatFileSize(byteLength) });
+}
+
+/** 下一个 tick 之后（@vue-office/excel 在 onMounted 的 nextTick 里创建 x-spreadsheet） */
+const afterTick = () => nextTick().then(() => nextTick());
 
 /** 缩放比例的硬性范围（数据层面能正常绘制的范围；默认可用范围由外壳的 zoomMin / zoomMax 决定） */
 const SCALE_MIN = 0.1;
@@ -53,6 +175,30 @@ export const excelRenderer: PreviewRenderer = {
     let destroyed = false;
     let zoomCleanup: (() => void) | null = null;
     let onSheetSwitch: (() => void) | null = null;
+    /** x-spreadsheet 挂在 window 上的监听，destroy 时移除 */
+    let windowListeners: WindowListener[] = [];
+    let releaseFixup: (() => void) | null = null;
+    /**
+     * 让 x-spreadsheet 按容器尺寸重新绘制：直接调用它自己的 resize 监听，只重绘这一个表格；
+     * 没记录到时退回派发 window resize
+     */
+    const relayout = () => {
+      if (!host?.isConnected) return;
+      const own = windowListeners.filter(l => l[0] === 'resize');
+      if (!own.length) {
+        window.dispatchEvent(new Event('resize'));
+        return;
+      }
+      const event = new Event('resize');
+      for (const [, listener] of own) {
+        if (typeof listener === 'function') listener.call(window, event);
+        else listener.handleEvent(event);
+      }
+    };
+    const removeWindowListeners = () => {
+      for (const [type, listener, options] of windowListeners) window.removeEventListener(type, listener, options);
+      windowListeners = [];
+    };
     const instance: PreviewRendererInstance = {
       async render(container, data, context) {
         const xls = isOleCompound(data);
@@ -60,33 +206,54 @@ export const excelRenderer: PreviewRenderer = {
           typeof context.zoom === 'number' && Number.isFinite(context.zoom) && context.zoom > 0
             ? clampScale(context.zoom)
             : undefined;
+        let limits: ExcelLimits | null = null;
+        let noticeOf: typeof import('../excel/limits').excelNoticeOf | null = null;
         const [VueOfficeExcel, fixup] = await Promise.all([
           loadExcelComponent(),
           loadFixup()
-            .then(mod =>
-              mod.prepareExcelFixup({ data, xls, locale: context.locale, signal: context.signal, zoom: initialZoom })
-            )
+            .then(mod => {
+              limits = mod.resolveExcelLimits(context.excelMaxCells, context.largeFileWarnSize);
+              noticeOf = mod.excelNoticeOf;
+              return mod.prepareExcelFixup({
+                data,
+                xls,
+                locale: context.locale,
+                signal: context.signal,
+                zoom: initialZoom,
+                maxCells: limits.maxCells,
+                onProgress: context.onProgress,
+              });
+            })
             .catch(() => null),
         ]);
-        if (context.signal.aborted) return;
+        if (context.signal.aborted || destroyed) {
+          fixup?.dispose();
+          return;
+        }
+        releaseFixup = fixup ? () => fixup.dispose() : null;
         const target = document.createElement('div');
         target.className = 'yss-file-preview-excel';
         // x-spreadsheet 在 window 上用方向键移动选区，声明后弹窗不会在表格内抢方向键
         target.dataset.previewKeyboard = 'self';
+        // 数据来源（排查用）：worker / main 为直接生成，vue-office 为 exceljs / SheetJS 读取
+        target.dataset.excelEngine = fixup?.direct || 'vue-office';
         const sheetHost = document.createElement('div');
         sheetHost.className = 'yss-file-preview-excel__sheet';
         target.appendChild(sheetHost);
         container.appendChild(target);
         host = target;
 
-        await new Promise<void>((resolve, reject) => {
+        const recording = recordWindowListeners();
+        const unmute = muteWorkbookLog();
+        const mounted = new Promise<void>((resolve, reject) => {
           context.signal.addEventListener('abort', () => resolve(), { once: true });
           const vnode = createVNode(VueOfficeExcel, {
             src: fixup?.source ?? data,
-            // 老版 .xls（OLE 复合文档）需要打开 xls 解析；内容其实是 xlsx 的 .xls 按 xlsx 解析
+            // 老版 .xls（OLE 复合文档）需要打开 xls 解析；内容其实是 xlsx 的 .xls 按 xlsx 解析；
+            // 已经直接生成数据时交给它的是空的 xlsx
             options: {
               minColLength: 20,
-              xls,
+              xls: xls && !fixup?.source,
               ...(fixup
                 ? {
                     beforeTransformData: fixup.beforeTransformData,
@@ -95,19 +262,37 @@ export const excelRenderer: PreviewRenderer = {
                 : {}),
             },
             style: { width: '100%', height: '100%' },
-            onRendered: () => resolve(),
+            onRendered: () => {
+              unmute();
+              resolve();
+            },
             // 切换工作表：叠加层（图表、图片、批注…）随之切换
             onSwitchSheet: (index: number) => {
               onSheetSwitch?.();
               pendingSheet = index;
               overlay?.setSheet(index);
             },
-            onError: (err: unknown) =>
-              reject(err instanceof Error ? err : new Error(String(err ?? 'Excel render failed'))),
+            onError: (err: unknown) => {
+              unmute();
+              reject(err instanceof Error ? err : new Error(String(err ?? 'Excel render failed')));
+            },
           });
           if (context.appContext) vnode.appContext = context.appContext;
-          vueRender(vnode, sheetHost);
+          try {
+            vueRender(vnode, sheetHost);
+          } catch (err) {
+            reject(err);
+          }
         });
+        try {
+          await afterTick();
+        } finally {
+          recording.stop();
+          windowListeners = recording.list;
+          // 渲染前就已销毁：立即移除
+          if (destroyed) removeWindowListeners();
+        }
+        await mounted;
         if (context.signal.aborted || !fixup) return;
         const model = fixup.model;
         if (fixup.sheets) Object.defineProperty(target, Symbol.for('yss.filePreview.excelData'), { value: fixup.sheets });
@@ -122,15 +307,16 @@ export const excelRenderer: PreviewRenderer = {
           : model.fullCalcOnLoad && formulas
             ? context.t('excelRecalcOnLoad')
             : '';
-        if (notice) {
-          const bar = document.createElement('div');
-          bar.className = 'yss-file-preview-excel__notice';
-          bar.setAttribute('role', 'status');
-          bar.textContent = notice;
+        // 大表格：单元格较多 / 文件较大时提示滚动可能略慢，超过上限时提示只显示了前面的行
+        const big = limits && noticeOf ? excelBigNotice(model, data.byteLength, limits, noticeOf, context.t, context.locale) : '';
+        for (const text of [notice, big]) {
+          if (!text) continue;
+          const bar = createNoticeBar(text);
+          bar.classList.add('yss-file-preview-excel__notice');
           target.insertBefore(bar, sheetHost);
-          // x-spreadsheet 按容器高度绘制，提示条占位后重新测量
-          window.dispatchEvent(new Event('resize'));
         }
+        // x-spreadsheet 按容器高度绘制，提示条占位后重新测量
+        if (big || notice) relayout();
 
         // 图表、图片、形状、批注、超链接、数据条、迷你图：叠加层按需加载，没有这些内容的表格不加载
         const visibleSheets = fixup.sheets ?? [];
@@ -355,9 +541,11 @@ export const excelRenderer: PreviewRenderer = {
               applyLegacy(next);
               return;
             }
+            // 先恢复被裁短的那格：否则裁短后的尺寸会被当成用户拖动过的值写进基准
+            restoreTrim();
             fixup.setScale(next);
             frame(next, anchors);
-            if (host?.isConnected) window.dispatchEvent(new Event('resize'));
+            relayout();
             overlay?.setScale(next);
           };
 
@@ -367,7 +555,7 @@ export const excelRenderer: PreviewRenderer = {
             const hbar = bar('horizontal');
             restoreTrim();
             const pos = fixup.rescale(pendingSheet, next, { left: hbar?.scrollLeft ?? 0, top: vbar?.scrollTop ?? 0 });
-            window.dispatchEvent(new Event('resize'));
+            relayout();
             if (pos && vbar && hbar) {
               vbar.scrollTop = pos.top;
               vbar.dispatchEvent(new Event('scroll'));
@@ -469,8 +657,8 @@ export const excelRenderer: PreviewRenderer = {
       },
       resize() {
         // x-spreadsheet 只在初始化和 window resize 时按容器尺寸重绘画布，且 vue-office 没有暴露实例，
-        // 容器尺寸变化（如弹窗全屏）后只能派发一次 resize 事件让它重新测量
-        if (host?.isConnected) window.dispatchEvent(new Event('resize'));
+        // 容器尺寸变化（如弹窗全屏）后调用它的 resize 监听重新测量
+        relayout();
       },
       destroy() {
         destroyed = true;
@@ -485,6 +673,10 @@ export const excelRenderer: PreviewRenderer = {
           host.remove();
           host = null;
         }
+        removeWindowListeners();
+        // 清空表格数据与模型：即使还有漏掉的引用，也只剩空对象
+        releaseFixup?.();
+        releaseFixup = null;
       },
     };
     return instance;

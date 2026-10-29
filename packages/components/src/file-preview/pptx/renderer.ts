@@ -20,7 +20,9 @@
  * 本文件只能被 `@yss-ui/components/file-preview/pptx` 子路径引用，主入口不得引用
  * （否则不用 pptx 的项目也要解析 @aiden0z/pptx-renderer）。
  */
+import { formatCount, formatFileSize, PPTX_WARN_SLIDES } from '../constant';
 import { MissingDependencyError } from '../errors';
+import { createNoticeBar } from '../renderers/notice-bar';
 import type { PreviewRenderer, RenderContext } from '../renderers/types';
 import { adjustChart, findChartPath, parseChartFonts, type ChartFontSizes, type ChartLike } from './charts';
 import { normalizePptxMedia, type PptxZipFiles } from './media';
@@ -140,6 +142,24 @@ const isZipLimitError = (err: unknown) => /zip limit/i.test(String((err as Error
 const FALLBACK_WIDTH = 960;
 /** 打开时立即绘制的页数，其余页滚动到附近时再绘制 */
 const EAGER_SLIDES = 3;
+
+/**
+ * 大文稿提示条文案：页数超过 PPTX_WARN_SLIDES 优先，其次文件超过 largeFileWarnSize（恰好等于不提示）；不需要时返回空串。
+ * warnSize 为 0 / 负数 / NaN / Infinity / 未传时不按大小提示
+ */
+export function pptxNoticeOf(
+  slides: number,
+  byteLength: number,
+  warnSize: number | undefined,
+  t: RenderContext['t'],
+  locale?: string
+): string {
+  if (Number.isFinite(slides) && slides > PPTX_WARN_SLIDES)
+    return t('pptxLargeSlidesNotice', { slides: formatCount(slides, locale) });
+  if (typeof warnSize === 'number' && warnSize > 0 && Number.isFinite(warnSize) && byteLength > warnSize)
+    return t('pptxLargeSizeNotice', { size: formatFileSize(byteLength) });
+  return '';
+}
 /** 不支持 IntersectionObserver 时，每批绘制的页数 */
 const BATCH_SLIDES = 4;
 
@@ -445,6 +465,14 @@ export function createPptxRenderer(options: PptxRendererOptions = {}): PreviewRe
             showEmpty();
             return;
           }
+          const notice = pptxNoticeOf(
+            presentation.slides.length,
+            data.byteLength,
+            context.largeFileWarnSize,
+            t,
+            context.locale
+          );
+          if (notice) root.appendChild(createNoticeBar(notice, 'yss-file-preview__notice-bar--sticky'));
           root.appendChild(buildList(presentation));
           layout();
           for (let i = 0; i < Math.min(EAGER_SLIDES, items.length); i += 1) renderSlide(i);

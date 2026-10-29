@@ -2,7 +2,13 @@
  * 文本（.txt / .md，以及 CSV 的源文本视图）渲染器。
  * 编码只在开头采样判定一次，大文件用流式 TextDecoder 分段追加，避免多字节字符被切断后乱码。
  */
-import { formatFileSize, TEXT_CHUNK_SIZE, TEXT_ENCODING_PROBE_SIZE, TEXT_LARGE_FILE_THRESHOLD } from '../constant';
+import {
+  formatFileSize,
+  TEXT_CHUNK_SIZE,
+  TEXT_ENCODING_PROBE_SIZE,
+  TEXT_LARGE_FILE_THRESHOLD,
+  TEXT_MAX_DISPLAY_SIZE,
+} from '../constant';
 import type { TextEncoding } from '../types';
 import type { PreviewRenderer } from './types';
 
@@ -75,7 +81,7 @@ export interface ChunkedTextReader {
   readonly total: number;
   readonly loaded: number;
   readonly done: boolean;
-  next(size?: number): string;
+  next(size?: number, lineBoundary?: boolean): string;
 }
 
 export function createChunkedTextReader(
@@ -96,9 +102,17 @@ export function createChunkedTextReader(
     get done() {
       return offset >= bytes.byteLength;
     },
-    next(size = chunkSize) {
+    next(size = chunkSize, lineBoundary = false) {
       if (offset >= bytes.byteLength) return '';
-      const end = Math.min(offset + size, bytes.byteLength);
+      let end = Math.min(offset + Math.max(1, size), bytes.byteLength);
+      if (lineBoundary && end < bytes.byteLength) {
+        // Prefer the last CR/LF in the budget. If a single line is longer than
+        // the budget, keep the budget and back up over UTF-8 continuation bytes.
+        let cut = end;
+        while (cut > offset && bytes[cut - 1] !== 0x0a && bytes[cut - 1] !== 0x0d) cut -= 1;
+        if (cut > offset) end = cut;
+        else while (end > offset && (bytes[end] & 0xc0) === 0x80) end -= 1;
+      }
       const chunk = bytes.subarray(offset, end);
       offset = end;
       return decoder.decode(chunk, { stream: offset < bytes.byteLength });
@@ -120,7 +134,7 @@ export const textRenderer: PreviewRenderer = {
         wrapper.className = 'yss-file-preview-text';
         const pre = document.createElement('pre');
         pre.className = 'yss-file-preview-text__content';
-        pre.append(document.createTextNode(isLarge ? reader.next() : reader.next(reader.total)));
+        pre.append(document.createTextNode(isLarge ? reader.next(TEXT_CHUNK_SIZE, true) : reader.next(reader.total, true)));
         wrapper.appendChild(pre);
 
         if (isLarge) {
@@ -138,11 +152,21 @@ export const textRenderer: PreviewRenderer = {
             });
           };
           const onClick = () => {
-            pre.append(document.createTextNode(reader.next()));
+            // 累计显示不超过 TEXT_MAX_DISPLAY_SIZE：一个 <pre> 里的文字太多时页面会越来越重
+            const size = Math.min(TEXT_CHUNK_SIZE, TEXT_MAX_DISPLAY_SIZE - reader.loaded);
+            if (size > 0) pre.append(document.createTextNode(reader.next(size, true)));
             updateTip();
             if (reader.done) {
               cleanupListener?.();
               bar.remove();
+            } else if (reader.loaded >= TEXT_MAX_DISPLAY_SIZE) {
+              cleanupListener?.();
+              button.remove();
+              bar.classList.add('is-limit');
+              tip.textContent = context.t('textLimit', {
+                loaded: formatFileSize(reader.loaded),
+                total: formatFileSize(reader.total),
+              });
             }
           };
           button.addEventListener('click', onClick);

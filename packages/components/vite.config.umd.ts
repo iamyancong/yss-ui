@@ -1,9 +1,11 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
+import { inlineWorkers } from './build/inline-workers';
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [inlineWorkers(__dirname), vue()],
+  worker: { format: 'iife', rollupOptions: { output: { inlineDynamicImports: true } } },
   define: {
     'process.env.NODE_ENV': '"production"',
   },

@@ -101,6 +101,25 @@
   border: 0;
 }
 
+// 预览上方的提示条（不拦截预览）：大文件、截断、公式结果等提示共用
+.yss-file-preview__notice-bar {
+  flex: none;
+  padding: 6px 12px;
+  // 底色固定为浅黄，文字颜色也固定，暗色主题下同样可读
+  color: rgb(0 0 0 / 88%);
+  font-size: 12px;
+  line-height: 20px;
+  background-color: #fffbe6;
+  border-bottom: 1px solid #ffe58f;
+
+  // 文档类（Word）：滚动时固定在顶部
+  &--sticky {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+}
+
 .yss-file-preview-excel {
   position: relative;
   display: flex;
@@ -461,6 +480,13 @@
 .yss-file-preview-pptx {
   // 幻灯片列表的底色比页面略深，白色幻灯片与间距才分得清（可通过该变量覆盖）
   --yss-file-preview-pptx-bg: #eceef1;
+
+  // 大文稿提示条：贴着顶部、撑满宽度（抵消内边距），滚动时固定在顶部
+  > .yss-file-preview__notice-bar {
+    top: -16px;
+    z-index: 2;
+    margin: -16px -16px 16px;
+  }
 
   position: relative;
   box-sizing: border-box;
@@ -1195,4 +1221,15 @@
       padding: 0 4px;
     }
   }
+}
+
+.yss-file-preview-image__placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgb(0 0 0 / 55%);
+  background: #fafafa;
+  z-index: 1;
+  pointer-events: none;
 }

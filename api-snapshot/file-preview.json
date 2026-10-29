@@ -1,6 +1,6 @@
 {
   "name": "file-preview",
-  "propsCount": 28,
+  "propsCount": 32,
   "props": {
     "source": {
       "name": "source",
@@ -33,6 +33,22 @@
       "default": "DEFAULT_MAX_FILE_SIZE",
       "isCore": true
     },
+    "largeFileWarnSize": {
+      "name": "largeFileWarnSize",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "DEFAULT_LARGE_FILE_WARN_SIZE",
+      "isCore": true
+    },
+    "excelMaxCells": {
+      "name": "excelMaxCells",
+      "type": "any",
+      "tsType": "FilePreviewExcelMaxCells",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
     "textEncoding": {
       "name": "textEncoding",
       "type": "any",
@@ -55,6 +71,22 @@
       "tsType": "boolean",
       "required": false,
       "default": "false",
+      "isCore": true
+    },
+    "csvMaxRows": {
+      "name": "csvMaxRows",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "DEFAULT_CSV_MAX_ROWS",
+      "isCore": true
+    },
+    "timeout": {
+      "name": "timeout",
+      "type": "number",
+      "tsType": "number",
+      "required": false,
+      "default": "DEFAULT_LOAD_TIMEOUT",
       "isCore": true
     },
     "height": {
@@ -239,7 +271,7 @@
   "slots": [
     {
       "name": "toolbar",
-      "type": "{ fileName: string; fileType: FilePreviewFileType | null; status: FilePreviewStatus; download: () => Promise<void>; reload: () => Promise<void>; zoom: FilePreviewZoomState; setZoom: (zoom: number) => void; zoomIn: () => void; zoomOut: () => void; resetZoom: () => void; fitZoom: (mode?: \"width\" | \"page\") => void; }"
+      "type": "{ fileName: string; fileType: FilePreviewFileType | null; status: FilePreviewStatus; download: () => Promise<void>; reload: () => Promise<void>; zoom: FilePreviewZoomState; setZoom: (zoom: number, anchor?: ZoomAnchor | undefined) => void; zoomIn: () => void; zoomOut: () => void; resetZoom: () => void; fitZoom: (mode?: \"width\" | \"page\") => void; }"
     },
     {
       "name": "loading",
