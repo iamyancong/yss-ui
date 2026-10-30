@@ -482,7 +482,7 @@ onBeforeUnmount(() => {
 <template>
   <Modal
     :open="open"
-    :width="isFullscreen ? '100vw' : width"
+    :width="isFullscreen ? '100%' : width"
     :footer="null"
     :destroy-on-close="true"
     :get-container="getContainer"

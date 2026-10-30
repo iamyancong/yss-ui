@@ -192,8 +192,46 @@ describe('YFilePreviewModal 全屏', () => {
     expect(body).toContain('min-height: 0');
     const fullscreen = modal.slice(modal.indexOf('&--fullscreen {'));
     const fsContent = block('.yss-file-preview-modal__content', fullscreen);
-    expect(fsContent).toContain('width: 100vw');
+    expect(fsContent).toContain('width: 100%');
     expect(fsContent).toContain('height: 100vh');
+  });
+
+  it('回归：全屏不沿用居中 inline-block 排版，出现滚动条时弹窗也不会被挤出视口（只剩遮罩）', async () => {
+    const less = readFileSync(resolve(__dirname, '../style.less'), 'utf8');
+    const modal = less.slice(less.indexOf('.yss-file-preview-modal {'), less.indexOf('// CSV 表格视图'));
+    const fullscreen = modal.slice(modal.indexOf('&--fullscreen {'));
+    const head = fullscreen.slice(0, fullscreen.indexOf('.yss-file-preview-modal__dialog'));
+    // 外层不滚动、去掉居中用的 ::before（否则 100% 宽的 inline-block 会换到它下面）
+    expect(head).toContain('overflow: hidden');
+    expect(head).toMatch(/&::before \{\s*display: none;/);
+    const dialog = fullscreen.slice(fullscreen.indexOf('.yss-file-preview-modal__dialog {'));
+    const dialogBlock = dialog.slice(0, dialog.indexOf('}'));
+    expect(dialogBlock).toContain('position: fixed');
+    expect(dialogBlock).toContain('inset: 0');
+    expect(dialogBlock).not.toContain('100vw');
+    // 100vw 包含滚动条宽度，全屏宽度必须用 100%
+    const wrapper = mount(FilePreviewModal, { props: { open: true, files }, attachTo: document.body });
+    await nextTick();
+    document.querySelector<HTMLButtonElement>('button[aria-label="全屏"]')!.click();
+    await nextTick();
+    expect(wrap().classList.contains('yss-file-preview-modal--fullscreen')).toBe(true);
+    const dialogEl = wrap().querySelector<HTMLElement>('.yss-file-preview-modal__dialog')!;
+    expect(dialogEl.style.width).toBe('100%');
+    // 视口反复变大 / 变小、退出全屏后再缩放：状态与宽度保持一致
+    for (const [w, h] of [[1000, 700], [1600, 1000], [900, 600], [1400, 900]]) {
+      Object.assign(window, { innerWidth: w, innerHeight: h });
+      window.dispatchEvent(new Event('resize'));
+      await nextTick();
+      expect(wrap().classList.contains('yss-file-preview-modal--fullscreen')).toBe(true);
+      expect(dialogEl.style.width).toBe('100%');
+    }
+    document.querySelector<HTMLButtonElement>('button[aria-label="退出全屏"]')!.click();
+    await nextTick();
+    window.dispatchEvent(new Event('resize'));
+    await nextTick();
+    expect(wrap().classList.contains('yss-file-preview-modal--fullscreen')).toBe(false);
+    expect(wrap().querySelector<HTMLElement>('.yss-file-preview-modal__dialog')!.style.width).not.toBe('100%');
+    wrapper.unmount();
   });
 
   it('全屏时 Esc 先退出全屏（即使事件已被页面 preventDefault），再按一次才关闭', async () => {

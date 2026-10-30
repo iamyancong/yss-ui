@@ -10,6 +10,16 @@ toc: content
 
 YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
+## v1.11.1
+
+`2026-10-30`
+
+### 🐛 Bug Fixes
+
+- **YFilePreview 全屏布局修复**：修复在全屏模式下，弹窗沿用居中 inline-block 排版导致窗口缩放或开关控制台出现滚动条时，弹窗换行被挤出视口（仅留遮罩）的问题；全屏模式下外层容器设置为 `overflow: hidden` 并隐藏居中伪元素，dialog 改为 `position: fixed; inset: 0` 铺满视口，弹窗宽度由 `100vw` 改为 `100%`，避免系统滚动条占宽导致溢出。
+
+---
+
 ## v1.11.0
 
 `2026-10-29`

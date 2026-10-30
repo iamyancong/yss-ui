@@ -827,15 +827,33 @@
     }
   }
 
+  // 全屏：不再沿用居中弹窗的 inline-block 排版。100vw / 100vh 的弹窗放在 overflow: auto 的外层里，
+  // 窗口缩放或开关开发者工具时只要短暂出现一次滚动条（常规滚动条会占用宽度），弹窗就会换行到
+  // 居中用的 ::before 下方，被推出视口，只剩遮罩；滚动条又因内容变高而一直保留。
+  // 这里改为固定铺满外层、外层不滚动，任何尺寸下都不会出现滚动条
   &--fullscreen {
+    overflow: hidden;
+
+    &::before {
+      display: none;
+    }
+
     .yss-file-preview-modal__dialog {
+      position: fixed;
+      inset: 0;
       top: 0;
+      width: 100%;
+      max-width: none;
+      height: 100%;
       margin: 0;
       padding: 0;
+      vertical-align: top;
     }
 
     .yss-file-preview-modal__content {
-      width: 100vw;
+      width: 100%;
+      // dialog 与 content 之间还有 antd 的焦点哨兵包装层（高度 auto），百分比高度传不下来，仍用视口高度；
+      // 外层 overflow: hidden，竖向 100vh 不会再引出滚动条
       height: 100vh;
       border-radius: 0;
     }
