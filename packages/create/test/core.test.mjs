@@ -1,7 +1,9 @@
+import { execFile as execFileCallback } from 'node:child_process';
 import fs from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   customizeEnvFiles,
@@ -16,6 +18,9 @@ import {
   validateAppName,
   validateHttpUrl,
 } from '../src/core/index.mjs';
+import { runGitInit } from '../src/post.mjs';
+
+const execFile = promisify(execFileCallback);
 
 describe('@yss-ui/create core 单元测试', () => {
   describe('validateAppName', () => {
@@ -336,6 +341,29 @@ describe('@yss-ui/create core 单元测试', () => {
       expect(devContent).not.toContain('old');
 
       await fs.rm(tempRoot, { recursive: true, force: true });
+    });
+  });
+
+  describe('runGitInit 首次初始化提交测试', () => {
+    it('首次初始化提交自动携带 --no-verify，跳过耗时 pre-commit 钩子', async () => {
+      const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'yss-git-init-test-'));
+      try {
+        await fs.writeFile(path.join(tempRoot, 'README.md'), '# test\n', 'utf8');
+        await execFile('git', ['init'], { cwd: tempRoot });
+        await execFile('git', ['config', 'user.name', 'Test User'], { cwd: tempRoot });
+        await execFile('git', ['config', 'user.email', 'test@example.com'], { cwd: tempRoot });
+
+        // 注入一个必定失败的 pre-commit 钩子，验证 runGitInit 通过 --no-verify 跳过
+        const hookPath = path.join(tempRoot, '.git/hooks/pre-commit');
+        await fs.writeFile(hookPath, '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+
+        await runGitInit(tempRoot);
+
+        const { stdout } = await execFile('git', ['log', '-1', '--pretty=%s'], { cwd: tempRoot });
+        expect(stdout.trim()).toBe('chore: initial commit from @yss-ui/create');
+      } finally {
+        await fs.rm(tempRoot, { recursive: true, force: true });
+      }
     });
   });
 });

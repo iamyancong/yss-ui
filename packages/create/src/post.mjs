@@ -56,6 +56,7 @@ export const runInstall = (targetPath, pm = 'pnpm') => {
 
 /**
  * 初始化 Git 仓库并执行首次初始提交。
+ * 模板出厂本身已通过门禁，首次全量建仓提交加 --no-verify 跳过 pre-commit，避免建项时全量扫描卡顿。
  *
  * @param {string} targetPath 目标项目目录
  * @returns {Promise<void>}
@@ -63,5 +64,7 @@ export const runInstall = (targetPath, pm = 'pnpm') => {
 export const runGitInit = async targetPath => {
   await execFile('git', ['init'], { cwd: targetPath });
   await execFile('git', ['add', '-A'], { cwd: targetPath });
-  await execFile('git', ['commit', '-m', 'chore: initial commit from @yss-ui/create'], { cwd: targetPath });
+  await execFile('git', ['commit', '--no-verify', '-m', 'chore: initial commit from @yss-ui/create'], {
+    cwd: targetPath,
+  });
 };
