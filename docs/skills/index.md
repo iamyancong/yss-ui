@@ -60,7 +60,6 @@ pnpm sync:skills:ides
 - [YSS UI Business Page Generation](./yss-ui-business-page-generation.md)：业务页面生成总控，串联组件、Hooks、Utils、表格、树和表单规则。
 - [Theme Token Usage](./theme-token-usage.md)：主题 Token、交互态、透明色派生与明暗模式规范。
 - [Component Selection Imports](./component-selection-imports.md)：组件选型与导入守门（默认查 `llms-full.txt`）。
-- [Page Module Development](./page-module-development.md)：兼容旧项目的页面模块开发入口。
 - [Page Skeleton](./page-skeleton.md)：页面骨架与目录结构标准。
 - [Page List Module](./page-list-module.md)：列表查询分页与操作模块。
 - [Page Form Module](./page-form-module.md)：新增/编辑/查看表单模块。
@@ -107,7 +106,7 @@ pnpm sync:skills:ides
 - `yss-formily` 保留为 Formily 总入口；基础表单细节继续查看 `formily-foundation`
 - `yss-formily-linkage-effects` -> `formily-linkage-effects`
 - `yss-formily-mode-slot-detail` -> `formily-mode-slot-detail`
-- `page-module-development` 保留为旧项目兼容入口；新页面优先查看 `yss-ui-business-page-generation`
+- `page-module-development` 已移除 -> 新页面使用 `yss-ui-business-page-generation`（列表/表单细分用 `page-list-module`、`page-form-module`）
 - `microapp-commit` 已移除 -> 前端业务仓库提交请使用 `frontend-commit`（Java 后端使用 `java-backend-commit`）
 
 ## 说明

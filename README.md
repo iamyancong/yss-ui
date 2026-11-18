@@ -188,7 +188,15 @@ pnpm sync:skills:ides
 ```
 
 ### 2. 官方 MCP Server (@yss-ui/mcp)
-配置 `@yss-ui/mcp` 服务后，AI 智能体即可在对话中调用内置工具（如 `get_component_docs`、`get_demo`、`search_docs`），实现 **“查阅为先，拒绝猜测”** 的可靠生成。
+配置 `@yss-ui/mcp` 服务后，AI 智能体即可在对话中调用内置工具（如 `get_component_docs`、`get_demo`、`search_docs`），实现 **“查阅为先，拒绝猜测”** 的可靠生成。推荐使用一键安装器：
+
+```bash
+npx -y @yss-ui/mcp install                    # 交互式勾选 AI 工具
+npx -y @yss-ui/mcp install cursor codex       # 直接指定目标
+npx -y @yss-ui/mcp install cursor --global    # 写入全局配置（默认写当前项目）
+```
+
+支持 Cursor、Claude Code、Codex、Antigravity、Trae 等 12 个目标；只增改 `yss-ui` 单个条目，可重复安全执行。完整说明见 [packages/mcp/README.md](packages/mcp/README.md)。
 
 ### 3. LLMs 上下文支持
 可直接向大模型投喂在线全量文档：

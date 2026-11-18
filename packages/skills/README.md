@@ -29,7 +29,6 @@ AI 生成 YSS UI 业务页面不准确的根因之一，是模型不知道组件
 - `yss-ui-business-page-generation`：Vue3 YSS UI 业务页面生成主入口（CRUD、列表、表单、详情、左树右表）；
 - `page-skeleton`：列表、表单、详情和弹窗页面模块骨架与模块化拆分（`index.vue`, `constant.ts`, `style.less`, `hooks/`）；
 - `prototype-page-acceptance`：根据原型截图或旧项目路径提取验收清单与像素级还原；
-- `page-module-development`：兼容旧版页面模块开发指令路由。
 
 ### 2. 表格与列表全家桶
 - `page-list-module`：标准列表页（查询重置、远程分页、YTable 工具栏、批量操作、左树右表）；

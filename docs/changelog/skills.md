@@ -10,6 +10,20 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.11.1
+
+`2026-11-18`
+
+### ⚠️ 行为变化与升级说明
+
+- **page-module-development**：删除已软废弃的兼容壳目录、评测用例与文档页，不再随 `@yss-ui/skills` 发布（此前 `yss-skills sync --all` 仍会把它装进项目）。`skills.config.json#deprecatedSkills` 继续保留该名称，已同步过的业务仓库重新执行 `sync` 会自动清理残留目录；新页面统一使用 `yss-ui-business-page-generation`。
+
+### 🧪 Test & Quality
+
+- **一致性校验**：`check-skills-consistency` 新增检查，`deprecatedSkills` 中的名称若仍存在 skill 目录、评测目录或文档页即报错，防止废弃 skill 再次进包。
+
+---
+
 ## v1.11.0
 
 `2026-10-29`

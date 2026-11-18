@@ -10,6 +10,21 @@ toc: content
 
 YSS MCP 文档服务（`@yss-ui/mcp`）的版本更新记录。
 
+## v0.10.2
+
+`2026-11-18`
+
+### 🐛 Bug Fixes
+
+- **安装器提示**：`yss-mcp install` 的 Cursor 验证提示不再写死「7 个工具」，改为按实际工具定义动态计算（当前 10 个），并新增测试防止文案与工具数、README 再次漂移。
+- **Trae 文案**：去掉「项目级为实验特性不写入」的过时说法，改为提示项目级 `.trae/mcp.json` 需在 Trae 设置中开启 Enable Project MCP（本版仍只写全局配置）。
+
+### 📝 Documentation
+
+- **索引同步**：代码生成规则与 Skills 索引移除已删除的 `page-module-development`。
+
+---
+
 ## v0.10.1
 
 `2026-10-30`

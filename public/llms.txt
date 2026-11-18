@@ -124,10 +124,6 @@ YSS UI 是基于 Vue 3、Ant Design Vue 与 VXE-Table 的企业级中后台组�
 - create-yss-app: https://iamyancong.github.io/yss-ui/skills/create-yss-app — 新建或初始化 YSS 微前端微应用工程首选入口，通过官方脚手架与 CLI 交互在线快速生成微前端工程骨架；create yss app scaffold micro-frontend project；当在线从零搭建微应用、新建 qiankun 子应用或运行脚手架创建项目时使用。已有项目开发迭代请转交 yss-frontend-dev，脱机离线创建请改用内部离线方案。
 - yss-frontend-dev: https://iamyancong.github.io/yss-ui/skills/yss-frontend-dev — 开发前端页面、新增或修改前端页面、列表页、表单、微应用业务功能总入口与流程编排器；develop a frontend page。通过状态识别与有限构件分流调度对应专业子 Skill。从零新建空工程项目请使用 create-yss-app，单独维护组件库自身请使用 library 类维护技能。
 
-### other
-
-- page-module-development: https://iamyancong.github.io/yss-ui/skills/page-module-development — （已废弃/Deprecated）兼容历史项目与旧指令的 Vue3 YSS UI 页面模块开发指令别名；本技能已软废弃，仅作为历史指令引导壳。新业务页面、CRUD 与完整模块开发请统一使用主规则 yss-ui-business-page-generation，细分模块参考 page-list-module 和 page-form-module。
-
 ## 指南
 
 - 快速开始: https://iamyancong.github.io/yss-ui/guide

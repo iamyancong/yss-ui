@@ -205,6 +205,18 @@ function validateDeprecatedSkillsConfig(errors) {
   if (appSkills.includes('page-module-development')) {
     errors.push('skills.config.json 的 categories.app 不得再推荐已废弃的 page-module-development');
   }
+  for (const name of deprecated) {
+    const targets = [
+      path.join(ROOT_DIR, 'packages/skills', name),
+      path.join(ROOT_DIR, 'packages/skills/evals', name),
+      path.join(ROOT_DIR, 'docs/skills', `${name}.md`),
+    ];
+    for (const target of targets) {
+      if (fs.existsSync(target)) {
+        errors.push(`已废弃 skill 目录仍存在，会随包发布：${path.relative(ROOT_DIR, target)}`);
+      }
+    }
+  }
 }
 
 /**

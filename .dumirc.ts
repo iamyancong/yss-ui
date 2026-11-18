@@ -202,7 +202,6 @@ export default defineConfig({
             { title: 'YSS UI Business Page Generation', link: '/skills/yss-ui-business-page-generation' },
             { title: 'Theme Token Usage', link: '/skills/theme-token-usage' },
             { title: 'Component Selection Imports', link: '/skills/component-selection-imports' },
-            { title: 'Page Module Development', link: '/skills/page-module-development' },
             { title: 'Page Skeleton', link: '/skills/page-skeleton' },
             { title: 'Page List Module', link: '/skills/page-list-module' },
             { title: 'Page Form Module', link: '/skills/page-form-module' },

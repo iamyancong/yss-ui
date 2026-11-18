@@ -17,6 +17,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const readline = require('readline');
+const { TOOL_DEFINITIONS } = require('./tools');
 
 /** 写入的 server 名称。 */
 const SERVER_NAME = 'yss-ui';
@@ -82,7 +83,7 @@ const TARGETS = [
       format: 'json',
       jsonPath: ['mcpServers'],
     }),
-    verify: 'Settings → MCP 中 yss-ui 为绿色且有 7 个工具',
+    verify: `Settings → MCP 中 yss-ui 为绿色且有 ${TOOL_DEFINITIONS.length} 个工具`,
   },
   {
     id: 'codex',
@@ -114,7 +115,7 @@ const TARGETS = [
   },
   {
     id: 'trae',
-    label: 'Trae（全局，项目级为实验特性不写入）',
+    label: 'Trae（全局；项目级 .trae/mcp.json 需开启 Enable Project MCP，暂不自动写入）',
     scoped: false,
     resolve: () => ({ file: resolveTraePath(), format: 'json', jsonPath: ['mcpServers'] }),
     verify: '设置 → MCP 列表出现 yss-ui（改完需重启）',

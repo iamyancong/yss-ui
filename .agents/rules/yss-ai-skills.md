@@ -25,7 +25,6 @@ trigger: always_on
 - java-backend-commit: .agents/skills/java-backend-commit/SKILL.md
 - page-form-module: .agents/skills/page-form-module/SKILL.md
 - page-list-module: .agents/skills/page-list-module/SKILL.md
-- page-module-development: .agents/skills/page-module-development/SKILL.md
 - page-skeleton: .agents/skills/page-skeleton/SKILL.md
 - prototype-page-acceptance: .agents/skills/prototype-page-acceptance/SKILL.md
 - release-management: .agents/skills/release-management/SKILL.md

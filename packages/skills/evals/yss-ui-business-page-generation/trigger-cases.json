@@ -20,7 +20,7 @@
       "id": "legacy-page-module-request",
       "prompt": "按页面模块开发规范生成商品管理列表",
       "should_trigger": true,
-      "accept_route_to": ["page-list-module", "page-module-development"],
+      "accept_route_to": ["page-list-module"],
       "assert": "旧触发词直接由 yss-ui-business-page-generation 接管或中转到列表技能。"
     },
     {
