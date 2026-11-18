@@ -68,6 +68,12 @@ export const FOOTER_SECTIONS: FooterSection[] = [
     description: '深入查阅相关组件库与工程工具。',
     links: [
       {
+        label: '前端研发体系官网',
+        href: 'https://iamyancong.github.io/',
+        description: 'YSS UI、脚手架、雨燕平台与演进路线',
+        external: true,
+      },
+      {
         label: 'Ant Design Vue',
         href: 'https://www.antdv.com/components/button-cn',
         description: 'Vue 企业级 UI 组件库',
