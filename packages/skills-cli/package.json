@@ -1,6 +1,6 @@
 {
   "name": "@yss-ui/skills-cli",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "CLI tool to sync AI skills to local projects",
   "bin": {
     "yss-skills": "./bin/yss-skills.js"
@@ -15,7 +15,12 @@
     "inquirer": "^8.2.6",
     "tar": "^6.2.0"
   },
-  "files": ["bin", "lib", "!lib/**/*.test.js", "README.md"],
+  "files": [
+    "bin",
+    "lib",
+    "!lib/**/*.test.js",
+    "README.md"
+  ],
   "publishConfig": {
     "access": "public"
   },
@@ -24,5 +29,11 @@
     "url": "https://github.com/iamyancong/yss-ui.git",
     "directory": "packages/skills-cli"
   },
-  "keywords": ["yss", "yss-ui", "ai", "skills", "cli"]
+  "keywords": [
+    "yss",
+    "yss-ui",
+    "ai",
+    "skills",
+    "cli"
+  ]
 }
