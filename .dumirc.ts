@@ -53,6 +53,7 @@ export default defineConfig({
       { title: 'Skills', link: '/skills', badge: 'AI', /* highlight: true, */ icon: 'spark', accent: 'emerald' },
       { title: '工具', link: '/utils', icon: 'toolbox', accent: 'amber' },
       { title: '更新日志', link: '/changelog', /* badge: 'NEW', */ icon: 'pulse', accent: 'rose' },
+      { title: '体系官网', link: 'https://iamyancong.github.io/', icon: 'nodes', accent: 'sky' },
     ],
     prefersColor: {
       default: 'auto',
