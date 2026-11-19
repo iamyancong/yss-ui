@@ -1,0 +1,123 @@
+# YSS UI 业务开发规则
+
+本项目使用 YSS UI 业务页面开发规范。处理 Vue3 业务页面、CRUD、列表、表单、抽屉、YTable、YEditTable、YFormily、YTree、API 对接任务时，必须先读取匹配的 SKILL.md，再写计划或代码。
+
+## 先查 MCP 与禁止猜 API
+
+- **先查 MCP**：编写 YSS UI 相关代码前，先通过 yss-ui MCP 的 `get_codegen_rules`、`get_component_docs`、`get_component_schema`、`get_consumption_contract` 核对；MCP 不可用时阅读对应 Skill。
+- **禁止猜 API**：Props、事件、插槽、暴露方法、Orval 导出名必须以 MCP 文档、Schema 或真实生成文件为准。
+
+## 任务 → 必读 Skill
+
+1. 页面/CRUD/列表/表单任务：先读 `.agents/skills/yss-ui-business-page-generation/SKILL.md`。
+2. 新增或修改页面、组件、Less、内联样式、TS 渲染配置、SVG 色值：必须读 `.agents/skills/theme-token-usage/SKILL.md`。
+3. 导出、报表、模板、附件、Excel、CSV、PDF、ZIP、Blob 下载任务：必须读 `.agents/skills/file-export-download/SKILL.md`。
+4. 列表或表格任务：同时读 `.agents/skills/page-list-module/SKILL.md`、`.agents/skills/ytable-usage/SKILL.md`、`.agents/skills/use-table-height/SKILL.md`。
+5. 新增/编辑/查看/抽屉表单：同时读 `.agents/skills/yss-formily/SKILL.md`、`.agents/skills/page-form-module/SKILL.md`。
+6. 可编辑表格、扩展属性、添加行/删除行：必须读 `.agents/skills/yedit-table-usage/SKILL.md`。
+7. 用户给原型截图或旧项目路径：必须读 `.agents/skills/prototype-page-acceptance/SKILL.md`，先生成验收清单，再实现。
+
+## Hard Stops 摘要
+
+- 禁止使用 YTable 不存在的 `request`、`search-params` Props 和 `actionConfig.actions`；实例 `refresh()` 只刷新当前表格数据，不得当作远程重新查询。
+- 可编辑表格必须优先使用 `YEditTable`，禁止用 `a-table` 手搓。
+- 禁止在业务代码中直接导入样式文件（如 `import './style.less'`），统一使用 scoped style 块。
+- 页面和组件禁止硬编码品牌色及 hover/active/selected/focus 色阶；主色透明态必须从真实动态 Token 派生。
+- 导出下载必须优先调用 `handleBlobResponse(res.data, res.headers)`；生成方法缺少 Blob 配置时第二参数必须传 `{ responseType: 'blob' }`。
+- 接口返回的 number 字段（id/主键/金额/数量等）一律按字符串透传，禁止 Number()/parseInt/+x 等任何数字转换。
+
+完整 Hard Stops 与详细代码生成规则：调用 MCP `get_codegen_rules`。
+
+# YSS UI 代码生成规则
+
+## 一、基础技术栈与 SFC 风格
+
+- **语言与框架**：TypeScript + Vue 3，统一使用 Composition API 与 `<script setup lang="ts">`。
+- **SFC 结构顺序**：严格遵循 1) `<script setup lang="ts">` 2) `<template>` 3) `<style scoped lang="less">`。
+- **代码风格**：
+  - 必须使用分号；函数优先使用 `const` + 箭头函数。
+  - 注释优先使用 JSDoc 块级注释。
+  - 避免颜色硬编码，优先使用主题变量。
+- **样式规范**：
+  - ❌ 禁止在业务代码中直接导入样式文件（会导致样式污染），例如禁止 `import './style.less'`。
+  - ✅ 正确做法：使用 scoped style 块，例如 `<style scoped lang="less">@import './style.less';</style>`。
+  - 文档 Demo 中的 import './style.less' 是为兼容 Dumi，业务层请勿使用。
+  - 始终使用 scoped；样式优先使用 Less。
+  - 外部样式通过 style 块中的 `@import` 引入。
+- **组件与展示命名**：
+  - 组件对外展示名以 Y 前缀（如 `<YTable/>`）。
+  - 组件库命名使用 'y-table'（不是 vxe-table 名称）。
+  - 路由 keepAlive 时，组件需 `defineOptions({ name: 'ComponentName' })` 显式命名。
+
+## 二、Vue 与代码质量规范
+
+- **Vue JSDoc 规范**：
+  - `defineProps` 与 `defineEmits` 必须使用规范 JSDoc 描述。
+  - 对外暴露的方法必须使用 `defineExpose` 并通过规范 JSDoc 标注。
+- **质量要求**：
+  - 变更后运行 linter 校验。
+  - 保持函数浅层、尽早返回，避免 2~3 层以上深层嵌套。
+  - 公共 API 必须提供显式类型定义。
+- **JSDoc 模板**：
+  - Hook JSDoc 模板：
+    ```typescript
+    /**
+     * ${description}
+     * @param ${paramName} - ${paramDesc}
+     * @returns ${returnsDesc}
+     */
+    ```
+  - Prop JSDoc 模板：
+    ```typescript
+    /** ${description} */
+    ```
+
+## 三、表格与 UI 规范
+
+- **vxe-table 集成约定**：
+  - 版本：以 @yss-ui/components 配套安装的 vxe-table 版本为准。
+  - 默认属性约定：
+    - `editConfig.autoClear=false`。
+    - `showOverflow=true` 与 `showHeaderOverflow=true` 表示 tooltip。
+    - `scrollY` 默认 `{ enabled: true, gt: 100 }`。
+    - 行拖拽需 `rowConfig.drag=true`。
+    - tooltip `contentMethod` 返回 string 或 null。
+  - 事件命名：`edit-closed`、`row-dragend` 等与 vxe 对齐。
+- **插槽命名规范（统一 kebab-case，内部兼容 camelCase）**：
+  - 工具栏：`#toolbar-left`、`#toolbar-right`（兼容 `#toolbarLeft` / `#toolbarRight`）。
+  - 操作列更多图标：`#action-more-icon`（兼容 `#actionMoreIcon`）。
+  - 列单元格：`#<field>`（如 `#name`）。
+  - 表头：`#<field>-header`（兼容 `#<field>Header`）。
+  - 筛选：`#<field>-filter`（兼容 `#<field>Filter`）。
+  - 展开行：`#expand-row`（兼容 `#expandRow`）。
+  - 说明：在 DOM 模板中属性名会被转为小写，camelCase 容易失效，故统一使用 kebab-case。
+- **弹层与样式变量**：
+  - 下拉与弹窗容器默认挂载 `body`。
+  - 颜色一律使用主题 Token / CSS 变量，禁止写死色值；主色透明态必须从真实动态 Token 派生，不得依赖固定色回退。
+- **接口精度约定**：
+  - 接口返回的 number 字段（id/主键/金额/数量等）一律按字符串透传，禁止 Number()/parseInt/+x 等任何数字转换（json-bigint 已存为字符串保精度），详见 api-integration skill。
+
+## 统一消费与构建契约
+
+- 默认单包安装，从 `@yss-ui/components` 具名导入并局部注册；不全局安装 YSSUI，不拆新的功能包。
+- `@yss-ui/components/table`、`@yss-ui/components/formily` 自 1.6.7 起公开，是可选入口；旧版本先核对 exports，禁止批量改写根入口。
+- 子路径与插件改善加载边界，不减少默认安装依赖；VXE/Formily 仍由组件库配套安装。
+- 官方 `@yss-ui/components/vite` 插件自 1.7.0 起已发布，完整验收范围为 Vite 6。旧项目先读取实际安装版本、exports 和现有插件，禁止与旧隔离插件同时运行。
+- 生成代码前用 MCP `get_consumption_contract` 核对版本；未知版本不得假设新插件可用。文档站 Demo 的样式导入不能直接复制为业务全局样式策略。
+
+## Hard Stops
+
+- 禁止使用 YTable 不存在的 `request`、`search-params` Props 和 `actionConfig.actions`；实例 `refresh()` 只刷新当前表格数据，不得当作远程重新查询。
+- 标准列表必须使用 `:data`、`:columns`、`:loading`、`pageable`、`v-model:pagination`、`@page-change`。
+- 表格工具栏必须使用 `:toolbar-config="{ custom: true }"`，新增/导入等主按钮放 `#toolbar-right`。
+- 业务列表查询区默认将查询/重置按钮放在 YFormily 外部独占一行并右对齐；`AutoButtonGroup + Submit + Reset` 仅用于纯 Formily 提交表单。
+- 所有 YFormily 横向业务表单必须使用 `FormLayout(labelWidth, labelAlign: 'right') -> FormGrid -> 字段`，不得省略固定 label 宽度和右对齐。
+- FormGrid 必须保持响应式：默认 `minColumns: 1`，通过 `maxColumns`、`minWidth` 控制宽屏列数；禁止 `minColumns` 等于 `maxColumns` 固定列数，除非用户明确要求不响应式。
+- 抽屉/弹窗编辑表单默认 `labelWidth: 140`、`FormGrid { maxColumns: 2, minColumns: 1, minWidth: 320~360 }`；备注/长文本字段必须用 `gridSpan` 占满整行。
+- 可编辑表格必须优先使用 `YEditTable`，禁止用 `a-table` 手搓。
+- 抽屉表单必须有响应式宽度，查看态不显示保存按钮。
+- 页面和组件禁止硬编码品牌色及 hover/active/selected/focus 色阶；主色透明态必须从真实动态 Token 派生，不得依赖未同步变量的固定色 fallback。
+- 导出下载必须优先调用 `handleBlobResponse(res.data, res.headers)`；生成方法缺少 Blob 配置时，第二参数必须传 `{ responseType: 'blob' }`，禁止手改 Orval 生成文件。
+- Orval 请求失败由 `mutator.ts` 统一提示并 reject；业务 Hook 禁止 `if (res?.success)` 冗余判断，也禁止在 `else`/`catch` 重复 `message.error`，除非请求显式跳过了全局处理。
+- 调用 Orval API 前必须检查当前生成文件；存在具名导出时直接导入，只有工厂导出时在模块顶层创建一次实例，禁止猜测 `getApi()` 名称。
+- 有截图/旧项目参考时，交付前必须逐项对照查询区、表格工具栏、分页高度、抽屉、label、字段控件类型。

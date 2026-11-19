@@ -45,7 +45,7 @@ npx -y @yss-ui/skills-cli sync
 | `search_docs` | 中文关键词全文搜索组件文档与 Skills（含 references 参考文档） |
 | `list_skills` / `get_skill` | 浏览并读取开发技能规范，支持通过 `include` 附带或 `file` 精准提取 references 参考文档与 scripts 脚本 |
 | `get_consumption_contract` | 按 `componentsVersion?` 核对单包、入口、Vite 插件与样式契约；未知版本要求读取实际 exports |
-| `get_codegen_rules` | 获取业务代码生成硬规则（样式导入、SFC 结构等） |
+| `get_codegen_rules` | 获取业务代码生成硬规则（样式导入、SFC 结构等，来源 packages/skills/rules/，Markdown 正文） |
 | `get_component_schema` | 获取组件精确 JSON Schema（Props约束/枚举值/默认值/Emits/Slots），防止属性名幻觉 |
 | `get_test_coverage` | 获取组件库自动化测试覆盖率指标与单测文件清单；不传查全库大盘，传参查单模块 |
 

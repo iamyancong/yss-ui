@@ -1,0 +1,16 @@
+[
+  "禁止使用 YTable 不存在的 `request`、`search-params` Props 和 `actionConfig.actions`；实例 `refresh()` 只刷新当前表格数据，不得当作远程重新查询。",
+  "标准列表必须使用 `:data`、`:columns`、`:loading`、`pageable`、`v-model:pagination`、`@page-change`。",
+  "表格工具栏必须使用 `:toolbar-config=\"{ custom: true }\"`，新增/导入等主按钮放 `#toolbar-right`。",
+  "业务列表查询区默认将查询/重置按钮放在 YFormily 外部独占一行并右对齐；`AutoButtonGroup + Submit + Reset` 仅用于纯 Formily 提交表单。",
+  "所有 YFormily 横向业务表单必须使用 `FormLayout(labelWidth, labelAlign: 'right') -> FormGrid -> 字段`，不得省略固定 label 宽度和右对齐。",
+  "FormGrid 必须保持响应式：默认 `minColumns: 1`，通过 `maxColumns`、`minWidth` 控制宽屏列数；禁止 `minColumns` 等于 `maxColumns` 固定列数，除非用户明确要求不响应式。",
+  "抽屉/弹窗编辑表单默认 `labelWidth: 140`、`FormGrid { maxColumns: 2, minColumns: 1, minWidth: 320~360 }`；备注/长文本字段必须用 `gridSpan` 占满整行。",
+  "可编辑表格必须优先使用 `YEditTable`，禁止用 `a-table` 手搓。",
+  "抽屉表单必须有响应式宽度，查看态不显示保存按钮。",
+  "页面和组件禁止硬编码品牌色及 hover/active/selected/focus 色阶；主色透明态必须从真实动态 Token 派生，不得依赖未同步变量的固定色 fallback。",
+  "导出下载必须优先调用 `handleBlobResponse(res.data, res.headers)`；生成方法缺少 Blob 配置时，第二参数必须传 `{ responseType: 'blob' }`，禁止手改 Orval 生成文件。",
+  "Orval 请求失败由 `mutator.ts` 统一提示并 reject；业务 Hook 禁止 `if (res?.success)` 冗余判断，也禁止在 `else`/`catch` 重复 `message.error`，除非请求显式跳过了全局处理。",
+  "调用 Orval API 前必须检查当前生成文件；存在具名导出时直接导入，只有工厂导出时在模块顶层创建一次实例，禁止猜测 `getApi()` 名称。",
+  "有截图/旧项目参考时，交付前必须逐项对照查询区、表格工具栏、分页高度、抽屉、label、字段控件类型。"
+]

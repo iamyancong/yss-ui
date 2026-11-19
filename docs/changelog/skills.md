@@ -10,17 +10,31 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
-## v1.11.1
+## v1.12.0
 
-`2026-11-18`
+`2026-11-19`
+
+### ✨ Features
+
+- **规则单一事实源**：在 `@yss-ui/skills` 中新增 `rules/`（包含常驻规则唯一来源 `core.md`、代码生成详细规则 `codegen.md` 以及生成配置 `targets.json`），实现跨 IDE 规则单一事实源治理。
+- **动态规则渲染模块**：`@yss-ui/skills-cli` 新增 `lib/ai-rules.js` 规则解析与渲染模块；`sync` 写入的 `.agents/rules/yss-ai-skills.md` 改为运行时从下载的 `@yss-ui/skills/rules/core.md` 动态渲染，彻底移除 CLI 内原有的硬编码规则模板。
 
 ### ⚠️ 行为变化与升级说明
 
 - **page-module-development**：删除已软废弃的兼容壳目录、评测用例与文档页，不再随 `@yss-ui/skills` 发布（此前 `yss-skills sync --all` 仍会把它装进项目）。`skills.config.json#deprecatedSkills` 继续保留该名称，已同步过的业务仓库重新执行 `sync` 会自动清理残留目录；新页面统一使用 `yss-ui-business-page-generation`。
+- **下游规则内容瘦身**：生成的 `.agents/rules/yss-ai-skills.md` 不再列出全量 skill 清单（各 IDE 均具备自动发现能力），Hard Stops 改为 6 条核心摘要（完整代码生成规则统一走 MCP `get_codegen_rules`）。
+- **旧版包回退与升级**：若使用的 skills 源不含 `rules/`，`skills-cli sync` 将保留现有规则文件并输出黄色警告提示升级；升级后重新执行 `npx -y @yss-ui/skills-cli sync` 即可刷新为最新规则。
+- **AGENTS.md 已含规则块时不再写旧文件**：`skills-cli sync` 检测到项目 `AGENTS.md` 已包含 `<!-- YSS-UI:START -->` 标记块时，跳过写入 `.agents/rules/yss-ai-skills.md`（不删除已有文件），避免 Antigravity/Cursor 重复加载。
+
+### 🔧 Chore
+
+- **本仓规则生成化**：本仓库根目录 `.cursorrules`、`.cursor/rules/rule.mdc` 与 `AGENTS.md` 中的 `YSS-UI` 标记块改为由 `pnpm build:ai-rules` 自动化生成（本仓库删除 `.agents/rules/yss-ai-skills.md`，避免 Antigravity/Cursor 重复加载）；`check:ai-rules` 接入 `validate:skills` 与 CI 门禁防止手动篡改漂移；组件库维护者约定迁入 `.agents/skills/lib-component-add` 与 `lib-docs-sync`。
+- **AGENTS.md 门禁调整**：`check:agents-size` 由「≤ 100 行」改为「≤ 32 KiB」（Codex 读取项目 AGENTS.md 的默认上限，超出会被截断）。
 
 ### 🧪 Test & Quality
 
 - **一致性校验**：`check-skills-consistency` 新增检查，`deprecatedSkills` 中的名称若仍存在 skill 目录、评测目录或文档页即报错，防止废弃 skill 再次进包。
+- **规则测试套件**：新增规则单测套件与回退测试，覆盖占位符展开、BOM/换行标准化、快照比对与 CLI sync 幂等性。
 
 ---
 

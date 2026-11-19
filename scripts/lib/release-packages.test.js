@@ -42,7 +42,9 @@ assert.deepEqual(keys(['docs/components/demos/table/x.vue']), ['mcp']);
 assert.deepEqual(keys(['docs/hooks/use-table-height.md']), ['mcp']);
 assert.deepEqual(keys(['docs/utils/download.md']), ['mcp']);
 assert.deepEqual(keys(['.dumirc.ts']), ['mcp']);
-assert.deepEqual(keys(['.cursorrules']), ['mcp']);
+assert.deepEqual(keys(['.cursorrules']), []);
+assert.deepEqual(keys(['packages/skills/rules/core.md']), ['mcp', 'skills']);
+assert.deepEqual(keys(['packages/skills-cli/lib/ai-rules.js']), ['mcp', 'skills-cli']);
 
 assert.deepEqual(keys(['docs/guide/mcp.md']), []);
 assert.deepEqual(keys(['docs/changelog/components.md']), []);

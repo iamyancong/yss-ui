@@ -28,11 +28,25 @@ description: 指导在 yss-ui 修改或新增组件、Hook 与工具后，同步
   - **严禁**将 Demo 文件直接平铺在 `demos/` 根目录。
   - Demo 文件必须使用 **kebab-case** 命名（例如 `use-fullscreen-basic.vue`）；Demo 内的 Vue 组件命名必须使用 **PascalCase**（例如 `UseFullscreenBasicDemo`）。
 - **Demo 代码编写规范（Critical）**：
+  - 在 Dumi demos 中始终通过 `@yss-ui/components` 导入组件，严禁使用相对路径或包内私有路径。
   - Demo 中使用 Ant Design Vue 组件时，**必须显式导入并创建别名**（例如：`import { Button } from 'ant-design-vue'; const AButton = Button;`），在模板中使用 `<a-button>`。
   - 未显式导入或未创建别名会导致组件在 Dumi 页面预览中静默丢失或白屏。
   - 优先从 `@yss-ui/components` 导入封装组件；未封装能力或需演示底层特性时方可直接引用 Ant Design Vue。
-- **组件文档表格要求**：
+  - 文档与 Demo 插槽统一使用 **kebab-case** 命名（例如 `#toolbar-left`、`#toolbar-right`、`#action-more-icon`、`#<field>-header`、`#<field>-filter`、`#expand-row`），避免在 DOM 模板中大小写失效。
+- **组件文档表格与同步要求**：
+  - 新增配置项或修改公开 API 时，**必须同步更新 docs 的 API 表和 demos**；若存在不兼容或破坏性变更，必须在文档中补充迁移说明与升级指南。
   - 组件文档必须清晰列出 **Props**、**Events**、**Slots** 以及 **Methods**（如有）参数表格，表格内容必须与组件 `types.ts` 定义的类型和默认值保持严格一致，禁止杜撰。
+  - 组件对外展示名统一使用 Y 前缀（如 `<YTable/>`）；文档语境中表述组件类别/概念时以 `y-` 作为前缀（例如 `y-table`），避免直接使用底层依赖名（如 `vxe-table`）。
+- **复杂 Demo 拆分目录规范**：
+  - 简单 Demo：直接在 `index.vue` 内实现逻辑即可。
+  - 复杂 Demo：必须参考以下规范拆分 hooks 与样式：
+    - 目录：`docs/components/demos/<feature>/<demo>/`
+      - `index.vue`（只保留视图与最少逻辑）
+      - `hooks/useXxx.ts`（业务逻辑与状态管理，具备明确返回与显式类型）
+      - `style.less`（样式，使用 CSS 变量，避免硬编码颜色）
+    - 参考范例：
+      - `docs/components/demos/table/column-custom-search`
+      - `docs/components/demos/table/action`
 - **更新日志格式与生成规范（Critical）**：
   - 综合更新日志为 `docs/changelog.md`，分包日志对应 `docs/changelog/components.md`、`hooks.md`、`utils.md`、`skills.md`、`mcp.md`。
   - 在 `docs/changelog.md` 中，所有更新条目**必须使用标准包名标签**：
@@ -249,6 +263,9 @@ export default {
 - [ ] Hook Demo 放置在 `demos/useXxx/` 子目录下，命名为 kebab-case，Vue 组件命名为 PascalCase。
 - [ ] Demo 文件中显式导入 AntDV 组件并完成别名赋值（如 `const AButton = Button`）。
 - [ ] 组件 API 表格（Props/Events/Slots/Methods）与实际 `types.ts` 完全一致。
+- [ ] Demo 统一从 `@yss-ui/components` 导入，插槽命名统一使用 kebab-case。
+- [ ] 复杂 Demo 已按 `docs/components/demos/<feature>/<demo>/` 规范拆分 hooks 与样式。
+- [ ] API 表格与 demos 已与代码保持同步，不兼容改动已包含迁移说明。
 - [ ] `.dumirc.ts` 的 `sidebar` 中对应分组已添加新路由配置。
 - [ ] `docs/changelog.md` 中更新条目严格使用 `**[@yss-ui/xxx] Name**: 说明` 标签格式。
 - [ ] 执行 `pnpm generate:changelog` 成功重新生成分包日志，无手动覆盖破坏。

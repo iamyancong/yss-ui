@@ -1,0 +1,124 @@
+{
+  "keep": [
+    "禁止在业务代码中直接导入样式文件",
+    "使用 scoped style 块",
+    "文档 Demo 中的 import './style.less' 是为兼容 Dumi，业务层请勿使用",
+    "必须使用分号",
+    "始终使用 scoped",
+    "样式优先使用 Less",
+    "外部样式通过 style 块中的 `@import` 引入",
+    "defineProps` 与 `defineEmits` 必须使用规范 JSDoc 描述",
+    "对外暴露的方法必须使用 `defineExpose` 并通过规范 JSDoc 标注",
+    "以 @yss-ui/components 配套安装的 vxe-table 版本为准",
+    "editConfig.autoClear=false",
+    "表示 tooltip",
+    "scrollY",
+    "rowConfig.drag=true",
+    "返回 string 或 null",
+    "edit-closed",
+    "row-dragend",
+    "挂载 `body`",
+    "颜色一律使用主题 Token / CSS 变量，禁止写死色值",
+    "变更后运行 linter 校验",
+    "保持函数浅层、尽早返回",
+    "公共 API 必须提供显式类型",
+    "组件库命名使用 'y-table'（不是 vxe-table 名称）",
+    "按字符串透传",
+    "json-bigint",
+    "默认单包安装",
+    "从 `@yss-ui/components` 具名导入并局部注册",
+    "@yss-ui/components/table",
+    "@yss-ui/components/formily",
+    "自 1.6.7 起公开",
+    "自 1.7.0 起已发布",
+    "get_consumption_contract",
+    "禁止使用 YTable 不存在的 `request`、`search-params` Props 和 `actionConfig.actions`",
+    "实例 `refresh()` 只刷新当前表格数据",
+    "AutoButtonGroup + Submit + Reset",
+    "FormLayout(labelWidth, labelAlign: 'right') -> FormGrid -> 字段",
+    "FormGrid 必须保持响应式",
+    "抽屉/弹窗编辑表单默认 `labelWidth: 140`",
+    "禁止用 `a-table` 手搓",
+    "主色透明态必须从真实动态 Token 派生",
+    "handleBlobResponse(res.data, res.headers)",
+    "{ responseType: 'blob' }",
+    "mutator.ts",
+    "#toolbar-right",
+    "#expand-row",
+    "keepAlive",
+    "禁止 `minColumns` 等于 `maxColumns`",
+    "禁止猜测 `getApi()` 名称",
+    "查看态不显示保存按钮",
+    ":toolbar-config=\"{ custom: true }\"",
+    "禁止批量改写根入口",
+    "禁止与旧隔离插件同时运行",
+    "<style scoped lang=\"less\">@import './style.less';</style>"
+  ],
+  "dropped": [
+    {
+      "phrase": "packages/components/src/<component>/hooks/",
+      "reason": "组件内部 Hooks 目录规范属于组件库维护者约定，业务项目无需感知",
+      "movedTo": "lib-component-add"
+    },
+    {
+      "phrase": "reuse_table_hooks_when_possible",
+      "reason": "表格 Hook 复用约定属于组件库内部维护规范",
+      "movedTo": "lib-component-add"
+    },
+    {
+      "phrase": "version: '4.16'",
+      "reason": "写死版本号与实际依赖 vxe-table 4.19+ 不符，改为由配套安装版本决定",
+      "movedTo": "removed"
+    },
+    {
+      "phrase": "update_docs_api_table",
+      "reason": "变更同步文档 API 表属于维护者规范",
+      "movedTo": "lib-docs-sync"
+    },
+    {
+      "phrase": "update_or_add_demos",
+      "reason": "维护或添加 Demo 示例属于维护者规范",
+      "movedTo": "lib-docs-sync"
+    },
+    {
+      "phrase": "for_breaking_change_add_migration_note",
+      "reason": "破坏性变更说明属于维护者规范",
+      "movedTo": "lib-docs-sync"
+    },
+    {
+      "phrase": "demos_import_from: '@yss-ui/components'",
+      "reason": "Dumi Demo 导入规范属于维护者规范",
+      "movedTo": "lib-docs-sync"
+    },
+    {
+      "phrase": "在 Dumi demos 中始终通过 '@yss-ui/components' 导入组件。",
+      "reason": "Dumi 文档 Demo 导入提醒属于维护者规范",
+      "movedTo": "lib-docs-sync"
+    },
+    {
+      "phrase": "新增配置项后，请同步更新 docs 的 API 表和 demos。",
+      "reason": "新增配置同步文档提醒属于维护者规范",
+      "movedTo": "lib-docs-sync"
+    },
+    {
+      "phrase": "--- YSS AI SKILLS START ---",
+      "reason": "现代 IDE 原生支持 skills 自动发现，全量清单冗余浪费上下文",
+      "movedTo": "removed"
+    },
+    {
+      "phrase": "var(--primary-color, #3371ff)",
+      "reason": "固定色回退写法与 Hard Stops「主色透明态必须从真实动态 Token 派生」冲突",
+      "movedTo": "removed"
+    },
+    {
+      "phrase": "HOME_PRODUCT_HIGHLIGHTS",
+      "reason": "首页产品定位保护属于维护者约定，AGENTS.md 已覆盖",
+      "movedTo": "AGENTS.md"
+    },
+    {
+      "phrase": "packages/skills/**",
+      "reason": "修改 Skills 同步文档及发版检查属于维护者工作流，AGENTS.md 已覆盖",
+      "movedTo": "AGENTS.md"
+    }
+  ]
+}

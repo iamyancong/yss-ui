@@ -44,7 +44,14 @@ const PACKAGES = {
     dir: 'packages/mcp',
     name: '@yss-ui/mcp',
     changelog: 'docs/changelog/mcp.md',
-    extraInputs: ['docs/components/', 'docs/hooks/', 'docs/utils/', 'packages/skills/', '.dumirc.ts', '.cursorrules'],
+    extraInputs: [
+      'docs/components/',
+      'docs/hooks/',
+      'docs/utils/',
+      'packages/skills/',
+      'packages/skills-cli/lib/ai-rules.js',
+      '.dumirc.ts',
+    ],
     indexHashFile: 'packages/mcp/index.hash',
   },
 };

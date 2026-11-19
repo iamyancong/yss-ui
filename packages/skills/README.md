@@ -88,11 +88,11 @@ npx -y @yss-ui/skills-cli sync
 1. 下载最新 `@yss-ui/skills` 技能包；
 2. 同步业务技能至 `.agents/skills/`；
 3. 为 Cursor、Claude Code、Trae 等 IDE 建立按 Skill 粒度的兼容软链接；
-4. 自动注入 `.cursorrules` 与 `.agents/rules/yss-ai-skills.md` 技能发现规则。
+4. 自动维护 `.cursorrules` 与 `.agents/rules/yss-ai-skills.md`（内容来自包内 `rules/core.md`）。
 
 ## 触发机制与验证
 
-- **自动触发**：当你在 AI 提示词中描述需求（例如：“*生成一个带有查询重置和远程分页的标准列表页*” 或 “*实现一个新增/编辑共用的抽屉表单*”），AI 会根据 `.cursorrules` / `.agents/rules` 自动命中对应 Skill，先读取 `SKILL.md` 再生成代码。
+- **自动触发**：当你在 AI 提示词中描述需求（例如：“*生成一个带有查询重置和远程分页的标准列表页*” 或 “*实现一个新增/编辑共用的抽屉表单*”），AI 会根据 `.cursorrules` / `.agents/rules/yss-ai-skills.md`（规则由包内 `rules/core.md` 渲染）自动命中对应 Skill，先读取 `SKILL.md` 再生成代码。
 - **显式指定**：也可以在提示词中显式点名（例如：“*请严格按照 page-form-module 的规范实现编辑弹窗*”）。
 - **验证生效**：观察 AI 在动笔前是否有读取对应 `SKILL.md` 的记录，且生成的代码严格遵守规范（如：抽离 `constant.ts`、使用 `useTableHeight`、无硬编码色值、无重复 `message.error`）。
 

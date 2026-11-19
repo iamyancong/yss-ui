@@ -18,9 +18,10 @@ description: 指导在 yss-ui monorepo 中新增组件、Hook 或工具函数的
 
 ## 硬约束（禁止/必须）
 
-- **命名规范**：
+- **命名与存放规范**：
   - 组件目录必须使用 kebab-case 命名（例如 `edit-table`、`condition-builder`）。
-  - Hook 目录必须使用 camelCase 命名且必须以 `use` 开头（例如 `useFullscreen`、`useTableHeight`）。
+  - 组件内私有 Hook 存放于 `packages/components/src/<component>/hooks/`，全局 Hook 存放于 `packages/hooks/src/<hookName>/`；Hook 命名必须遵循 `use[A-Z][a-zA-Z]+`（例如 `useColumns`、`usePagination`、`useTableHeight`）。
+  - 组合式 Hook 必须保持单一职责；开发表格类组件或扩展功能时，能复用已有表格 Hooks 的优先复用。
   - 工具函数文件必须放在 `packages/utils/src/` 下，使用 camelCase 命名（例如 `format.ts`、`download.ts`）。
 - **类型文件强制命名**：
   - 所有类型定义文件统一命名为 `types.ts`，**严禁命名为 `type.ts`**。
@@ -37,6 +38,7 @@ description: 指导在 yss-ui monorepo 中新增组件、Hook 或工具函数的
   - 新 Hook 必须在 `packages/hooks/src/index.ts` 中导出。
   - 新工具函数必须在 `packages/utils/src/index.ts` 中导出。
 - **注释与质量约束**：
+  - 组件中 `defineProps`、`defineEmits` 必须使用规范 JSDoc 描述各属性与事件；对外暴露的方法必须使用 `defineExpose` 并附带规范 JSDoc 标注。
   - 所有新增的对外导出函数、Hook、接口、类型与常量必须包含规范的中文 JSDoc 注释。
   - 禁止使用已废弃的 Vue 2 API、CommonJS 或不必要的 `any` 类型。
 - **本地验证命令**：

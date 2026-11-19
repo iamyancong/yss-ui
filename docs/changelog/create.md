@@ -2,6 +2,14 @@
 
 `@yss-ui/create` 与别名包 `create-yss-app` 版本同步，共用本更新日志。
 
+## v1.4.0
+
+`2026-11-18`
+
+### ⚡ Performance
+
+- **建项初始化提交提速**：首次 `git init` 后的初始化提交增加 `--no-verify`，跳过 pre-commit 钩子，避免建项卡顿。
+
 ## v1.3.2
 
 `2026-10-13`

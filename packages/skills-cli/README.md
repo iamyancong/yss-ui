@@ -13,7 +13,7 @@ YSS UI AI Skills 同步与 IDE 适配 CLI：一键拉取最新开发技能规范
 1. **自动拉取**：从 NPM Registry（公网或企业私服）下载最新 `@yss-ui/skills`；
 2. **规范主仓**：将业务技能同步至 `.agents/skills/`（AI Coding Agent 标准规范主目录）；
 3. **多 IDE 适配**：按 Skill 粒度自动为 `.cursor/skills`、`.claude/skills`、`.trae/skills`、`.agent/skills` 建立安全软链接（Windows 降级为拷贝），绝不覆盖或删除用户自建的第三方 Skills；
-4. **规则注入**：自动更新 `.cursorrules` 与 `.agents/rules/yss-ai-skills.md` 发现入口；
+4. **规则注入**：自动更新 `.cursorrules` 与 `.agents/rules/yss-ai-skills.md`（内容由 `@yss-ui/skills/rules/core.md` 渲染）；
 5. **清单安全追踪**：通过 `.yss-skills-manifest.json` 跟踪已托管技能，废弃技能自动清理，非 YSS 技能安全保留。
 
 ## 快速使用
@@ -83,8 +83,8 @@ project-root/
 ├── .claude/skills/                   # Claude Code 软链接 -> .agents/skills/*
 ├── .trae/skills/                     # Trae 软链接 -> .agents/skills/*
 ├── .agent/skills/                    # 兼容链接
-├── .cursorrules                      # 自动注入 YSS AI SKILLS 清单
-└── .agents/rules/yss-ai-skills.md    # 自动注入 Antigravity / Agent Rules
+├── .cursorrules                      # 自动注入 YSS AI SKILLS 清单（保留过渡）
+└── .agents/rules/yss-ai-skills.md    # 由 @yss-ui/skills/rules/core.md 渲染的常驻规则
 ```
 
 - **非破坏性**：若 `.cursor/skills/` 目录下已有你自定义的其他技能，CLI 只管理属于 YSS UI 的技能项，不会影响其他文件。

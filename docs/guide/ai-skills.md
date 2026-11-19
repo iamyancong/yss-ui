@@ -61,8 +61,8 @@ CLI 同步命令包含以下完整处理流程：
 
 1. 从 npm registry（公网或内网私服）拉取最新 `@yss-ui/skills` 包；
 2. 同步业务向技能到 `.agents/skills/`（Codex / Agent Skills 标准主目录）；
-3. 自动更新 `.cursorrules` 中的 `YSS AI SKILLS` 区块（AI 的技能发现清单）；
-4. 自动更新 `.agents/rules/`（Antigravity 风格规则）；
+3. 自动更新 `.cursorrules` 中的 `YSS AI SKILLS` 区块（AI 的技能发现清单，保留兼容过渡期）；
+4. 自动更新 `.agents/rules/yss-ai-skills.md`（由 `@yss-ui/skills` 包内 `rules/core.md` 渲染，包含任务到 Skill 路由及 6 条核心 Hard Stops 摘要，不再列全量清单；完整硬规则走 MCP `get_codegen_rules`。旧版包缺少 `rules/` 时保留现状并警告；项目 `AGENTS.md` 已含 `YSS-UI` 标记块时跳过，避免重复加载）；
 5. 为兼容旧工具与其他 IDE，按 Skill 粒度创建软链：`.agent/skills`、`.cursor/skills`、`.trae/skills`、`.claude/skills`（Windows 降级为拷贝），不会删除目标目录中的第三方 Skills；
 6. 自动维护 `.gitignore` / `.prettierignore` 中的 `YSS AI SKILLS` 标记块，只忽略上述 Skills 兼容路径（不带结尾斜杠，兼容整目录软链接），不忽略 `.cursor/`、`.claude/` 等整个 IDE 目录。
 
@@ -77,7 +77,7 @@ CLI 同步命令包含以下完整处理流程：
 | `--global-only` | 只更新用户级 AI IDE 目录，隐含 `--global` |
 | `--no-links` | 跳过为其他 IDE 创建软链 |
 
-> **建议**：主目录 `.agents/skills`、`.agents/rules` 与 `.cursorrules` 提交进仓库共享；`.agent/skills`、`.cursor/skills`、`.trae/skills`、`.claude/skills` 由 CLI 自动写入 `.gitignore`，每位成员本地各自 sync。`.cursor/rules`、`.cursor/mcp.json`、`.claude/settings.json` 等团队 IDE 配置正常入库；团队自研 Skill 请放在 `.agents/skills`，不要放进被忽略的兼容目录。
+> **建议**：主目录 `.agents/skills`、`.agents/rules/yss-ai-skills.md` 与 `.cursorrules` 提交进仓库共享；`.agent/skills`、`.cursor/skills`、`.trae/skills`、`.claude/skills` 由 CLI 自动写入 `.gitignore`，每位成员本地各自 sync。`.cursor/rules`、`.cursor/mcp.json`、`.claude/settings.json` 等团队 IDE 配置正常入库；团队自研 Skill 请放在 `.agents/skills`，不要放进被忽略的兼容目录。
 
 > 从旧版升级时，CLI 会保留 `.agent/skills` 作为兼容链接。仅当执行用户级同步时，才会根据 `.yss-skills-manifest.json` 清理旧 `~/.codex/skills` 中由 YSS CLI 管理的同名项；其他用户 Skill 不受影响。
 
@@ -93,16 +93,20 @@ pnpm sync:skills:ides
 
 源码仓内单独执行 `pnpm sync:skills`时，会同步包括组件库维护技能在内的全部 Skills；项目级 `.agents/skills` 直接链接当前 `packages/skills`，避免在组件库内生成第二份实体副本。
 
+### 规则单一来源（维护者）
+
+本仓库 AI 规则单一事实源位于 `packages/skills/rules/`（`core.md`、`codegen.md` 与 `targets.json`）。执行 `pnpm build:ai-rules` 会自动生成根目录 `.cursorrules`、`.cursor/rules/rule.mdc`，并维护 `AGENTS.md` 末尾的 `<!-- YSS-UI:START -->…<!-- YSS-UI:END -->` 标记块（Codex、Cursor、Antigravity 直接读 AGENTS.md，Claude 经 `CLAUDE.md` 软链读到；本仓库不再保留 `.agents/rules/yss-ai-skills.md`，避免重复加载）；标记块内与生成产物禁止手改，AGENTS.md 块外内容可正常编辑。`pnpm check:ai-rules` 已接入 `validate:skills` 与 CI 门禁，确保源文件与生成物时刻对齐。`.cursorrules` 仍保留一个 minor 兼容期。
+
 ## 触发机制
 
-Codex 会直接扫描 `.agents/skills`；其他 AI 工具可读取 `.cursorrules`、`.agents/rules` 或对应兼容目录中的技能清单。当用户请求命中某个 skill 的 description 时，先读取对应 `SKILL.md` 再动手写代码。两种触发方式：
+Codex 与现代 IDE 会直接扫描 `.agents/skills`；其他 AI 工具可读取 `.cursorrules` 或 `.agents/rules/yss-ai-skills.md` 常驻规则（按任务类型直接路由对应 Skill）。当用户请求命中某个 skill 的 description 时，先读取对应 `SKILL.md` 再动手写代码。两种触发方式：
 
 - **自动路由**：说"生成一个标准列表页"，AI 应命中 `page-list-module`；
 - **显式点名**：说"按 page-form-module 的规范实现这个编辑弹窗"，强制走指定规范。
 
 ## 如何验证生效
 
-1. **清单检查**：确认 `.cursorrules` 中存在 `YSS AI SKILLS START/END` 区块且列出技能；`.agents/skills/` 下有对应目录。
+1. **规则与目录检查**：确认 `.agents/rules/yss-ai-skills.md` 存在且包含任务路由与 Hard Stops 摘要（`.cursorrules` 保留清单过渡）；`.agents/skills/` 下有对应目录。
 2. **触发检查**：对 AI 说"实现一个新增/编辑/查看共用的表单弹窗"，观察它是否先读取 `page-form-module/SKILL.md`（Cursor 会显示读文件记录）再生成代码。
 3. **行为检查**：生成的代码应符合 skill 硬约束（如：不出现 `import './style.less'` 裸导入、不重复 `message.error`、表格用 `useTableHeight`）。若 AI 未触发，显式点名 skill 名称即可。
 
@@ -114,8 +118,8 @@ Codex 会直接扫描 `.agents/skills`；其他 AI 工具可读取 `.cursorrules
 
 ### Q: Skills 和 MCP 的 `get_skill` 工具重复吗？
 
-**A:** 不重复。同步到本地的 Skills 是 AI 的**常驻上下文入口**（清单写进 `.cursorrules`，无需任何工具调用即可发现）；MCP 的 `list_skills` / `get_skill` 是**查询通道**，适合未同步 Skills 的环境或跨项目查阅。两者数据同源，本地同步的触发更稳定。
+**A:** 不重复。同步到本地的 Skills 是 AI 的**本地技能主目录**（配合 `.agents/rules/` 常驻规则路由，或在 `.cursorrules` 中保留清单过渡）；MCP 的 `list_skills` / `get_skill` 是**动态查询通道**，适合按需提取 reference 深度文档或跨项目查阅；完整的代码生成硬规则由 MCP `get_codegen_rules` 托管。两者数据同源，本地同步的触发更稳定。
 
 ### Q: 同步后 AI 仍不按规范生成？
 
-**A:** 依次排查：`.cursorrules` 是否被工具读取（部分工具需在设置中启用 rules 文件）；请求的说法是否命中 skill 的触发词（可显式点名 skill）；会话过长时规则可能被截断，开新会话重试。
+**A:** 依次排查：`.agents/rules/` 或 `.cursorrules` 是否被工具读取；请求的说法是否命中 skill 的触发词（可显式点名 skill）；会话过长时规则可能被截断，开新会话重试。

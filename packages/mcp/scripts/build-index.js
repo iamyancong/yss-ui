@@ -5,14 +5,15 @@
  *
  * 数据源与 scripts/generate-llms.js 同源：.dumirc.ts sidebar 枚举
  * 组件 / Hooks / 工具函数文档，packages/skills 提供技能内容，
- * .cursorrules 提供代码生成硬规则。索引随包发布，版本与组件库对齐，
- * 业务项目安装后 MCP Server 零网络、零仓库依赖即可回答查询。
+ * packages/skills/rules/core.md + codegen.md 提供代码生成硬规则。
+ * 索引随包发布，版本与组件库对齐，业务项目安装后 MCP Server 零网络、零仓库依赖即可回答查询。
  *
  * 只能在 yss-ui 仓库内运行（依赖仓库 devDependencies 的 esbuild-register）。
  */
 
 const fs = require('fs');
 const path = require('path');
+const { render } = require('../../../packages/skills-cli/lib/ai-rules');
 
 /** 仓库根目录。 */
 const ROOT_DIR = path.join(__dirname, '../../..');
@@ -26,10 +27,22 @@ const SKILLS_DIR = path.join(ROOT_DIR, 'packages/skills');
 /** 索引输出路径。 */
 const OUTPUT_PATH = path.join(__dirname, '../data/index.json');
 
-const { register } = require('esbuild-register/dist/node');
-register({ target: 'node16' });
-// eslint-disable-next-line import/no-unresolved
-const dumiConfig = require(path.join(ROOT_DIR, '.dumirc.ts')).default;
+let cachedDumiConfig = null;
+
+/**
+ * 惰性加载 Dumi 配置，避免纯模块引用（如单测 buildCodegenRules）时触发 esbuild-register。
+ *
+ * @returns {object} Dumi 默认导出配置
+ */
+function getDumiConfig() {
+  if (!cachedDumiConfig) {
+    const { register } = require('esbuild-register/dist/node');
+    register({ target: 'node16' });
+    // eslint-disable-next-line import/no-unresolved
+    cachedDumiConfig = require(path.join(ROOT_DIR, '.dumirc.ts')).default;
+  }
+  return cachedDumiConfig;
+}
 
 /**
  * 移除 markdown frontmatter。
@@ -227,7 +240,10 @@ function extractFirstLineComment(content) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#!')) continue;
     if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*') || trimmed.startsWith('#')) {
-      return trimmed.replace(/^(\/\/|\/\*|\*|#)\s*/, '').replace(/\*\/$/, '').trim();
+      return trimmed
+        .replace(/^(\/\/|\/\*|\*|#)\s*/, '')
+        .replace(/\*\/$/, '')
+        .trim();
     }
   }
   return '';
@@ -290,9 +306,19 @@ function buildSkills() {
   return skills;
 }
 
+/**
+ * 从 packages/skills/rules/ 生成 MCP 使用的 codegenRules 规则文本。
+ *
+ * @param {string} [rulesDir] 规则源目录绝对路径
+ * @returns {string} 渲染后的代码生成规则 Markdown
+ */
+function buildCodegenRules(rulesDir = path.join(ROOT_DIR, 'packages/skills/rules')) {
+  return render('mcp-codegen', { rulesDir });
+}
+
 /** 构建索引并写入 data/index.json。 */
 function main() {
-  const sidebar = dumiConfig.themeConfig.sidebar || {};
+  const sidebar = getDumiConfig().themeConfig.sidebar || {};
   const componentsPackage = JSON.parse(
     fs.readFileSync(path.join(ROOT_DIR, 'packages/components/package.json'), 'utf8')
   );
@@ -339,7 +365,7 @@ function main() {
       ...buildEntries(sidebar['/utils'], 'util'),
     ],
     skills: buildSkills(),
-    codegenRules: fs.readFileSync(path.join(ROOT_DIR, '.cursorrules'), 'utf8'),
+    codegenRules: buildCodegenRules(),
     consumptionContract: {
       ...consumptionPolicy,
       componentsVersion: componentsPackage.version,
@@ -363,4 +389,10 @@ function main() {
   console.log(`   -> ${path.relative(ROOT_DIR, OUTPUT_PATH)}`);
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  buildCodegenRules,
+};

@@ -77,7 +77,7 @@ npx -y @yss-ui/mcp install cursor --global    # 写全局配置（默认写当�
 | `search_docs` | `query`，`limit?` | 中文二元组词法全文搜索（组件文档 + Skills） |
 | `list_skills` | — | 全部 Skills 及触发场景描述 |
 | `get_skill` | `name` | Skill 完整内容（硬约束、标准骨架、失败兜底） |
-| `get_codegen_rules` | — | 业务代码生成硬规则（.cursorrules 快照） |
+| `get_codegen_rules` | — | 业务代码生成硬规则（由 `@yss-ui/skills` 的 `rules/core.md` + `rules/codegen.md` 生成，Markdown） |
 | `get_component_schema` | `name`，`detail?: core\|all` | 获取组件精确 JSON Schema（Props约束/枚举值/默认值/Emits/Slots），防止属性名幻觉 |
 | `get_test_coverage` | `component?` | 获取组件库自动化测试覆盖率指标与单测文件清单；不传查全库大盘，传参查单模块 |
 
@@ -87,7 +87,7 @@ npx -y @yss-ui/mcp install cursor --global    # 写全局配置（默认写当�
 pnpm mcp:index   # 生成 data/index.json（发布时 prepack/prepublishOnly 自动执行）
 ```
 
-数据源与文档站同源：`.dumirc.ts` sidebar → `docs/**/*.md` + `docs/**/demos/**` + `packages/skills/*/SKILL.md` + `.cursorrules`。
+数据源与文档站同源：`.dumirc.ts` sidebar → `docs/**/*.md` + `docs/**/demos/**` + `packages/skills/*/SKILL.md` + `packages/skills/rules/`。
 
 `get_consumption_contract` 中的 `plugin.vite` 表示官方插件已完成验证的范围，`plugin.vitePeer` 与顶层 `peerDependencies.vite` 表示实际安装兼容范围；两者不应混用。当前 Vite 6 完整验收，Vite 5 仅完成包管理器解析验证。
 

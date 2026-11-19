@@ -10,9 +10,13 @@ toc: content
 
 YSS MCP 文档服务（`@yss-ui/mcp`）的版本更新记录。
 
-## v0.10.2
+## v0.11.0
 
-`2026-11-18`
+`2026-11-19`
+
+### ⚠️ 行为变化与升级说明
+
+- **代码生成规则数据源升级**：`get_codegen_rules` 数据源从仓库 `.cursorrules` 切换为 `@yss-ui/skills` 的 `rules/core.md + rules/codegen.md`；正文由 YAML 风格改为 Markdown；返回的 consumptionNotice 前缀与标题「# YSS UI 业务代码生成硬规则」不变；新增完整 14 条 Hard Stops；移除组件库维护者约定（Hooks 目录、docs API 表/Demo 同步、Dumi demo 导入）和全量 skill 清单；vxe-table 版本号不再写死 4.16。业务方无需操作，升级后重新拉起 MCP 即可。
 
 ### 🐛 Bug Fixes
 
@@ -22,6 +26,10 @@ YSS MCP 文档服务（`@yss-ui/mcp`）的版本更新记录。
 ### 📝 Documentation
 
 - **索引同步**：代码生成规则与 Skills 索引移除已删除的 `page-module-development`。
+
+### 🧪 Test & Quality
+
+- **契约测试与发版检测**：旧规则关键句清单 + 快照测试兜底；发版检测 extraInputs 由 `.cursorrules` 改为 `packages/skills-cli/lib/ai-rules.js`（`packages/skills/` 已覆盖 rules/）。
 
 ---
 

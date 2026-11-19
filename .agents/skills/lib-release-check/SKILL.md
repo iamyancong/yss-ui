@@ -34,8 +34,8 @@ description: 在准备提交、发布或 CI 排查时执行 yss-ui 门禁检查�
   - `scripts/lib/home-release-positioning.js` 中的 `HOME_PRODUCT_HIGHLIGHTS` 是首页长期产品总体介绍，不是单次发版摘要。
   - 发版前及更新 changelog 时，**禁止修改 `HOME_PRODUCT_HIGHLIGHTS`**；禁止根据本次 diff 自动改写 `highlight`。
   - 只有用户明确要求“调整首页产品定位/总体介绍”时方可调整，并同步更新 `scripts/generate-home-releases.test.js` 快照。
-- **AGENTS.md 尺寸门禁（CI 强制，≤ 100 行）**：
-  - 仓库宪法 `AGENTS.md` 行数必须严格保持在 100 行以内。
+- **AGENTS.md 尺寸门禁（CI 强制，大小 ≤ 32 KiB）**：
+  - 仓库宪法 `AGENTS.md` 体积必须保持在 32 KiB（32768 字节）以内（Codex 读取上限，防止截断）。
   - 提交前必须执行：
     ```bash
     node scripts/check-agents-size.js
@@ -59,7 +59,7 @@ description: 在准备提交、发布或 CI 排查时执行 yss-ui 门禁检查�
 
 ```bash
 # -------------------------------------------------------------
-# 步骤 1：AGENTS.md 尺寸硬约束预检（≤ 100 行）
+# 步骤 1：AGENTS.md 尺寸硬约束预检（≤ 32 KiB）
 # -------------------------------------------------------------
 node scripts/check-agents-size.js
 
@@ -103,7 +103,7 @@ pnpm quality
 
 ## 交付检查清单
 
-- [ ] 执行 `node scripts/check-agents-size.js` 检查通过，`AGENTS.md` ≤ 100 行。
+- [ ] 执行 `node scripts/check-agents-size.js` 检查通过，`AGENTS.md` ≤ 32 KiB。
 - [ ] 执行 `node scripts/release-changed.js patch --dry` 识别出所有变更包，无 `Missing changelog` 报错。
 - [ ] 涉及 `packages/skills/**` 的修改已同步更新 `docs/changelog/skills.md` 目标版本记录。
 - [ ] 确认未修改 `scripts/lib/home-release-positioning.js` 的 `HOME_PRODUCT_HIGHLIGHTS`，`pnpm test:home-releases` 测试通过。
@@ -115,7 +115,7 @@ pnpm quality
 
 - **Dry-run 报告 `Missing changelog for package @yss-ui/xxx`**：
   - 观察 dry-run 输出的目标版本号（例如 `v1.7.5`），在 `docs/changelog/<pkg>.md` 顶部按标准骨架补充对应版本的改动记录。
-- **`check-agents-size.js` 报错超出 100 行限制**：
+- **`check-agents-size.js` 报错超出 32 KiB 限制**：
   - 检查 `AGENTS.md` 中的冗余内容，将具体工作流或组件开发细节剥离到对应 Skill，保持宪法文件紧凑精炼。
 - **`pnpm validate:skills` 校验报错**：
   - 运行 `node scripts/validate-skills.js` 查看具体错误输出。

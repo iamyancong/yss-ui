@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "skillRoot": ".agents/skills",
+  "marker": {
+    "start": "<!-- YSS-UI:START -->",
+    "end": "<!-- YSS-UI:END -->"
+  },
+  "targets": {
+    "agents-md": {
+      "ides": ["codex", "cursor", "antigravity"],
+      "path": "AGENTS.md",
+      "mode": "marker-block",
+      "sources": ["core.md"]
+    },
+    "claude": {
+      "ides": ["claude"],
+      "path": ".claude/rules/yss-ui.md",
+      "mode": "file",
+      "sources": ["core.md"]
+    },
+    "trae": {
+      "ides": ["trae"],
+      "path": ".trae/rules/yss-ui.md",
+      "mode": "file",
+      "frontmatter": {
+        "alwaysApply": true
+      },
+      "sources": ["core.md"]
+    },
+    "antigravity-legacy": {
+      "ides": ["antigravity"],
+      "path": ".agents/rules/yss-ai-skills.md",
+      "mode": "file",
+      "frontmatter": {
+        "trigger": "always_on"
+      },
+      "sources": ["core.md"],
+      "deprecated": true
+    },
+    "mcp-codegen": {
+      "mode": "text",
+      "sources": ["core.md", "codegen.md"]
+    }
+  }
+}

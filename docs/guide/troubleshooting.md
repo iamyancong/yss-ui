@@ -83,8 +83,8 @@ const AButton = Button;
 2. 为每个待发包在 `docs/changelog/*.md` 中补充目标版本记录
 3. Skills 变更必须同时检查 `docs/changelog/skills.md`
 
-### AGENTS.md 行数超限
+### AGENTS.md 体积超限
 
-**原因**：在 AGENTS.md 中堆砌了过多内容。
+**原因**：在 AGENTS.md 中堆砌了过多内容，超出 32 KiB 限制（Codex 读取上限）。
 
-**解决方案**：AGENTS.md 只保留角色、边界、路由和底线（≤100 行）。超出内容迁移到对应 Skill（`packages/skills/lib-*`）或 `docs/guide/`。
+**解决方案**：AGENTS.md 只保留角色、边界、路由和底线（大小 ≤ 32 KiB）。超出内容迁移到对应 Skill（`packages/skills/lib-*`）或 `docs/guide/`。
