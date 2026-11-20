@@ -22,7 +22,8 @@ if (fs.existsSync(faviconSource)) {
 }
 
 const mcpPkg = JSON.parse(fs.readFileSync(mcpPkgPath, 'utf-8'));
-const version = mcpPkg.version || '0.11.0';
+// 即将发布的版本为 0.13.0
+const targetVersion = '0.13.0';
 
 const indexPayload = {
   format: 1,
@@ -54,8 +55,15 @@ const indexPayload = {
       },
       versions: [
         {
-          version,
+          version: targetVersion,
           publishTimestamp: Math.floor(Date.now() / 1000),
+          source: {
+            type: 'npm',
+          },
+        },
+        {
+          version: '0.12.0',
+          publishTimestamp: 1732080000,
           source: {
             type: 'npm',
           },
