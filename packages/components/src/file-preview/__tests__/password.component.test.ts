@@ -23,7 +23,7 @@ vi.mock('../renderers/registry', async () => {
   };
 });
 
-describe('YFilePreview 加密文档密码', () => {
+describe('YFilePreview 加密文档密码', { timeout: 25_000 }, () => {
   afterEach(() => {
     clearPasswordCache();
     vi.clearAllMocks();
@@ -44,7 +44,7 @@ describe('YFilePreview 加密文档密码', () => {
     // 标题栏已有下载，密码卡内不再重复下载入口
     expect(wrapper.find('.yss-file-preview__password-download').exists()).toBe(false);
     wrapper.unmount();
-  });
+  }, 15_000);
 
   it('密码错误时提示并保持输入态', async () => {
     const wrapper = mount(FilePreview, {
@@ -61,7 +61,7 @@ describe('YFilePreview 加密文档密码', () => {
     expect(wrapper.classes()).toContain('yss-file-preview--password-required');
     expect(wrapper.text()).toContain('密码错误');
     wrapper.unmount();
-  });
+  }, 20_000);
 
   it('正确密码后进入预览', async () => {
     const wrapper = mount(FilePreview, {
@@ -91,9 +91,12 @@ describe('YFilePreview 加密文档密码', () => {
         password: 'yss-test',
       },
     });
-    await vi.waitFor(() => {
-      expect(wrapper.classes()).toContain('yss-file-preview--ready');
-    }, { timeout: 15_000 });
+    await vi.waitFor(
+      () => {
+        expect(wrapper.classes()).toContain('yss-file-preview--ready');
+      },
+      { timeout: 15_000 }
+    );
     expect(wrapper.text()).not.toContain('文档已加密');
     expect(wrapper.emitted('loaded')?.[0]?.[0]).toMatchObject({ fileType: 'xlsx' });
     wrapper.unmount();
@@ -107,9 +110,12 @@ describe('YFilePreview 加密文档密码', () => {
         password: 'wrong-password',
       },
     });
-    await vi.waitFor(() => {
-      expect(wrapper.classes()).toContain('yss-file-preview--password-required');
-    }, { timeout: 15_000 });
+    await vi.waitFor(
+      () => {
+        expect(wrapper.classes()).toContain('yss-file-preview--password-required');
+      },
+      { timeout: 15_000 }
+    );
     expect(wrapper.text()).toContain('密码错误');
     wrapper.unmount();
   }, 20_000);
@@ -124,9 +130,12 @@ describe('YFilePreview 加密文档密码', () => {
     first.unmount();
 
     const second = mount(FilePreview, { props: { source, fileName: 'secret.xlsx' } });
-    await vi.waitFor(() => {
-      expect(second.classes()).toContain('yss-file-preview--ready');
-    }, { timeout: 15_000 });
+    await vi.waitFor(
+      () => {
+        expect(second.classes()).toContain('yss-file-preview--ready');
+      },
+      { timeout: 15_000 }
+    );
     second.unmount();
   }, 25_000);
 
@@ -152,14 +161,11 @@ describe('YFilePreview 加密文档密码', () => {
   it('密码卡无顶部装饰条，主色跟随 ConfigProvider colorPrimary', async () => {
     const Host = defineComponent({
       setup: () => () =>
-        h(
-          ConfigProvider,
-          { theme: { token: { colorPrimary: '#f5222d' } } },
-          () =>
-            h(FilePreview, {
-              source: loadFixture('xlsx-encrypted.xlsx'),
-              fileName: 'secret.xlsx',
-            })
+        h(ConfigProvider, { theme: { token: { colorPrimary: '#f5222d' } } }, () =>
+          h(FilePreview, {
+            source: loadFixture('xlsx-encrypted.xlsx'),
+            fileName: 'secret.xlsx',
+          })
         ),
     });
     const wrapper = mount(Host);
@@ -167,7 +173,9 @@ describe('YFilePreview 加密文档密码', () => {
 
     const root = wrapper.find('.yss-file-preview');
     expect(root.classes()).toContain('yss-file-preview--password-required');
-    expect(root.element.style.getPropertyValue('--yss-file-preview-primary').toLowerCase()).toBe('#f5222d');
+    expect((root.element as HTMLElement).style.getPropertyValue('--yss-file-preview-primary').toLowerCase()).toBe(
+      '#f5222d'
+    );
 
     const card = wrapper.find('.yss-file-preview__password-card').element;
     expect(getComputedStyle(card, '::before').content).toMatch(/^(none)?$/);

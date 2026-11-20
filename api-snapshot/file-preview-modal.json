@@ -1,6 +1,6 @@
 {
   "name": "file-preview-modal",
-  "propsCount": 37,
+  "propsCount": 39,
   "props": {
     "open": {
       "name": "open",
@@ -136,6 +136,22 @@
       "tsType": "number",
       "required": false,
       "default": "DEFAULT_LOAD_TIMEOUT",
+      "isCore": true
+    },
+    "password": {
+      "name": "password",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "rememberPassword": {
+      "name": "rememberPassword",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
       "isCore": true
     },
     "getContainer": {

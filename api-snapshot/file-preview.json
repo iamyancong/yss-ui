@@ -1,6 +1,6 @@
 {
   "name": "file-preview",
-  "propsCount": 32,
+  "propsCount": 34,
   "props": {
     "source": {
       "name": "source",
@@ -23,6 +23,22 @@
       "tsType": "FilePreviewFileType",
       "required": false,
       "default": "undefined",
+      "isCore": true
+    },
+    "password": {
+      "name": "password",
+      "type": "string",
+      "tsType": "string",
+      "required": false,
+      "default": "undefined",
+      "isCore": true
+    },
+    "rememberPassword": {
+      "name": "rememberPassword",
+      "type": "boolean",
+      "tsType": "boolean",
+      "required": false,
+      "default": "true",
       "isCore": true
     },
     "maxSize": {
@@ -290,6 +306,10 @@
     {
       "name": "reload",
       "type": "() => Promise<void>"
+    },
+    {
+      "name": "submitPassword",
+      "type": "(password: string) => Promise<boolean>"
     },
     {
       "name": "getFileName",
