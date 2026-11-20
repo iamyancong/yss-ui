@@ -42,16 +42,16 @@ jobs:
 
       - name: Run Skills Security Gate
         run: |
-          node scripts/scan-skills-security.js
-          python3 scripts/verify-no-secrets.py
+          node scripts/skills/scan-skills-security.js
+          python3 scripts/skills/verify-no-secrets.py
 
       - name: Run Export Unit Tests
         run: |
-          node scripts/export-skills-sh.node.test.mjs
+          node scripts/skills/export-skills-sh.node.test.mjs
 
       - name: Export Public Skills
         run: |
-          node scripts/export-skills-sh.mjs --clean --out-dir dist-skills-sh
+          node scripts/skills/export-skills-sh.mjs --clean --out-dir dist-skills-sh
 
       - name: Sync to iamyancong/yss-ui-skills (main)
         if: ${{ !inputs.dry_run && env.HAS_DEPLOY_KEY == 'true' }}

@@ -1,0 +1,40 @@
+{
+  "format": 1,
+  "title": {
+    "en": "YSS UI Official Plugins",
+    "zh": "YSS UI 官方插件源"
+  },
+  "description": {
+    "en": "Official MCP tools and developer skills for YSS UI Vue3 component library",
+    "zh": "YSS UI 官方组件库文档查询、Schema 校验与代码生成 MCP 插件"
+  },
+  "plugins": [
+    {
+      "name": "@yss-ui/mcp",
+      "title": {
+        "en": "YSS UI Assistant",
+        "zh": "YSS UI 研发助手"
+      },
+      "description": {
+        "en": "Provide YSS UI component API retrieval, demo examples and codegen rules via MCP",
+        "zh": "提供 YSS UI 组件检索、Demo 示例、Schema 校验与代码生成规则 MCP 工具"
+      },
+      "icon": "favicon.svg",
+      "author": "iamyancong",
+      "homepage": "https://iamyancong.github.io/yss-ui/",
+      "repository": {
+        "url": "https://github.com/iamyancong/yss-ui",
+        "directory": "packages/mcp"
+      },
+      "versions": [
+        {
+          "version": "0.11.0",
+          "publishTimestamp": 1795157619,
+          "source": {
+            "type": "npm"
+          }
+        }
+      ]
+    }
+  ]
+}

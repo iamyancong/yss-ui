@@ -50,7 +50,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_SHA: ${{ github.sha }}
         run: |
-          node scripts/verify-ci-status.mjs
+          node scripts/release/verify-ci-status.mjs
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
@@ -79,8 +79,8 @@ jobs:
         env:
           RELEASE_OVERRIDE_REASON: ${{ inputs.override_reason }}
         run: |
-          node scripts/check-registry-artifacts.mjs
-          node scripts/release-changed.js "${{ inputs.bump }}" --dry
+          node scripts/quality/check-registry-artifacts.mjs
+          node scripts/release/release-changed.js "${{ inputs.bump }}" --dry
 
       - name: Configure npm authentication
         run: |
@@ -101,10 +101,10 @@ jobs:
           BUMP_TYPE="${{ inputs.bump }}"
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             echo "🔍 Running release in dry-run mode..."
-            node scripts/release-changed.js "$BUMP_TYPE" --dry
+            node scripts/release/release-changed.js "$BUMP_TYPE" --dry
           else
             echo "🚀 Executing release..."
-            node scripts/release-changed.js "$BUMP_TYPE"
+            node scripts/release/release-changed.js "$BUMP_TYPE"
           fi
 
       - name: Commit, Push & Tag Version Bumps
@@ -115,16 +115,16 @@ jobs:
           BUMP: ${{ inputs.bump }}
           RELEASE_OVERRIDE_REASON: ${{ inputs.override_reason }}
         run: |
-          node scripts/ci-post-release.js
+          node scripts/release/ci-post-release.js
 
       - name: Verify Published MCP Tarball
         if: ${{ inputs.dry_run != true }}
-        run: node scripts/verify-published-release.mjs --registry=https://registry.npmjs.org/ --retries=32
+        run: node scripts/release/verify-published-release.mjs --registry=https://registry.npmjs.org/ --retries=32
 
       - name: Sync published packages to npmmirror
         if: ${{ inputs.dry_run != true }}
         continue-on-error: true
-        run: node scripts/sync-npmmirror.mjs
+        run: node scripts/release/sync-npmmirror.mjs
 
       - name: Send Notification (Optional)
         if: ${{ inputs.dry_run != true }}
@@ -133,7 +133,7 @@ jobs:
           DOCS_BASE_URL: "https://iamyancong.github.io/yss-ui"
         run: |
           if [ -n "$WECOM_WEBHOOK_KEY" ]; then
-            node scripts/wecom-notify.js || echo "Notification failed"
+            node scripts/release/wecom-notify.js || echo "Notification failed"
           else
             echo "No WECOM_WEBHOOK_KEY provided, skip notification."
           fi
