@@ -205,10 +205,22 @@ function getSnapshotDiffInRange(baseRef, files = []) {
  */
 function findLastReleaseCommit() {
   try {
-    // 优先在当前分支查找；若没有则返回空
-    // 匹配所有 release 格式: "chore(release): bump packages" 或 "chore(release): patch N package(s)"
-    const out = run('git log -n 1 --grep "^chore(release):" --pretty=format:%H');
-    return out || null;
+    // 优先匹配真正的发版 commit（形如 "chore(release): patch 2 package(s)" 或带 [skip ci]），并排除当前 HEAD
+    const commits = run('git log -n 10 --grep "^chore(release):" --pretty=format:%H%x20%s').split('\n').filter(Boolean);
+    const headHash = run('git rev-parse HEAD');
+    for (const line of commits) {
+      const [hash, ...rest] = line.split(' ');
+      const msg = rest.join(' ');
+      if (hash !== headHash && (/package\(s\)/i.test(msg) || /\[skip ci\]/i.test(msg))) {
+        return hash;
+      }
+    }
+    // 兜底：只要不是当前 HEAD 的第一个 chore(release)
+    for (const line of commits) {
+      const [hash] = line.split(' ');
+      if (hash !== headHash) return hash;
+    }
+    return null;
   } catch (_) {
     return null;
   }
