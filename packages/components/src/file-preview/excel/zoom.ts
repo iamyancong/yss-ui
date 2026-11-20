@@ -244,6 +244,45 @@ export function scaleSheet(sheet: XsSheet, base: SheetBase, scale: number): void
   }
 }
 
+/**
+ * 冻结列过宽时，为腾出横向可滚区域所需的最小可滚像素（含横向滚动条可用宽度）。
+ * 与 Excel 渲染器 ensureFreezeScrollable 共用。
+ */
+export const FREEZE_MIN_SCROLLABLE_PX = 120;
+/** 自动缩小相对当前比例至少再小这么多才干预，避免浮点抖动反复缩放 */
+export const FREEZE_AUTO_ZOOM_EPSILON = 0.02;
+/** 冻结自适应缩小的下限（与渲染器适应宽度 FIT_MIN 一致） */
+export const FREEZE_AUTO_ZOOM_MIN = 0.25;
+
+/**
+ * 冻结列总宽几乎占满视口时，算出保证「冻结宽 + 最小可滚宽 ≤ 视口宽」所需的最大缩放比。
+ * 只缩小、不放大：无需干预时返回 null。
+ *
+ * @param freezeWidthAtScale1 - 100% 时冻结列总宽度（px）
+ * @param viewportWidth - 单元格区域（不含行号）可视宽度（px）
+ * @param currentScale - 当前缩放比例（1 = 100%）
+ * @param minScrollablePx - 非冻结区至少保留的像素，默认 {@link FREEZE_MIN_SCROLLABLE_PX}
+ * @returns 需要应用的比例；已够用或无法计算时为 null
+ */
+export function freezeScrollScale(
+  freezeWidthAtScale1: number,
+  viewportWidth: number,
+  currentScale: number,
+  minScrollablePx = FREEZE_MIN_SCROLLABLE_PX
+): number | null {
+  if (!(freezeWidthAtScale1 > 0) || !(viewportWidth > 0) || !(currentScale > 0)) return null;
+  if (!(minScrollablePx > 0)) return null;
+  const room = viewportWidth - minScrollablePx;
+  if (!(room > 0)) return null;
+  // 当前比例下冻结已够窄则不动
+  if (freezeWidthAtScale1 * currentScale <= room + 1e-6) return null;
+  let needed = room / freezeWidthAtScale1;
+  needed = Math.min(currentScale, Math.max(FREEZE_AUTO_ZOOM_MIN, needed));
+  needed = Math.round(needed * 100) / 100;
+  if (!(needed < currentScale - FREEZE_AUTO_ZOOM_EPSILON)) return null;
+  return needed;
+}
+
 /** 已用区域（含图表等对象）在 100% 时的宽高，用于适应宽度 / 整页 */
 export function usedSize(sheet: XsSheet, base: SheetBase): { w: number; h: number } {
   let lastCol = -1;

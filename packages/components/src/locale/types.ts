@@ -220,6 +220,8 @@ export interface YssFilePreviewLocale {
   excelLargeNotice: string;
   /** 表格文件较大的提示条（读不到单元格数时），{size} 为文件大小 */
   excelLargeSizeNotice: string;
+  /** 冻结列过宽导致横向滚动条被挤没时，自动缩小后的提示条 */
+  excelFreezeAutoZoomNotice: string;
   /** 表格单元格超过上限、只显示前面的行，{limit} 上限，{sheet} 工作表名，{rows} 显示的行数 */
   excelTruncatedNotice: string;
   /** 还有其他工作表也被截断，{count} 为数量 */
@@ -240,6 +242,22 @@ export interface YssFilePreviewLocale {
   emptyDesc: string;
   mismatchTitle: string;
   mismatchDesc: string;
+  /** 加密文档：标题（如「文档已加密」） */
+  passwordRequiredTitle: string;
+  /** 加密文档：说明（如「请输入密码打开文档」） */
+  passwordRequiredDesc: string;
+  /** 密码输入框占位 */
+  passwordPlaceholder: string;
+  /** 确认打开 */
+  passwordConfirm: string;
+  /** 取消（清空输入） */
+  passwordCancel: string;
+  /** 密码错误提示 */
+  passwordWrong: string;
+  /** 正在解密 */
+  passwordDecrypting: string;
+  /** 加密算法不受支持 */
+  passwordUnsupported: string;
   missingDepTitle: string;
   missingDepDesc: string;
   unsupportedTitle: string;

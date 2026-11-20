@@ -30,6 +30,8 @@ import type {
   FileSource,
 } from '../types';
 import { detectFileType } from '../utils/detect';
+import { decryptOoxmlPackage, InvalidPasswordError, UnsupportedEncryptionError } from '../utils/office-crypto';
+import { fingerprintEncryptedFile, getCachedPassword, setCachedPassword } from '../utils/password-cache';
 import { observeResize } from '../utils/resize';
 import { downloadFile, loadFileData, saveBlob } from './useFileData';
 
@@ -89,14 +91,37 @@ export function useFileRenderer({ props, emit, containerRef, t, locale, zoomCont
   const parseProgress = ref<number | null>(null);
   /** 当前渲染器的缩放能力（渲染完成后才有） */
   const zoomController = shallowRef<PreviewZoomController | null>(null);
+  /** 密码输入态的错误文案（密码错误 / 不支持的加密） */
+  const passwordError = ref('');
+  /** 正在用密码解密 */
+  const passwordUnlocking = ref(false);
 
   let current: RenderSession | null = null;
   /** large-file 状态下「继续预览」要做的事 */
   let pendingContinue: (() => Promise<void>) | null = null;
   /** 最近一次成功读取的内容，下载时直接保存，不重复请求 */
   let loadedData: { buffer: ArrayBuffer; mimeType?: string } | null = null;
+  /**
+   * 加密原件（解密预览后仍优先下载原件，避免把解密后的明文当附件发出）。
+   * 未加密文件时为 null。
+   */
+  let encryptedOriginal: { buffer: ArrayBuffer; mimeType?: string } | null = null;
   /** 懒加载来源解析出的实际来源 */
   let resolvedSource: FileSource | null = null;
+  /**
+   * 加密文件等待密码：保留原始 OLE 字节与声明类型。
+   * 下载仍保存加密原件；解密成功后用明文 zip 继续渲染。
+   */
+  let pendingEncrypted: {
+    session: RenderSession;
+    buffer: ArrayBuffer;
+    fileName: string;
+    mimeType?: string;
+    /** 后缀 / MIME / 显式类型推断出的 OOXML 类型；无后缀时解密后再识别 */
+    declaredType: string | null;
+    /** 会话密码缓存用的文件指纹 */
+    fingerprint: string;
+  } | null = null;
 
   const hasSource = () => props.source !== undefined && props.source !== null && props.source !== '';
   const currentItem = (): FilePreviewItem => ({
@@ -122,15 +147,19 @@ export function useFileRenderer({ props, emit, containerRef, t, locale, zoomCont
     error.value = null;
     largeFile.value = null;
     pendingContinue = null;
+    pendingEncrypted = null;
     unsupportedType.value = '';
     mismatchType.value = '';
     missingPackage.value = '';
+    passwordError.value = '';
+    passwordUnlocking.value = false;
     detectedType.value = null;
     fileName.value = props.fileName ?? '';
     fileSize.value = 0;
     progress.value = null;
     parseProgress.value = null;
     loadedData = null;
+    encryptedOriginal = null;
     resolvedSource = null;
 
     if (!hasSource()) {
@@ -163,50 +192,199 @@ export function useFileRenderer({ props, emit, containerRef, t, locale, zoomCont
         status.value = 'mismatch';
         return;
       }
-      // 内置识别不了、但注册了自定义渲染器的新格式（如 ofd），交给自定义渲染器
-      const customType =
-        !detected.type && detected.expectedType && hasCustomRenderer(detected.expectedType)
-          ? detected.expectedType.toLowerCase()
-          : null;
-      if (!detected.type && !customType) {
-        unsupportedType.value = detected.expectedType || 'unknown';
-        status.value = 'unsupported';
-        emit('unsupported', unsupportedType.value);
-        return;
-      }
 
-      const fileType = (detected.type ?? customType) as string;
-      detectedType.value = fileType;
+      // Office 加密文档：先要密码；下载始终用加密原件
+      if (detected.encrypted) {
+        encryptedOriginal = { buffer: result.buffer, mimeType: result.mimeType };
+        loadedData = encryptedOriginal;
+        detectedType.value = detected.type;
+        const fingerprint = fingerprintEncryptedFile(result.buffer, result.fileName);
+        pendingEncrypted = {
+          session,
+          buffer: result.buffer,
+          fileName: result.fileName,
+          mimeType: result.mimeType,
+          declaredType: detected.type,
+          fingerprint,
+        };
 
-      const renderer = await getRenderer(fileType);
-      if (isStale()) return;
-      if (!renderer) {
-        unsupportedType.value = fileType;
-        status.value = 'unsupported';
-        emit('unsupported', fileType);
-        return;
-      }
-
-      // 渲染前的大文件检查（如 Excel 估算单元格数）：超过阈值先提示确认，或只提供下载
-      const verdict = await preflightOf(renderer, result.buffer, result.fileName, fileType, session.controller.signal);
-      if (isStale()) return;
-      if (verdict) {
-        // 下载时直接保存已读取的内容
-        loadedData = { buffer: result.buffer, mimeType: result.mimeType };
-        largeFile.value = verdict;
-        if (verdict.level === 'block') {
-          status.value = 'oversize';
-          return;
+        // 业务传入 password，或会话缓存命中：保持 loading 直接解锁，不闪密码框
+        const propPassword = props.password?.trim() || '';
+        const cachedPassword =
+          !propPassword && props.rememberPassword !== false ? getCachedPassword(fingerprint)?.trim() || '' : '';
+        const autoPassword = propPassword || cachedPassword;
+        if (autoPassword) {
+          const ok = await unlockWithPassword(autoPassword, {
+            fromCache: !propPassword,
+            allowWhileLoading: true,
+          });
+          if (ok || isStale()) return;
+          // 缺依赖等已切到终态时不要再盖成密码框
+          if (status.value !== 'loading' || !pendingEncrypted) return;
+          // 传入的密码错误：落到输入态并提示；缓存失效则静默提示输入
+          if (propPassword) passwordError.value = t('passwordWrong');
         }
-        pendingContinue = () => mountTimed(session, renderer, result, fileType);
-        status.value = 'large-file';
+
+        status.value = 'password-required';
         return;
       }
 
-      await mountTimed(session, renderer, result, fileType);
+      await proceedWithBuffer(
+        session,
+        {
+          buffer: result.buffer,
+          fileName: result.fileName,
+          mimeType: result.mimeType,
+        },
+        detected.type,
+        detected.expectedType
+      );
     } catch (err) {
       fail(session, err);
     }
+  };
+
+  /**
+   * 类型已确认（或解密后重新识别）后：找渲染器 → 大文件检查 → 挂载。
+   */
+  const proceedWithBuffer = async (
+    session: RenderSession,
+    result: { buffer: ArrayBuffer; fileName: string; mimeType?: string },
+    detectedTypeValue: string | null,
+    expectedType: string | null
+  ): Promise<void> => {
+    const isStale = () => current !== session || session.controller.signal.aborted;
+    const customType =
+      !detectedTypeValue && expectedType && hasCustomRenderer(expectedType) ? expectedType.toLowerCase() : null;
+    if (!detectedTypeValue && !customType) {
+      unsupportedType.value = expectedType || 'unknown';
+      status.value = 'unsupported';
+      emit('unsupported', unsupportedType.value);
+      return;
+    }
+
+    const fileType = (detectedTypeValue ?? customType) as string;
+    detectedType.value = fileType;
+
+    const renderer = await getRenderer(fileType);
+    if (isStale()) return;
+    if (!renderer) {
+      unsupportedType.value = fileType;
+      status.value = 'unsupported';
+      emit('unsupported', fileType);
+      return;
+    }
+
+    const verdict = await preflightOf(renderer, result.buffer, result.fileName, fileType, session.controller.signal);
+    if (isStale()) return;
+    if (verdict) {
+      loadedData = { buffer: result.buffer, mimeType: result.mimeType };
+      largeFile.value = verdict;
+      if (verdict.level === 'block') {
+        status.value = 'oversize';
+        return;
+      }
+      pendingContinue = () => mountTimed(session, renderer, result, fileType);
+      status.value = 'large-file';
+      return;
+    }
+
+    await mountTimed(session, renderer, result, fileType);
+  };
+
+  /**
+   * 用密码解密当前加密文件并继续预览。
+   * @param password - 打开密码
+   * @param options.fromCache - 是否来自会话缓存；缓存密码失效时静默回到输入态，不提示「密码错误」
+   * @param options.allowWhileLoading - 允许在 loading 态自动解锁（业务传入 password / 缓存命中），避免先闪密码框
+   * @returns 是否解密成功并进入后续预览流程
+   */
+  const unlockWithPassword = async (
+    password: string,
+    options?: { fromCache?: boolean; allowWhileLoading?: boolean }
+  ): Promise<boolean> => {
+    const pending = pendingEncrypted;
+    if (!pending) return false;
+    const canUnlock =
+      status.value === 'password-required' || (options?.allowWhileLoading === true && status.value === 'loading');
+    if (!canUnlock) return false;
+    const session = pending.session;
+    if (current !== session || session.controller.signal.aborted) return false;
+
+    const trimmed = password.trim();
+    if (!trimmed) {
+      if (!options?.fromCache) passwordError.value = t('passwordWrong');
+      return false;
+    }
+
+    passwordError.value = '';
+    passwordUnlocking.value = true;
+    try {
+      const unlocked = await decryptOoxmlPackage(pending.buffer, trimmed);
+      if (current !== session || session.controller.signal.aborted) return false;
+
+      // 解密后按明文内容再识别（无后缀时依赖 zip 嗅探）
+      const detected = detectFileType(
+        pending.fileName,
+        pending.mimeType,
+        unlocked,
+        pending.declaredType ?? props.fileType
+      );
+      if (detected.encrypted) {
+        passwordError.value = t('passwordUnsupported');
+        return false;
+      }
+      if (detected.mismatch || (!detected.type && !detected.expectedType)) {
+        passwordError.value = t('passwordUnsupported');
+        return false;
+      }
+
+      if (props.rememberPassword !== false) {
+        setCachedPassword(pending.fingerprint, trimmed);
+      }
+
+      pendingEncrypted = null;
+      passwordUnlocking.value = false;
+      status.value = 'loading';
+      encryptedOriginal = { buffer: pending.buffer, mimeType: pending.mimeType };
+      await proceedWithBuffer(
+        session,
+        { buffer: unlocked, fileName: pending.fileName, mimeType: pending.mimeType },
+        detected.type,
+        detected.expectedType ?? pending.declaredType
+      );
+      // await 之后 status 会被 proceedWithBuffer 改写；避免 TS 仍按前面的 'loading' 收窄
+      const next = status.value as FilePreviewStatus;
+      return next === 'ready' || next === 'large-file' || next === 'oversize';
+    } catch (err) {
+      if (current !== session || session.controller.signal.aborted) return false;
+      if (err instanceof InvalidPasswordError) {
+        // 缓存过期或文件已改密：静默回到输入框，避免一闪「密码错误」
+        if (!options?.fromCache) passwordError.value = t('passwordWrong');
+        return false;
+      }
+      if (err instanceof UnsupportedEncryptionError) {
+        passwordError.value = t('passwordUnsupported');
+        return false;
+      }
+      if (err instanceof MissingDependencyError) {
+        pendingEncrypted = null;
+        fail(session, err);
+        return false;
+      }
+      fail(session, err);
+      return false;
+    } finally {
+      if (current === session) passwordUnlocking.value = false;
+    }
+  };
+
+  /** 对外：提交密码 */
+  const submitPassword = async (password: string): Promise<boolean> => unlockWithPassword(password);
+
+  /** 取消密码输入：清空错误文案，保持 password-required 以便再次输入或下载 */
+  const cancelPassword = () => {
+    passwordError.value = '';
   };
 
   /**
@@ -417,8 +595,12 @@ export function useFileRenderer({ props, emit, containerRef, t, locale, zoomCont
       await downloadFile(source, target, { file: currentItem() });
       return;
     }
-    if (loadedData) {
-      saveBlob(new Blob([loadedData.buffer], loadedData.mimeType ? { type: loadedData.mimeType } : undefined), target);
+    const downloadPayload = encryptedOriginal ?? loadedData;
+    if (downloadPayload) {
+      saveBlob(
+        new Blob([downloadPayload.buffer], downloadPayload.mimeType ? { type: downloadPayload.mimeType } : undefined),
+        target
+      );
       return;
     }
     const fallback = resolvedSource ?? (hasSource() ? props.source : null);
@@ -445,7 +627,7 @@ export function useFileRenderer({ props, emit, containerRef, t, locale, zoomCont
     if (props.customDownload) {
       await props.customDownload({
         ...getContext(),
-        data: loadedData?.buffer,
+        data: (encryptedOriginal ?? loadedData)?.buffer,
         defaultDownload,
       });
       return;
@@ -471,10 +653,24 @@ export function useFileRenderer({ props, emit, containerRef, t, locale, zoomCont
       props.timeout,
       props.showDownload,
       !!props.customDownload,
+      props.password,
     ],
     (next, prev) => {
       // getter 每次返回新数组：逐项比较，只有取值真的变化才重新加载
       if (prev && next.length === prev.length && next.every((v, i) => Object.is(v, prev[i]))) return;
+      // 仅 password 变化且已在密码态：直接尝试解锁，避免整文件重载
+      if (
+        prev &&
+        status.value === 'password-required' &&
+        pendingEncrypted &&
+        next.length === prev.length &&
+        next.every((v, i) => i === next.length - 1 || Object.is(v, prev[i])) &&
+        !Object.is(next[next.length - 1], prev[prev.length - 1])
+      ) {
+        const autoPassword = typeof next[next.length - 1] === 'string' ? String(next[next.length - 1]).trim() : '';
+        if (autoPassword) void unlockWithPassword(autoPassword);
+        return;
+      }
       void render();
     }
   );
@@ -517,11 +713,15 @@ export function useFileRenderer({ props, emit, containerRef, t, locale, zoomCont
     unsupportedType,
     mismatchType,
     missingPackage,
+    passwordError,
+    passwordUnlocking,
     detectedType,
     fileName,
     fileSize,
     largeFile,
     continuePreview,
+    submitPassword,
+    cancelPassword,
     render,
     download,
     getContext,

@@ -1,6 +1,7 @@
 // 文件预览样式（非 scoped）：渲染器动态创建的节点与传送到 body 的弹窗都需要命中这些样式，
 // 所有选择器统一使用 yss-file-preview 前缀，避免污染业务页面。
 .yss-file-preview {
+  // 运行时由 index.vue 的 theme.useToken() 写入同名变量覆盖；以下为无 ConfigProvider 时的兜底链
   --yss-file-preview-primary: var(--yss-color-primary-6, var(--ant-primary-color, #4676f6));
   --yss-file-preview-error: var(--yss-color-error-6, var(--ant-error-color, #ff4d4f));
   --yss-file-preview-warning: var(--ant-warning-color, #faad14);
@@ -91,6 +92,98 @@
   &__actions {
     display: flex;
     gap: 8px;
+  }
+
+  // Office 加密文档密码输入
+  &__password {
+    // 遮罩色与换肤无关，仅用于压暗预览底
+    background:
+      radial-gradient(
+        120% 80% at 50% 0%,
+        color-mix(in srgb, var(--yss-file-preview-primary) 14%, transparent),
+        transparent 55%
+      ),
+      color-mix(in srgb, var(--yss-file-preview-text) 4%, var(--yss-file-preview-bg-soft));
+    backdrop-filter: blur(2px);
+  }
+
+  &__password-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: min(100%, 380px);
+    padding: 32px 28px 24px;
+    overflow: hidden;
+    background-color: var(--yss-file-preview-bg);
+    border: 1px solid color-mix(in srgb, var(--yss-file-preview-primary) 12%, var(--yss-file-preview-border));
+    border-radius: 16px;
+    // 阴影使用中性透明黑，不绑定品牌色
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 4%),
+      0 12px 32px rgb(0 0 0 / 8%);
+    box-sizing: border-box;
+  }
+
+  &__password-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    margin: 4px auto 18px;
+    color: var(--yss-file-preview-primary);
+    background: color-mix(in srgb, var(--yss-file-preview-primary) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--yss-file-preview-primary) 18%, transparent);
+    border-radius: 16px;
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--yss-file-preview-primary) 6%, transparent);
+  }
+
+  &__password-badge-icon {
+    font-size: 24px;
+  }
+
+  &__password-title {
+    margin-bottom: 6px;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--yss-file-preview-text);
+    text-align: center;
+    letter-spacing: 0.01em;
+  }
+
+  &__password-desc {
+    margin-bottom: 20px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--yss-file-preview-text-secondary);
+    text-align: center;
+  }
+
+  &__password-input {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  &__password-error {
+    width: 100%;
+    margin-bottom: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--yss-file-preview-error);
+    text-align: left;
+  }
+
+  &__password-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  &__password-cancel {
+    color: var(--yss-file-preview-text-secondary);
   }
 }
 

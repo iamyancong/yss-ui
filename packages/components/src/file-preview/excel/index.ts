@@ -15,6 +15,7 @@ import {
   axisView,
   captureAxisAnchor,
   captureSheet,
+  freezeScrollScale,
   geometryOf,
   scaleSheet,
   scrollForCell,
@@ -92,6 +93,7 @@ export interface ExcelFixup {
     geometryOf: typeof geometryOf;
     captureAxisAnchor: typeof captureAxisAnchor;
     axisView: typeof axisView;
+    freezeScrollScale: typeof freezeScrollScale;
   };
 }
 
@@ -261,7 +263,7 @@ function directFixup(
     rescale(index, next, scroll) {
       return rescaleSheet(fixup, sheets, model, index, next, scroll);
     },
-    zoomMath: { geometryOf, captureAxisAnchor, axisView },
+    zoomMath: { geometryOf, captureAxisAnchor, axisView, freezeScrollScale },
     dispose() {
       disposed = true;
       for (const list of [sheets, pending]) if (list) for (const sheet of list) clearSheet(sheet);
@@ -377,7 +379,7 @@ async function legacyFixup(
     rescale(index, next, scroll) {
       return bases.ready ? rescaleSheet(fixup, sheets, model, index, next, scroll) : null;
     },
-    zoomMath: { geometryOf, captureAxisAnchor, axisView },
+    zoomMath: { geometryOf, captureAxisAnchor, axisView, freezeScrollScale },
     dispose() {
       disposed = true;
       if (sheets) for (const sheet of sheets) clearSheet(sheet);

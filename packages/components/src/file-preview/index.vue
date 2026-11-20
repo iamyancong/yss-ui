@@ -3,12 +3,13 @@ import {
   ApiOutlined,
   CloseCircleOutlined,
   FileOutlined,
+  LockOutlined,
   QuestionCircleOutlined,
   StopOutlined,
   WarningOutlined,
 } from '@ant-design/icons-vue';
-import { Button, Spin } from 'ant-design-vue';
-import { computed, inject, onBeforeUnmount, onMounted, ref, type Component } from 'vue';
+import { Button, Input, Spin, theme } from 'ant-design-vue';
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Component } from 'vue';
 import { useLocale } from '../locale/useLocale';
 import {
   DEFAULT_EXCEL_MAX_CELLS,
@@ -33,6 +34,8 @@ defineOptions({ name: 'YFilePreview' });
 const props = withDefaults(defineProps<FilePreviewProps>(), {
   fileName: undefined,
   fileType: undefined,
+  password: undefined,
+  rememberPassword: true,
   maxSize: DEFAULT_MAX_FILE_SIZE,
   largeFileWarnSize: DEFAULT_LARGE_FILE_WARN_SIZE,
   excelMaxCells: undefined,
@@ -58,6 +61,9 @@ const { t: translate, localeName } = useLocale('filePreview');
 const t: FilePreviewTranslate = (key, params) => translate(key, params);
 
 const containerRef = ref<HTMLElement | null>(null);
+/** 密码输入框当前值 */
+const passwordInput = ref('');
+const passwordInputRef = ref<{ focus?: () => void } | null>(null);
 
 const {
   status,
@@ -67,11 +73,15 @@ const {
   unsupportedType,
   mismatchType,
   missingPackage,
+  passwordError,
+  passwordUnlocking,
   detectedType,
   fileName,
   fileSize,
   largeFile,
   continuePreview,
+  submitPassword,
+  cancelPassword,
   render,
   download,
   zoomController,
@@ -94,13 +104,61 @@ const zoom = usePreviewZoom({
 });
 onBeforeUnmount(zoom.dispose);
 
+watch(
+  () => status.value,
+  async value => {
+    if (value !== 'password-required') {
+      passwordInput.value = '';
+      return;
+    }
+    // 已通过 props.password 自动尝试时，输入框保持空白
+    if (props.password?.trim()) passwordInput.value = '';
+    await nextTick();
+    passwordInputRef.value?.focus?.();
+  }
+);
+
+const handlePasswordConfirm = async () => {
+  if (passwordUnlocking.value) return;
+  const ok = await submitPassword(passwordInput.value);
+  if (ok) passwordInput.value = '';
+};
+
+const handlePasswordCancel = () => {
+  passwordInput.value = '';
+  cancelPassword();
+};
+
+const handlePasswordKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    void handlePasswordConfirm();
+  }
+};
+
 onMounted(() => {
   void render();
 });
 
-const rootStyle = computed(() => ({
-  height: typeof props.height === 'number' ? `${props.height}px` : props.height,
-}));
+/**
+ * 根节点主题 Token：随外层 ConfigProvider（含 colorPrimary / 暗色算法）变化。
+ * 密码态锁图标、主色描边、遮罩渐变等自定义样式依赖这些变量；Button / Input 仍走 antd 自身主题。
+ */
+const { token } = theme.useToken();
+const rootStyle = computed(() => {
+  const tk = token.value;
+  return {
+    height: typeof props.height === 'number' ? `${props.height}px` : props.height,
+    '--yss-file-preview-primary': tk.colorPrimary,
+    '--yss-file-preview-error': tk.colorError,
+    '--yss-file-preview-warning': tk.colorWarning,
+    '--yss-file-preview-bg': tk.colorBgContainer,
+    '--yss-file-preview-bg-soft': tk.colorFillAlter,
+    '--yss-file-preview-border': tk.colorSplit,
+    '--yss-file-preview-text': tk.colorText,
+    '--yss-file-preview-text-secondary': tk.colorTextSecondary,
+  } as Record<string, string>;
+});
 
 const supportedTypesText = computed(() =>
   [...new Set([...SUPPORTED_FILE_TYPES, ...getCustomRendererTypes()])].join(', ')
@@ -237,6 +295,7 @@ const notice = computed<Notice | null>(() => {
 
 defineExpose<FilePreviewExpose>({
   reload: render,
+  submitPassword,
   getFileName: () => fileName.value,
   getFileType: () => detectedType.value,
   getStatus: () => status.value,
@@ -312,6 +371,56 @@ defineExpose<FilePreviewExpose>({
         <Button v-else-if="showDownload" :type="notice.primary ? 'primary' : 'default'" @click="download">
           {{ notice.downloadText }}
         </Button>
+      </div>
+
+      <div
+        v-else-if="status === 'password-required'"
+        class="yss-file-preview__overlay yss-file-preview__password"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="t('passwordRequiredTitle')"
+      >
+        <div class="yss-file-preview__password-card">
+          <div class="yss-file-preview__password-badge" aria-hidden="true">
+            <LockOutlined class="yss-file-preview__password-badge-icon" />
+          </div>
+          <div class="yss-file-preview__password-title">{{ t('passwordRequiredTitle') }}</div>
+          <div class="yss-file-preview__password-desc">{{ t('passwordRequiredDesc') }}</div>
+          <Input.Password
+            ref="passwordInputRef"
+            v-model:value="passwordInput"
+            class="yss-file-preview__password-input"
+            size="large"
+            :placeholder="t('passwordPlaceholder')"
+            :disabled="passwordUnlocking"
+            autocomplete="current-password"
+            @keydown="handlePasswordKeydown"
+          />
+          <div v-if="passwordError" class="yss-file-preview__password-error" role="alert">
+            {{ passwordError }}
+          </div>
+          <div class="yss-file-preview__password-actions">
+            <Button
+              type="primary"
+              size="large"
+              block
+              :loading="passwordUnlocking"
+              @click="handlePasswordConfirm"
+            >
+              {{ passwordUnlocking ? t('passwordDecrypting') : t('passwordConfirm') }}
+            </Button>
+            <Button
+              type="text"
+              size="large"
+              block
+              class="yss-file-preview__password-cancel"
+              :disabled="passwordUnlocking"
+              @click="handlePasswordCancel"
+            >
+              {{ t('passwordCancel') }}
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div v-else-if="status === 'unsupported'" class="yss-file-preview__overlay yss-file-preview__state" role="status">

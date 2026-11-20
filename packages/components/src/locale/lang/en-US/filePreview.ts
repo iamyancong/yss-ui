@@ -37,6 +37,15 @@ const filePreview: YssFilePreviewLocale = {
   mismatchTitle: 'File content does not match its type',
   mismatchDesc:
     'The content does not match the {type} extension. The file may have been renamed, so it cannot be previewed.',
+  passwordRequiredTitle: 'Document is encrypted',
+  passwordRequiredDesc: 'Enter the password to open the document',
+  passwordPlaceholder: 'Password',
+  passwordConfirm: 'OK',
+  passwordCancel: 'Cancel',
+  passwordWrong: 'Incorrect password. Please try again.',
+  passwordDecrypting: 'Decrypting…',
+  passwordUnsupported:
+    'This encryption method cannot be decrypted in the browser. Download the file and open it in Excel or WPS.',
   missingDepTitle: 'Preview dependency missing',
   missingDepDesc: 'Previewing this format requires the package: {pkg}',
   unsupportedTitle: 'Preview of {type} files is not supported',
@@ -103,6 +112,7 @@ const filePreview: YssFilePreviewLocale = {
   parsingProgress: 'Parsing {percent}%',
   excelLargeNotice: 'Large file (about {cells} cells). Scrolling and zooming may be a little slow.',
   excelLargeSizeNotice: 'Large file ({size}). Scrolling and zooming may be a little slow.',
+  excelFreezeAutoZoomNotice: 'Frozen columns are wide; zoomed out automatically so you can scroll horizontally.',
   excelTruncatedNotice: 'More than {limit} cells. Only the first {rows} rows of "{sheet}" are shown; download the file to see everything.',
   excelTruncatedMore: '{count} more sheet(s) are not fully shown.',
   docxLargePagesNotice: 'Long document (about {pages} pages). Scrolling may be a little slow.',

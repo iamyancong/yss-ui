@@ -55,6 +55,7 @@ export type FilePreviewStatus =
   | 'large-file'
   | 'empty'
   | 'mismatch'
+  | 'password-required'
   | 'missing-dependency'
   | 'unsupported'
   | 'error';
@@ -67,6 +68,10 @@ export interface FilePreviewItem {
   fileName?: string;
   /** 显式指定文件类型，优先于后缀和 MIME 推断，但仍会校验文件头 */
   fileType?: FilePreviewFileType;
+  /**
+   * 打开密码（加密的 xlsx / docx / pptx）。弹窗多文件时可按文件分别传入。
+   */
+  password?: string;
   /**
    * 文件大小（字节），用于弹窗文件切换列表显示；source 为 File / Blob / ArrayBuffer 时可省略（自动读取）。
    * 不参与大小上限判断（上限以实际读取的内容为准）
@@ -124,6 +129,18 @@ export interface FilePreviewProps {
   fileName?: string;
   /** 显式指定文件类型，优先于后缀和 MIME 推断，但仍会校验文件头 */
   fileType?: FilePreviewFileType;
+  /**
+   * 打开密码（用于 Office「加密文档」的 xlsx / docx / pptx）。
+   * 业务已知密码时可直接传入：加密文件保持加载态自动解密打开，不弹出密码框；
+   * 密码错误时再显示输入框并提示。也可在弹窗的 `FilePreviewItem.password` 上按文件传入。
+   */
+  password?: string;
+  /**
+   * 是否在当前页面会话内记住已成功解锁的打开密码，默认 `true`。
+   * 为 `true` 时：多文件弹窗切换后再切回同一加密文件，无需重新输入；刷新页面后清空。
+   * 为 `false` 时：每次打开 / 切换到该文件都要重新输入密码（更严格）。
+   */
+  rememberPassword?: boolean;
   /** 允许预览的最大字节数，默认 20MB；超过时不读取内容，直接提示下载。恰好等于时可以预览；Infinity 不限制；0、负数、NaN 按默认值 */
   maxSize?: number;
   /**
@@ -225,6 +242,11 @@ export type FilePreviewEmits = {
 export interface FilePreviewExpose {
   /** 重新加载并渲染当前文件 */
   reload: () => Promise<void>;
+  /**
+   * 对加密文档提交打开密码；非 password-required 状态时无操作。
+   * @returns 是否解密并开始预览成功
+   */
+  submitPassword: (password: string) => Promise<boolean>;
   /** 当前文件名（原始文件名，未转义） */
   getFileName: () => string;
   /** 当前识别出的文件类型 */
@@ -294,6 +316,13 @@ export interface FilePreviewModalProps {
   csvMaxRows?: number;
   /** 加载超时（毫秒），默认 60000，同 YFilePreview */
   timeout?: number;
+  /** 打开密码，同 YFilePreview（加密的 xlsx / docx / pptx） */
+  password?: string;
+  /**
+   * 是否记住已解锁密码，同 YFilePreview。
+   * 默认 `true`：弹窗内切换文件再切回无需重输；`false`：每次切到加密文件都要输入。
+   */
+  rememberPassword?: boolean;
   /** 弹窗挂载节点，同 ant-design-vue Modal 的 getContainer */
   getContainer?: string | HTMLElement | (() => HTMLElement) | false;
   /** 自定义下载，同 YFilePreview；设置后 PDF 也显示标题栏下载按钮 */
@@ -387,6 +416,10 @@ export interface UseFilePreviewOptions {
   csvMaxRows?: number;
   /** 加载超时（毫秒） */
   timeout?: number;
+  /** 打开密码（加密的 xlsx / docx / pptx），规则同 YFilePreviewModal */
+  password?: string;
+  /** 是否记住已解锁密码，规则同 YFilePreviewModal，默认 true */
+  rememberPassword?: boolean;
   /** 是否显示下载按钮，规则同 YFilePreviewModal */
   showDownload?: boolean;
   /** 是否允许方向键切换 */

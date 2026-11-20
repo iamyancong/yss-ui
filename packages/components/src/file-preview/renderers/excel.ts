@@ -175,6 +175,8 @@ export const excelRenderer: PreviewRenderer = {
     let destroyed = false;
     let zoomCleanup: (() => void) | null = null;
     let onSheetSwitch: (() => void) | null = null;
+    /** 冻结列过宽时自动缩小，腾出横向滚动空间（首渲 / 切表 / resize） */
+    let ensureFreezeScrollable: (() => void) | null = null;
     /** x-spreadsheet 挂在 window 上的监听，destroy 时移除 */
     let windowListeners: WindowListener[] = [];
     let releaseFixup: (() => void) | null = null;
@@ -266,11 +268,12 @@ export const excelRenderer: PreviewRenderer = {
               unmute();
               resolve();
             },
-            // 切换工作表：叠加层（图表、图片、批注…）随之切换
+            // 切换工作表：叠加层（图表、图片、批注…）随之切换；新表冻结过宽时再自动缩小
             onSwitchSheet: (index: number) => {
               onSheetSwitch?.();
               pendingSheet = index;
               overlay?.setSheet(index);
+              ensureFreezeScrollable?.();
             },
             onError: (err: unknown) => {
               unmute();
@@ -371,10 +374,26 @@ export const excelRenderer: PreviewRenderer = {
         // 缩放：按比例改写行高、列宽、字号后让 x-spreadsheet 真正重绘（见 ../excel/zoom.ts），画布始终清晰。
         // 捏合 / 按钮动画中每帧（requestAnimationFrame）重绘一次，锚点（指针或左上角）下的内容精确到像素保持不动
         if (fixup.zoomable) {
-          const { geometryOf, captureAxisAnchor, axisView } = fixup.zoomMath;
+          const { geometryOf, captureAxisAnchor, axisView, freezeScrollScale } = fixup.zoomMath;
           const bar = (dir: 'vertical' | 'horizontal') =>
             target.querySelector<HTMLElement>(`.x-spreadsheet-scrollbar.${dir}`);
           const cellsEl = () => target.querySelector<HTMLElement>('.x-spreadsheet-overlayer-content');
+          const zoomListeners = new Set<(zoom: number, info?: { live?: boolean }) => void>();
+          const notifyZoom = (z: number, info?: { live?: boolean }) => {
+            const rounded = Math.round(z * 10000) / 10000;
+            zoomListeners.forEach(fn => fn(rounded, info));
+          };
+          /** 冻结过宽自动缩小的提示条：同一预览只插一条，避免切表堆叠 */
+          let freezeNotice: HTMLElement | null = null;
+          const showFreezeNotice = () => {
+            if (freezeNotice?.isConnected) return;
+            freezeNotice = createNoticeBar(
+              context.t('excelFreezeAutoZoomNotice'),
+              'yss-file-preview-excel__notice'
+            );
+            target.insertBefore(freezeNotice, sheetHost);
+            relayout();
+          };
 
           /** 左上角被裁短的行 / 列（不足一格的滚动），用户滚动、切换工作表、再次缩放前恢复 */
           let trims: Array<{
@@ -539,6 +558,7 @@ export const excelRenderer: PreviewRenderer = {
             current = next;
             if (!anchors) {
               applyLegacy(next);
+              notifyZoom(next);
               return;
             }
             // 先恢复被裁短的那格：否则裁短后的尺寸会被当成用户拖动过的值写进基准
@@ -547,6 +567,7 @@ export const excelRenderer: PreviewRenderer = {
             frame(next, anchors);
             relayout();
             overlay?.setScale(next);
+            notifyZoom(next);
           };
 
           /** 取不到 x-spreadsheet 滚动状态时（不应发生）退回整页重绘、保持左上角 */
@@ -600,6 +621,32 @@ export const excelRenderer: PreviewRenderer = {
             animFrame = raf(step);
           };
 
+          /**
+           * 冻结列几乎占满视口时自动缩小，腾出横向滚动条可用空间。
+           * 只缩小不放大；容器尚未量到宽度时跳过，等下一帧 / resize 再试。
+           */
+          const runFreezeScrollable = () => {
+            if (destroyed || !target.isConnected) return;
+            const live = fixup.live(pendingSheet);
+            const cells = cellsEl();
+            if (!live || !cells || !(live.freeze.cols > 0)) return;
+            const viewW = cells.clientWidth;
+            if (!(viewW > 0)) return;
+            const scaleNow = targetScale ?? current;
+            if (!(scaleNow > 0)) return;
+            const geo = geometryOf(live.data, live.freeze);
+            // 行高列宽已按当前比例写入，换算回 100% 冻结宽
+            const freezeAt1 = geo.frozen.w / scaleNow;
+            const needed = freezeScrollScale(freezeAt1, viewW, scaleNow);
+            if (needed === null) return;
+            showFreezeNotice();
+            animateTo(needed);
+          };
+          ensureFreezeScrollable = () => {
+            if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => runFreezeScrollable());
+            else runFreezeScrollable();
+          };
+
           const controller: PreviewZoomController = {
             get: () => targetScale ?? current,
             set(next, options) {
@@ -622,6 +669,7 @@ export const excelRenderer: PreviewRenderer = {
               targetScale = z;
               current = z;
               if (!gesture || !frame(z, gesture)) gesture = null;
+              else notifyZoom(z, { live: true });
             },
             fit(mode) {
               const used = fixup.usedSize(pendingSheet);
@@ -637,13 +685,22 @@ export const excelRenderer: PreviewRenderer = {
               animateTo(next);
               return next;
             },
+            onChange(listener) {
+              zoomListeners.add(listener);
+              return () => zoomListeners.delete(listener);
+            },
           };
           zoomCleanup = () => {
             stopAnim();
             target.removeEventListener('scroll', onScrollCapture, true);
+            zoomListeners.clear();
+            ensureFreezeScrollable = null;
+            freezeNotice = null;
           };
           target.dataset.zoom = String(fixup.scale);
           instance.zoom = controller;
+          // 布局完成后再量视口；冻结过宽时自动缩小
+          ensureFreezeScrollable();
         }
 
         // 打开时显示文件保存时的当前工作表
@@ -659,12 +716,15 @@ export const excelRenderer: PreviewRenderer = {
         // x-spreadsheet 只在初始化和 window resize 时按容器尺寸重绘画布，且 vue-office 没有暴露实例，
         // 容器尺寸变化（如弹窗全屏）后调用它的 resize 监听重新测量
         relayout();
+        // 视口变窄时若冻结再次挤掉横向滚动，继续缩小（只缩小不放大）
+        ensureFreezeScrollable?.();
       },
       destroy() {
         destroyed = true;
         zoomCleanup?.();
         zoomCleanup = null;
         onSheetSwitch = null;
+        ensureFreezeScrollable = null;
         overlay?.destroy();
         overlay = null;
         if (host) {

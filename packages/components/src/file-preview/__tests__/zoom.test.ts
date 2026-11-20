@@ -3,6 +3,9 @@ import { SheetGeometry } from '../excel/geometry';
 import { EMU_PER_PX } from '../excel/dml';
 import {
   captureSheetBase,
+  FREEZE_AUTO_ZOOM_MIN,
+  FREEZE_MIN_SCROLLABLE_PX,
+  freezeScrollScale,
   geometryOf,
   pxToXsFont,
   scaleSheets,
@@ -150,6 +153,50 @@ describe('表格缩放数据', () => {
     const after = geometryOf(s);
     const pos = scrollForCell(after, cell.row, cell.col);
     expect(topLeftCell(after, pos.left, pos.top)).toEqual(cell);
+  });
+});
+
+describe('冻结过宽智能缩小', () => {
+  it('无冻结 / 无效输入 / 视口过窄：不干预', () => {
+    expect(freezeScrollScale(0, 800, 1)).toBeNull();
+    expect(freezeScrollScale(600, 0, 1)).toBeNull();
+    expect(freezeScrollScale(600, 800, 0)).toBeNull();
+    expect(freezeScrollScale(600, FREEZE_MIN_SCROLLABLE_PX, 1)).toBeNull();
+    expect(freezeScrollScale(600, FREEZE_MIN_SCROLLABLE_PX - 1, 1)).toBeNull();
+  });
+
+  it('冻结刚好或已够窄：不干预', () => {
+    // 冻结 600 + 可滚 120 = 720 ≤ 800
+    expect(freezeScrollScale(600, 800, 1)).toBeNull();
+    // 已缩小到 0.5：冻结 600*0.5=300，远小于 room
+    expect(freezeScrollScale(600, 800, 0.5)).toBeNull();
+  });
+
+  it('冻结超宽：缩小到刚好腾出可滚区，只缩小不放大', () => {
+    // room = 800 - 120 = 680；needed = 680/900 ≈ 0.76
+    expect(freezeScrollScale(900, 800, 1)).toBe(0.76);
+    // 当前已是 0.7，needed 0.76 > 0.7 → 不放大
+    expect(freezeScrollScale(900, 800, 0.7)).toBeNull();
+    // 变化不足 epsilon（0.02）
+    expect(freezeScrollScale(800, 800, 0.86)).toBeNull();
+  });
+
+  it('极端超宽时不低于下限', () => {
+    // room=680，freeze=10000 → 0.068 → clamp 到 FREEZE_AUTO_ZOOM_MIN
+    expect(freezeScrollScale(10000, 800, 1)).toBe(FREEZE_AUTO_ZOOM_MIN);
+  });
+
+  it('与 geometryOf 联用：按当前比例换算回 100% 冻结宽再算', () => {
+    const s = sheet();
+    const freeze = { rows: 0, cols: 3 };
+    // 100%：冻结宽 64+100+64=228；视口 300、可滚 120 → room=180 → needed=180/228≈0.79
+    expect(freezeScrollScale(geometryOf(s, freeze).frozen.w, 300, 1)).toBe(0.79);
+    const bases = captureSheetBase([s]);
+    scaleSheets([s], bases, 0.5);
+    // 列宽已是 50%：frozen.w=114；换算回 100% = 114/0.5=228，再算同样结果
+    const atHalf = geometryOf(s, freeze).frozen.w;
+    expect(freezeScrollScale(atHalf / 0.5, 300, 0.5)).toBeNull();
+    expect(freezeScrollScale(atHalf / 0.5, 200, 0.5)).toBe(0.35);
   });
 });
 

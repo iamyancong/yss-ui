@@ -11,6 +11,7 @@ import {
   ZIP_SNIFF_RANGE,
 } from '../constant';
 import type { FileType, ImageFileType } from '../types';
+import { isOoxmlType, sniffOleEncrypted } from './office-crypto';
 
 /** 类型识别结果 */
 export interface DetectResult {
@@ -23,7 +24,12 @@ export interface DetectResult {
   /** 0 字节文件 */
   isEmpty: boolean;
   /** 不能预览的原因 */
-  reason?: 'EMPTY_FILE' | 'TYPE_MISMATCH' | 'UNSUPPORTED_TYPE';
+  reason?: 'EMPTY_FILE' | 'TYPE_MISMATCH' | 'UNSUPPORTED_TYPE' | 'PASSWORD_REQUIRED';
+  /**
+   * 是否为 Office「加密文档」（OLE + EncryptedPackage）。
+   * 为 true 时需先输入密码解密，再按 type（或解密后的 zip 内容）渲染。
+   */
+  encrypted?: boolean;
 }
 
 /** 文件头签名 */
@@ -193,6 +199,7 @@ export function detectFileType(
   }
 
   const sig = bytes ? readSignature(bytes) : null;
+  const encrypted = bytes ? sniffOleEncrypted(bytes) : false;
   const mismatch = (expectedType: string): DetectResult => ({
     type: null,
     expectedType,
@@ -206,6 +213,14 @@ export function detectFileType(
     mismatch: false,
     isEmpty: false,
   });
+  const passwordRequired = (type: FileType | null, expectedType: string | null): DetectResult => ({
+    type,
+    expectedType,
+    mismatch: false,
+    isEmpty: false,
+    encrypted: true,
+    reason: 'PASSWORD_REQUIRED',
+  });
   const unsupported = (expectedType: string | null): DetectResult => ({
     type: null,
     expectedType,
@@ -218,7 +233,13 @@ export function detectFileType(
   if (declared) {
     const supportedType = EXTENSION_TYPE_MAP[declared];
     if (!supportedType) return unsupported(declared);
-    if (sig && !contentMatches(supportedType, sig)) return mismatch(declared);
+    if (sig && !contentMatches(supportedType, sig)) {
+      // 加密的 docx/xlsx/pptx：内容是 OLE 信封而非 zip，需要密码后再校验
+      if (encrypted && isOoxmlType(supportedType)) {
+        return passwordRequired(supportedType, declared);
+      }
+      return mismatch(declared);
+    }
     return accept(supportedType, declared);
   }
 
@@ -227,13 +248,20 @@ export function detectFileType(
     if (sig.isPdf) return accept('pdf', null);
     if (sig.zipKind) return accept(sig.zipKind, null);
     if (sig.imageKind) return accept(sig.imageKind, null);
+    // 无后缀的加密 OOXML：解密后再按 zip 内目录识别类型
+    if (encrypted) return passwordRequired(null, null);
   }
 
   // 3. 再看 MIME
   const cleanMime = mimeType?.split(';')[0]?.trim().toLowerCase() ?? '';
   const mimeTypeMatched = MIME_TYPE_MAP[cleanMime];
   if (mimeTypeMatched) {
-    if (sig && !contentMatches(mimeTypeMatched, sig)) return mismatch(mimeTypeMatched);
+    if (sig && !contentMatches(mimeTypeMatched, sig)) {
+      if (encrypted && isOoxmlType(mimeTypeMatched)) {
+        return passwordRequired(mimeTypeMatched, mimeTypeMatched);
+      }
+      return mismatch(mimeTypeMatched);
+    }
     return accept(mimeTypeMatched, mimeTypeMatched);
   }
 

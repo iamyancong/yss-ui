@@ -61,6 +61,8 @@ const props = withDefaults(defineProps<FilePreviewModalProps>(), {
   csvRowNumber: false,
   csvMaxRows: DEFAULT_CSV_MAX_ROWS,
   timeout: DEFAULT_LOAD_TIMEOUT,
+  password: undefined,
+  rememberPassword: true,
   getContainer: undefined,
   customDownload: undefined,
   fileSwitcher: true,
@@ -637,6 +639,8 @@ onBeforeUnmount(() => {
         :source="sourceOf(currentFile)"
         :file-name="currentFile.fileName"
         :file-type="currentFile.fileType"
+        :password="currentFile.password ?? password"
+        :remember-password="rememberPassword"
         :max-size="maxSize"
         :large-file-warn-size="largeFileWarnSize"
         :excel-max-cells="excelMaxCells"
