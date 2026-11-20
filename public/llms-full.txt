@@ -1070,7 +1070,7 @@ import { YFilePreview, YFilePreviewModal, useFilePreview } from '@yss-ui/compone
 | 格式 | 渲染方式 | 依赖 |
 | --- | --- | --- |
 | `docx` | [docx-preview](https://github.com/VolodymyrBaydalka/docxjs) 转成 HTML | `docx-preview` |
-| `xlsx` / `xls` | [@vue-office/excel](https://github.com/501351981/vue-office) 渲染表格，可切换工作表；单元格文字按文件里保存的值和数字格式显示；图表、图片、形状、批注等叠在表格上方，见 [Excel 显示说明](#excel-显示说明) | `@vue-office/excel`、`vue-demi`、`numfmt`；图表按需加载 `echarts` |
+| `xlsx` / `xls` | [@vue-office/excel](https://github.com/501351981/vue-office) 渲染表格，可切换工作表；单元格文字按文件里保存的值和数字格式显示；图表、图片、形状、批注等叠在表格上方，见 [Excel 显示说明](#excel-显示说明)。Office「加密文档」（输入密码打开）会先弹出密码框，解密后再预览 | `@vue-office/excel`、`vue-demi`、`numfmt`、`ooxml-encryption`（解密）；图表按需加载 `echarts` |
 | `pdf` | 浏览器自带的 PDF 查看器（iframe），查看器工具栏自带下载、打印、缩放 | 无 |
 | `csv` | 表格显示：首行作为表头（滚动时吸顶），可横向滚动，行号列按需开启（`csvRowNumber`）；可随时切换为源文本 | 无 |
 | `txt` / `md` | 纯文本显示 | 无 |
@@ -1095,11 +1095,12 @@ docx、Excel 的渲染依赖已写在 `@yss-ui/components` 的 `optionalDependen
 | `@vue-office/excel` | `1.7.14`（锁定版本） | MIT |
 | `vue-demi` | `^0.14.10` | MIT |
 | `numfmt` | `3.2.6`（锁定版本） | MIT |
+| `ooxml-encryption` | `1.0.0`（锁定版本） | MIT |
 
 如果安装时用了 `--no-optional`（或 `--omit=optional`），需要预览 docx / Excel 时再手动安装：
 
 ```bash
-pnpm add docx-preview@^0.3.4 @vue-office/excel@1.7.14 vue-demi@^0.14.10 numfmt@3.2.6
+pnpm add docx-preview@^0.3.4 @vue-office/excel@1.7.14 vue-demi@^0.14.10 numfmt@3.2.6 ooxml-encryption@1.0.0
 ```
 
 `numfmt` 用于按 Excel 规则显示数字格式（打开表格时按需加载，约 21KB gzip）；没有安装时表格照常显示，日期、百分比、小数位等常用格式改用简化实现，少数复杂格式可能与 Excel 不同。
@@ -1170,7 +1171,7 @@ PPTX 是**实验性**能力，默认不启用：不使用 pptx 的项目不需�
 
 - **数字格式**：内置格式编号 0–49（随语言切换，如中文的 `yyyy/m/d`、`¥#,##0.00`）与 27–36 / 50–58 的中文日期格式，自定义格式的日期时间、`[h]:mm`、百分比、小数位、千分位、货币、负数红色、括号、`@` 文本、分数、科学计数、条件分段（`[>=100]`）、`yyyy"年"m"月"d"日"`、`上午/下午` 与 1904 日期系统；
 - **单元格值**：公式显示文件里保存的计算结果，错误值（`#DIV/0!`、`#N/A` 等）、布尔值、富文本、超链接文字原样显示；
-- **布局**：合并单元格（不再重影）、隐藏的行 / 列 / 工作表、冻结窗格、按 Excel 换算的列宽与行高（隐藏列上的换行不撑高行）、字号、对齐（未设置时数字右对齐）、主题颜色与 tint、下划线 / 删除线；打开时显示文件保存时的当前工作表；
+- **布局**：合并单元格（不再重影）、隐藏的行 / 列 / 工作表、冻结窗格（冻结列几乎占满预览宽度时会自动缩小以便横向滚动，见 [缩放](#缩放)）、按 Excel 换算的列宽与行高（隐藏列上的换行不撑高行）、字号、对齐（未设置时数字右对齐）、主题颜色与 tint、下划线 / 删除线；打开时显示文件保存时的当前工作表；
 - **xls**：读取旧版 Excel（BIFF8，Excel 97–2003）记录里的格式与公式结果，以及单元格样式（边框、填充、字体、对齐，含只有边框的空白单元格和合并区域的外框）。行、列整体设置的样式（没有单元格记录的位置）与富文本中的局部字体不显示。更早的 BIFF5 文件按 @vue-office/excel 原样显示。
 
 **公式不会重新计算**。预览显示文件里保存的结果，以下情况会在表格上方给出提示：
@@ -1210,7 +1211,7 @@ xlsx / xls 和图片可以缩放。弹窗标题栏在业务操作区（`#actions
 | 放大 / 缩小按钮、快捷键 | 表格约 150ms 平滑过渡，保持左上角；系统开启“减少动态效果”时直接跳到新比例 |
 | 触摸屏双指捏合 | 连续缩放 |
 
-- **Excel**：按比例重新绘制表格（行高、列宽、字号一起变），不是把画布拉伸，所以高清屏下文字和边框保持清晰；图表、图片、形状等叠加内容按同一比例定位和缩放，冻结窗格和滚动同步不变；缩放后左上角仍停在原来的单元格。大表格（约 2 万行以上）连续缩放时会稍等片刻再重绘。用户拖动过的行高、列宽会保留：拖动后的尺寸按当时的比例换算成 100% 的尺寸，之后放大、缩小都按拖动后的尺寸换算。
+- **Excel**：按比例重新绘制表格（行高、列宽、字号一起变），不是把画布拉伸，所以高清屏下文字和边框保持清晰；图表、图片、形状等叠加内容按同一比例定位和缩放，冻结窗格和滚动同步不变；缩放后左上角仍停在原来的单元格。大表格（约 2 万行以上）连续缩放时会稍等片刻再重绘。用户拖动过的行高、列宽会保留：拖动后的尺寸按当时的比例换算成 100% 的尺寸，之后放大、缩小都按拖动后的尺寸换算。若冻结列总宽度几乎占满预览区（横向滚动条会被挤到几乎看不见），打开、切表或视口变窄时会**自动缩小**到刚好能横向滚动，并在上方提示；只缩小不放大，冻结本身不取消。
 - **图片**：标题栏控件与图片工具栏共用同一个比例，图片工具栏只保留适应窗口、旋转和重置。图片打开时先适应窗口，范围默认 5%–800%（设置了 `zoomMin` / `zoomMax` 时按设置）。
 - **PDF** 用浏览器内置查看器显示，查看器自带缩放，不显示这个控件。docx、pptx、文本、CSV 暂不支持缩放。
 - 比例按文件分别记住：切换到别的文件时用那个文件自己的比例（第一次打开为 `zoom` 或 `zoomFit` 指定的比例），切回来时恢复。
@@ -1263,6 +1264,8 @@ xlsx / xls 和图片可以缩放。弹窗标题栏在业务操作区（`#actions
 | source | 文件来源：URL、`File`、`Blob`、`ArrayBuffer`、`Uint8Array`，或懒加载函数 `FileSourceLoader` | `FileSource` | - |
 | fileName | 文件名，用于识别类型和下载。`File` 会自动取 `name`，URL 会取路径最后一段 | `string` | - |
 | fileType | 显式指定类型，优先级高于后缀和 MIME，仍会校验文件内容。可以是自定义渲染器注册的类型 | `FilePreviewFileType` | - |
+| password | 打开密码（Office「加密文档」的 xlsx / docx / pptx）。**业务已知密码时直接传入即可自动打开，不弹密码框**；密码错误时再显示输入框并提示。弹窗也可在单个 `FilePreviewItem.password` 上按文件传入 | `string` | - |
+| rememberPassword | 是否在当前页面会话内记住已成功解锁的密码。默认记住：多文件切换后再切回同一加密文件无需重输；刷新页面后清空。设为 `false` 则每次打开 / 切换都要重新输入 | `boolean` | `true` |
 | maxSize | 最大预览字节数，恰好等于时可以预览；`Infinity` 不限制，`0`、负数、`NaN` 按默认值 | `number` | `20 * 1024 * 1024` |
 | largeFileWarnSize | 大文件提示阈值（字节）：超过时照常直接预览，在内容上方显示提示条「文件较大，滚动可能略慢」，不拦截。作用于 xlsx / xls / docx / pptx（恰好等于时不提示）；`0`、负数、`NaN` 或 `Infinity` 不按大小提示。见 [大文件](#大文件) | `number` | `10 * 1024 * 1024` |
 | excelMaxCells | Excel 单元格数阈值（按实际读到的单元格数）：超过 `warn` 在表格上方显示提示条；超过 `max` 只显示前面的行，提示条显示「仅显示前 N 行，完整内容请下载后查看」。都不拦截预览。传数字只设置 `max`；`Infinity` 不限制 | `number \| { warn?: number; max?: number }` | `{ warn: 300000, max: 5000000 }` |
@@ -1280,7 +1283,7 @@ xlsx / xls 和图片可以缩放。弹窗标题栏在业务操作区（`#actions
 | zoomStep | 放大 / 缩小按钮与快捷键的步长 | `number` | `0.1` |
 | zoomFit | 第一次打开某个文件时的比例：`'width'` 适应宽度、`'page'` 适应整页、`'none'` 使用 `zoom`（没有设置时 Excel 为 100%，图片适应窗口） | `'width' \| 'page' \| 'none'` | `'none'` |
 
-`source`、`fileName`、`fileType`、`maxSize`、`largeFileWarnSize`、`excelMaxCells`（对象形式按取值比较）、`textEncoding`、`csvMode`、`csvRowNumber`、`csvMaxRows`、`timeout`、`showDownload` 任意一项变化，或 `customDownload` 从无到有（反之亦然）都会重新加载。缩放相关属性变化不会重新加载。
+`source`、`fileName`、`fileType`、`maxSize`、`largeFileWarnSize`、`excelMaxCells`（对象形式按取值比较）、`textEncoding`、`csvMode`、`csvRowNumber`、`csvMaxRows`、`timeout`、`showDownload`、`password` 任意一项变化，或 `customDownload` 从无到有（反之亦然）都会重新加载；已在密码输入态时仅改 `password` 会直接尝试解锁，不重复下载。缩放相关属性变化不会重新加载。
 
 ### YFilePreview Events
 
@@ -1308,6 +1311,7 @@ xlsx / xls 和图片可以缩放。弹窗标题栏在业务操作区（`#actions
 | 方法 | 说明 | 类型 |
 | --- | --- | --- |
 | reload | 重新加载 | `() => Promise<void>` |
+| submitPassword | 对加密文档提交打开密码；非 `password-required` 时无操作，返回是否解锁成功 | `(password: string) => Promise<boolean>` |
 | download | 下载当前文件 | `() => Promise<void>` |
 | getFileName | 当前文件名 | `() => string` |
 | getFileType | 识别出的类型，未识别时为 `null` | `() => FilePreviewFileType \| null` |
@@ -1318,7 +1322,7 @@ xlsx / xls 和图片可以缩放。弹窗标题栏在业务操作区（`#actions
 | resetZoom | 恢复 100% | `() => void` |
 | fitZoom | 适应宽度（默认）或整页 | `(mode?: 'width' \| 'page') => void` |
 
-`FilePreviewStatus` 取值：`'idle' | 'loading' | 'ready' | 'oversize' | 'large-file' | 'empty' | 'mismatch' | 'missing-dependency' | 'unsupported' | 'error'`。
+`FilePreviewStatus` 取值：`'idle' | 'loading' | 'ready' | 'oversize' | 'large-file' | 'empty' | 'mismatch' | 'password-required' | 'missing-dependency' | 'unsupported' | 'error'`。
 
 ### YFilePreviewModal Props
 
@@ -1339,6 +1343,8 @@ xlsx / xls 和图片可以缩放。弹窗标题栏在业务操作区（`#actions
 | csvMode | CSV 初始显示方式 | `CsvMode` | `'table'` |
 | csvRowNumber | CSV 表格是否显示行号列 | `boolean` | `false` |
 | csvMaxRows / timeout | CSV 显示行数上限与加载超时，同 `YFilePreview` | `number` | `50000` / `60000` |
+| password | 打开密码，同 `YFilePreview`；也可在单个 `FilePreviewItem.password` 上按文件传入 | `string` | - |
+| rememberPassword | 是否记住已解锁密码，同 `YFilePreview`（弹窗切换文件场景尤其有用） | `boolean` | `true` |
 | getContainer | 弹窗挂载节点 | `() => HTMLElement` | - |
 | customDownload | 自定义下载，同 `YFilePreview`；设置后 PDF 也显示标题栏下载按钮 | `(ctx: FilePreviewDownloadContext) => void \| Promise<void>` | - |
 | zoom (v-model) / zoomable / zoomMin / zoomMax / zoomStep / zoomFit | 缩放，同 `YFilePreview`。可以缩放时标题栏显示缩放控件 | - | - |
@@ -1406,7 +1412,7 @@ const lastIndex = await controller.afterClose; // 关闭后刷新列表等
 | 选项 | 说明 | 类型 |
 | --- | --- | --- |
 | fileName / fileType | 仅 `open` 生效 | `string` / `FilePreviewFileType` |
-| width 等 | 同 `YFilePreviewModal`：width、title、fileSwitcher、loop、maxSize、largeFileWarnSize、excelMaxCells、textEncoding、csvMode、csvRowNumber、csvMaxRows、timeout、showDownload、keyboard、customDownload、zoom、zoomable、zoomMin、zoomMax、zoomStep、zoomFit | - |
+| width 等 | 同 `YFilePreviewModal`：width、title、fileSwitcher、loop、maxSize、largeFileWarnSize、excelMaxCells、textEncoding、csvMode、csvRowNumber、csvMaxRows、timeout、password、rememberPassword、showDownload、keyboard、customDownload、zoom、zoomable、zoomMin、zoomMax、zoomStep、zoomFit | - |
 | onChange | 当前文件变化（翻页、`update` 后） | `(ctx: FilePreviewContext) => void` |
 | onLoaded | 当前文件渲染完成 | `(payload: FilePreviewLoadedPayload, ctx: FilePreviewContext) => void` |
 | onError | 当前文件加载或解析失败 | `(error: Error, ctx: FilePreviewContext) => void` |
@@ -1437,6 +1443,7 @@ const lastIndex = await controller.afterClose; // 关闭后刷新列表等
 | source | 文件来源 | `FileSource` |
 | fileName | 文件名；懒加载来源建议提供，否则加载完成前标题显示「未命名」 | `string` |
 | fileType | 显式类型 | `FilePreviewFileType` |
+| password | 打开密码（加密的 xlsx / docx / pptx） | `string` |
 | fileSize | 文件大小（字节），显示在文件切换下拉里。`File` / `Blob` / `ArrayBuffer` 会自动取，URL 与懒加载来源需要时可传入 | `number` |
 | [key: string] | 业务字段（如 `id`），组件不会读取，会原样出现在 `ctx.file` 里 | `unknown` |
 
@@ -1593,12 +1600,52 @@ declare module 'rtf.js/dist/*';
 
 rtf.js 的转换对简单的矢量图（矩形、椭圆、多边形、文字）与 WMF 效果较好；带复杂坐标变换的 EMF（例如部分软件导出的带 EMF+ 记录的图）可能显示不完整。对还原度有要求时建议后端转换为 PDF 后预览。
 
+## 加密文档（密码）
+
+带打开密码的 xlsx / docx / pptx 会显示密码框，解密后再预览（依赖 `ooxml-encryption`，随 `optionalDependencies` 安装）。仅支持现代 Office **Agile** 加密；旧版 Standard / 证书加密会提示下载后用本地软件打开。下载始终是**加密原件**。
+
+| 场景 | 用法 |
+| --- | --- |
+| 用户输入密码 | 密码框输入；错误可重试；实例方法 `submitPassword(password)` |
+| 业务已知密码 | 传 `password` 或 `FilePreviewItem.password`，直接打开不弹框；错密再显示输入框 |
+| 多文件切换 | `rememberPassword` 默认 `true`（会话内切回无需重输）；`false` 则每次都输入；`clearPasswordCache()` 可清空 |
+
+```vue | pure
+<YFilePreview :source="file" file-name="report.xlsx" password="secret" />
+
+<YFilePreviewModal
+  v-model:open="open"
+  :files="[{ source: file, fileName: 'a.xlsx', password: 'pwd-a' }]"
+/>
+```
+
+### 业务侧工具函数
+
+上传校验等场景从同一子路径导入（无需打开预览）：
+
+```ts
+import { isOfficeFileEncrypted, verifyOfficeFilePassword } from '@yss-ui/components/file-preview';
+
+const buf = await file.arrayBuffer();
+if (isOfficeFileEncrypted(buf) && !(await verifyOfficeFilePassword(buf, password))) {
+  throw new Error('密码错误');
+}
+```
+
+| 函数 | 说明 |
+| --- | --- |
+| `isOfficeFileEncrypted(data)` | 是否加密（同步，只看文件头） |
+| `verifyOfficeFilePassword(data, password)` | 密码是否正确（异步；未加密返回 `true`，错密返回 `false`） |
+| `decryptOoxmlPackage(data, password)` | 解密得到普通 zip（高级用法，预览一般用不到） |
+| `clearPasswordCache()` | 清空会话内记住的密码 |
+
 ## 文件识别规则
 
 1. 先看显式传入的 `fileType`，再看文件名后缀，都没有时看 MIME 类型；
 2. 再检查文件内容是否与类型一致：docx / xlsx / pptx 必须是对应的 Office 压缩包（按包内 `word/`、`xl/`、`ppt/` 目录区分），pdf 必须以 `%PDF` 开头，xls 必须是旧版 Excel 二进制或 xlsx 压缩包，图片按文件头识别（PNG、JPEG、GIF、WebP、BMP、ICO；SVG 按文本内容的 `<svg` 根元素），文本不能是二进制文件；
-3. 内容和类型对不上时（例如把 exe 改名成 docx），显示「文件类型与内容不一致」，不会继续解析。图片之间互相改后缀（如 PNG 存成 `.jpg`）不算不一致，按实际内容显示；
-4. 没有后缀也没有 MIME 时，会根据内容识别 pdf / docx / xlsx / pptx / 图片。pptx 能被识别，但只有调用 `registerPptxRenderer()` 后才会渲染。
+3. 声明为 docx / xlsx / pptx，但内容是带 `EncryptedPackage` 的 OLE 信封时，识别为加密文档（`password-required`），不是内容不符；
+4. 内容和类型对不上时（例如把 exe 改名成 docx），显示「文件类型与内容不一致」，不会继续解析。图片之间互相改后缀（如 PNG 存成 `.jpg`）不算不一致，按实际内容显示；
+5. 没有后缀也没有 MIME 时，会根据内容识别 pdf / docx / xlsx / pptx / 图片；加密 OLE 会先要密码，解密后再按 zip 内目录识别。pptx 能被识别，但只有调用 `registerPptxRenderer()` 后才会渲染。
 
 ## 边界情况
 
@@ -6473,7 +6520,7 @@ box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color, #3371ff) 15%, tran
 - 业务层禁止导入 `@formily/antdv` 或 `@formily/antd*` UI 组件；使用 `YFormily` 提供的 Schema 与组件边界。
 - 微前端子应用同样默认使用根入口具名导入；Vite 6 新模板继续采用官方插件，无插件消费的样式能力按下方版本契约判断。`lite` 是可选兼容入口，旧项目保留已验证的样式策略。
 - 对于 `YMonaco`、`YEcharts`、`YSheet` 等重型依赖组件，微应用可继续从 `@yss-ui/components` 正常消费（已异步化），也可直接从官方子路径 `@yss-ui/components/monaco`、`@yss-ui/components/echarts`、`@yss-ui/components/sheet` 导入，避免未使用的重型依赖及其全量 CSS 被打包到业务页面中。
-- 文件预览使用 `YFilePreview`（页面内嵌）、`YFilePreviewModal`（弹窗多文件）或 `useFilePreview`（函数式），只从子路径 `@yss-ui/components/file-preview` 导入，根入口和 `lite` 入口不导出；该子路径自 1.9.0 起提供，旧版本先核对 exports。默认支持 docx、xlsx、xls、pdf、txt、csv、md 和常见图片；xlsx 里的图表、图片、形状、批注、超链接、条件格式和迷你图由组件叠在表格上方显示（echarts 未安装时图表显示占位，不要为此引入公式计算库或换用别的表格预览）；pptx 是实验性 opt-in 能力，按下方「文件预览 PPTX（实验性 opt-in）」处理。不要再手写 iframe、`docx-preview`、`@vue-office/excel` 或 `@aiden0z/pptx-renderer` 预览。鉴权或按需取数用 `source: FileSourceLoader`（`({ signal, file }) => Promise<Blob | string>`），下载拦截用 `customDownload`，标题栏操作用 `#actions` 插槽或 `slots.actions`；`open / openList` 返回 `FilePreviewController`，增删文件用 `controller.update()`，不要直接改 hook 返回的只读状态。多文件弹窗的标题默认就是文件切换下拉（`fileSwitcher`，默认 `true`；设置 `title` 会改为普通标题），不要自己再做文件列表下拉；URL / 懒加载来源要在下拉里显示大小时传 `fileSize`；需要首尾循环翻页时传 `loop: true`（默认首尾禁用）。xlsx / xls / 图片自带缩放（弹窗标题栏 `[ − ] [ 100% ▾ ] [ + ]`、Ctrl / ⌘ + `=` `-` `0`、Ctrl + 滚轮），用 `v-model:zoom`、`zoomable`（布尔或类型列表）、`zoomMin` / `zoomMax` / `zoomStep` / `zoomFit` 配置，不要用 CSS `transform` / `zoom` 缩放预览容器，也不要自己再做缩放按钮；PDF 用浏览器查看器自带的缩放。xlsx / xls / docx 大文件由组件处理：`maxSize`（默认 20MB）以内直接预览，解析时显示进度，超过 30 万单元格或 10MB（docx 超过 300 页）时在内容上方显示「文件较大」提示条，超过 500 万单元格只显示前面的行并提示下载，用 `largeFileWarnSize`、`excelMaxCells` 调整阈值，不要自己再按文件大小拦截、弹确认框或换用别的表格预览库。`useFilePreview()` 必须在组件 `setup` 中调用：弹窗继承调用位置的 `ConfigProvider` 主题 / 语言、`YConfigProvider` 与 `provide` 的值（含 slots 内的 inject），不要为了暗色主题或国际化改写成组件形式。
+- 文件预览使用 `YFilePreview`（页面内嵌）、`YFilePreviewModal`（弹窗多文件）或 `useFilePreview`（函数式），只从子路径 `@yss-ui/components/file-preview` 导入，根入口和 `lite` 入口不导出；该子路径自 1.9.0 起提供，旧版本先核对 exports。默认支持 docx、xlsx、xls、pdf、txt、csv、md 和常见图片；Office「加密文档」会提示输入密码后解密预览（依赖 ooxml-encryption；可传 `password` / `FilePreviewItem.password` 直接打开；默认 `rememberPassword` 会话内切换无需重输，可设 `false` 每次都输入；上传校验用同路径的 `isOfficeFileEncrypted` / `verifyOfficeFilePassword`，不要自写 OLE 解析或改放到 `@yss-ui/utils`）；xlsx 里的图表、图片、形状、批注、超链接、条件格式和迷你图由组件叠在表格上方显示（echarts 未安装时图表显示占位，不要为此引入公式计算库或换用别的表格预览）；pptx 是实验性 opt-in 能力，按下方「文件预览 PPTX（实验性 opt-in）」处理。不要再手写 iframe、`docx-preview`、`@vue-office/excel` 或 `@aiden0z/pptx-renderer` 预览。鉴权或按需取数用 `source: FileSourceLoader`（`({ signal, file }) => Promise<Blob | string>`），下载拦截用 `customDownload`，标题栏操作用 `#actions` 插槽或 `slots.actions`；`open / openList` 返回 `FilePreviewController`，增删文件用 `controller.update()`，不要直接改 hook 返回的只读状态。多文件弹窗的标题默认就是文件切换下拉（`fileSwitcher`，默认 `true`；设置 `title` 会改为普通标题），不要自己再做文件列表下拉；URL / 懒加载来源要在下拉里显示大小时传 `fileSize`；需要首尾循环翻页时传 `loop: true`（默认首尾禁用）。xlsx / xls / 图片自带缩放（弹窗标题栏 `[ − ] [ 100% ▾ ] [ + ]`、Ctrl / ⌘ + `=` `-` `0`、Ctrl + 滚轮），用 `v-model:zoom`、`zoomable`（布尔或类型列表）、`zoomMin` / `zoomMax` / `zoomStep` / `zoomFit` 配置，不要用 CSS `transform` / `zoom` 缩放预览容器，也不要自己再做缩放按钮；PDF 用浏览器查看器自带的缩放。xlsx / xls / docx 大文件由组件处理：`maxSize`（默认 20MB）以内直接预览，解析时显示进度，超过 30 万单元格或 10MB（docx 超过 300 页）时在内容上方显示「文件较大」提示条，超过 500 万单元格只显示前面的行并提示下载，用 `largeFileWarnSize`、`excelMaxCells` 调整阈值，不要自己再按文件大小拦截、弹确认框或换用别的表格预览库。`useFilePreview()` 必须在组件 `setup` 中调用：弹窗继承调用位置的 `ConfigProvider` 主题 / 语言、`YConfigProvider` 与 `provide` 的值（含 slots 内的 inject），不要为了暗色主题或国际化改写成组件形式。
 - 禁止因文档暂时不可达就把猜测的 `Y*` 组件改成 Ant Design Vue “先落地”。只能复用当前仓库已证明可用的导入，或明确报告待确认项。
 - 接口错误提示由 `mutator.ts` 的响应拦截器统一处理。API Hook 不得在 `success === false` 分支或 `catch` 内重复调用 `message.error`；`message` 只用于非 API 错误的本地交互反馈或成功提示。
 

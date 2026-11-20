@@ -87,6 +87,8 @@ export default defineConfig({
         'monaco-editor-nls',
         /^monaco-editor\//,
         /^monaco-editor-nls\//,
+        'ooxml-encryption',
+        /^ooxml-encryption\//,
       ],
       output: {
         exports: 'named',

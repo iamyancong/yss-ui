@@ -564,7 +564,7 @@ rtf.js 的转换对简单的矢量图（矩形、椭圆、多边形、文字）�
 | 业务已知密码 | 传 `password` 或 `FilePreviewItem.password`，直接打开不弹框；错密再显示输入框 |
 | 多文件切换 | `rememberPassword` 默认 `true`（会话内切回无需重输）；`false` 则每次都输入；`clearPasswordCache()` 可清空 |
 
-```vue
+```vue | pure
 <YFilePreview :source="file" file-name="report.xlsx" password="secret" />
 
 <YFilePreviewModal

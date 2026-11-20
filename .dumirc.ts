@@ -26,6 +26,10 @@ export default defineConfig({
   live: false,
   // 开启静态导出，确保 GitHub Pages 或 Nginx 刷新页面不 404
   exportStatic: {},
+  // 支持包含 BigInt (ES2020) 的第三方异步依赖（如 ooxml-encryption）
+  jsMinifierOptions: {
+    target: ['chrome80', 'es2020'],
+  },
   // 注入全局环境，供客户端组件读取
   define: {
     'process.env.DOCS_BASE_PATH': JSON.stringify(normalizedBasePath),
