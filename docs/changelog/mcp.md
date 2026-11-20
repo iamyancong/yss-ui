@@ -10,6 +10,16 @@ toc: content
 
 YSS MCP 文档服务（`@yss-ui/mcp`）的版本更新记录。
 
+## v0.12.1
+
+`2026-11-20`
+
+### 🚀 Features
+
+- **远程服务**: 新增 `yss-mcp serve` 命令，基于标准 SSE (Server-Sent Events) 与 HTTP 提供远程 MCP 服务与 `/health` 健康检查接口，便于内网集中化部署。
+- **DeepSeek Harness 支持**: 支持作为 DeepSeek Harness 官方 Cordis Bundle 插件直接安装，新增 `cordis.patch.yml` 与 `package.json` 的 `dsh.bundle` 配置。
+
+---
 ## v0.12.0
 
 `2026-11-20`

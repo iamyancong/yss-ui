@@ -1,6 +1,6 @@
 {
   "name": "@yss-ui/mcp",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "YSS UI 文档 MCP Server：让 coding agent 精准查询组件 API、Demo 源码、Skills 与代码生成规则",
   "keywords": [
     "yss-ui",
@@ -18,12 +18,18 @@
     "bin",
     "lib",
     "data",
+    "cordis.patch.yml",
     "README.md"
   ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
   "scripts": {
     "build": "node scripts/build-index.js",
     "build:index": "node scripts/build-index.js",
-    "test": "node --test lib/tools.test.js lib/install.node.test.js",
+    "test": "node --test lib/tools.test.js lib/install.node.test.js lib/serve.test.js",
     "prepack": "node scripts/build-index.js",
     "prepublishOnly": "node scripts/build-index.js"
   },

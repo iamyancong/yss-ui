@@ -38,7 +38,7 @@ const PACKAGES = {
     dir: 'packages/skills',
     name: '@yss-ui/skills',
     changelog: 'docs/changelog/skills.md',
-    extraInputs: ['scripts/export-skills-sh.mjs', 'scripts/export-skills-sh.node.test.mjs'],
+    extraInputs: ['scripts/skills/export-skills-sh.mjs', 'scripts/skills/export-skills-sh.node.test.mjs'],
   },
   mcp: {
     dir: 'packages/mcp',

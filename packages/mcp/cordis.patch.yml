@@ -1,0 +1,12 @@
+# DeepSeek Harness Cordis Patch for YSS UI MCP
+- insert:
+    - id: yss-ui-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: yss-ui
+        transport: stdio
+        command: npx
+        args:
+          - -y
+          - '@yss-ui/mcp'
+        failOnStartupError: false
