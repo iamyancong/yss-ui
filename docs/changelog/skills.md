@@ -10,6 +10,16 @@ toc: content
 
 YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
+## v1.13.0
+
+`2026-11-20`
+
+### ✨ Features
+
+- **component-selection-imports**：补充 YFilePreview 对 Office「加密文档」密码预览的说明（依赖 `ooxml-encryption`；默认 `rememberPassword` 会话内切换无需重输）。
+
+---
+
 ## v1.12.0
 
 `2026-11-19`
