@@ -13,7 +13,14 @@ export {
   unregisterPreviewRenderer,
 } from './renderers/registry';
 export { FileLoadError, MissingDependencyError } from './errors';
-export { InvalidPasswordError, UnsupportedEncryptionError, sniffOleEncrypted } from './utils/office-crypto';
+export {
+  InvalidPasswordError,
+  UnsupportedEncryptionError,
+  decryptOoxmlPackage,
+  isOfficeFileEncrypted,
+  sniffOleEncrypted,
+  verifyOfficeFilePassword,
+} from './utils/office-crypto';
 export { clearPasswordCache } from './utils/password-cache';
 export { DEFAULT_LARGE_FILE_WARN_SIZE, DEFAULT_MAX_FILE_SIZE, SUPPORTED_FILE_TYPES } from './constant';
 export type {

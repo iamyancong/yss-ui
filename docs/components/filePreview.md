@@ -366,7 +366,7 @@ const lastIndex = await controller.afterClose; // 关闭后刷新列表等
 | 选项 | 说明 | 类型 |
 | --- | --- | --- |
 | fileName / fileType | 仅 `open` 生效 | `string` / `FilePreviewFileType` |
-| width 等 | 同 `YFilePreviewModal`：width、title、fileSwitcher、loop、maxSize、largeFileWarnSize、excelMaxCells、textEncoding、csvMode、csvRowNumber、csvMaxRows、timeout、showDownload、keyboard、customDownload、zoom、zoomable、zoomMin、zoomMax、zoomStep、zoomFit | - |
+| width 等 | 同 `YFilePreviewModal`：width、title、fileSwitcher、loop、maxSize、largeFileWarnSize、excelMaxCells、textEncoding、csvMode、csvRowNumber、csvMaxRows、timeout、password、rememberPassword、showDownload、keyboard、customDownload、zoom、zoomable、zoomMin、zoomMax、zoomStep、zoomFit | - |
 | onChange | 当前文件变化（翻页、`update` 后） | `(ctx: FilePreviewContext) => void` |
 | onLoaded | 当前文件渲染完成 | `(payload: FilePreviewLoadedPayload, ctx: FilePreviewContext) => void` |
 | onError | 当前文件加载或解析失败 | `(error: Error, ctx: FilePreviewContext) => void` |
@@ -556,27 +556,42 @@ rtf.js 的转换对简单的矢量图（矩形、椭圆、多边形、文字）�
 
 ## 加密文档（密码）
 
-Excel / Word / PowerPoint 的「加密文档」（打开时要输入密码）在磁盘上不是普通 zip，而是 OLE 复合文档（文件头 `D0 CF 11 E0`）包着 `EncryptedPackage`。以前会被误判成「文件内容与类型不符」；现在会显示「文档已加密」密码框（交互对齐 WPS / Excel）：
+带打开密码的 xlsx / docx / pptx 会显示密码框，解密后再预览（依赖 `ooxml-encryption`，随 `optionalDependencies` 安装）。仅支持现代 Office **Agile** 加密；旧版 Standard / 证书加密会提示下载后用本地软件打开。下载始终是**加密原件**。
 
-1. 输入正确密码后解密为普通 xlsx / docx / pptx，再走原有预览；
-2. 密码错误会提示「密码错误，请重新输入」，可重试；
-3. **业务已知密码**：传 `password` 或 `FilePreviewItem.password`，保持加载态直接解密打开，不弹密码框；密码错了再落到输入态。也可事后调用 `submitPassword(password)`；
-4. **默认记住密码**（`rememberPassword: true`）：本页会话内已解锁过的同一加密文件，切换后再切回会自动打开，无需重输；刷新页面后清空。需要每次都输入时设 `rememberPassword={false}`；也可调用 `clearPasswordCache()` 主动清空；
-5. 下载始终保存**加密原件**（用标题栏下载即可），不会把解密后的明文当作附件发出；
-6. 仅支持现代 Office 默认的 **Agile** 加密（AES + SHA-1/256/384/512）。旧版 Standard 加密、证书加密、老 `.xls` 二进制加密不支持，会提示下载后用本地软件打开。
+| 场景 | 用法 |
+| --- | --- |
+| 用户输入密码 | 密码框输入；错误可重试；实例方法 `submitPassword(password)` |
+| 业务已知密码 | 传 `password` 或 `FilePreviewItem.password`，直接打开不弹框；错密再显示输入框 |
+| 多文件切换 | `rememberPassword` 默认 `true`（会话内切回无需重输）；`false` 则每次都输入；`clearPasswordCache()` 可清空 |
 
 ```vue
-<!-- 业务层已有密码：直接打开 -->
-<YFilePreview :source="file" file-name="report.xlsx" password="O4XTz7mh" />
+<YFilePreview :source="file" file-name="report.xlsx" password="secret" />
 
-<!-- 弹窗按文件带密码 -->
 <YFilePreviewModal
   v-model:open="open"
-  :files="[{ source: file, fileName: 'a.xlsx', password: 'pwd-a' }, { source: file2, fileName: 'b.xlsx' }]"
+  :files="[{ source: file, fileName: 'a.xlsx', password: 'pwd-a' }]"
 />
 ```
 
-解密依赖 `ooxml-encryption`（组件库 `optionalDependencies`，一般会随安装带上）。使用 `--no-optional` 时需手动安装，缺少时显示「缺少预览依赖」。
+### 业务侧工具函数
+
+上传校验等场景从同一子路径导入（无需打开预览）：
+
+```ts
+import { isOfficeFileEncrypted, verifyOfficeFilePassword } from '@yss-ui/components/file-preview';
+
+const buf = await file.arrayBuffer();
+if (isOfficeFileEncrypted(buf) && !(await verifyOfficeFilePassword(buf, password))) {
+  throw new Error('密码错误');
+}
+```
+
+| 函数 | 说明 |
+| --- | --- |
+| `isOfficeFileEncrypted(data)` | 是否加密（同步，只看文件头） |
+| `verifyOfficeFilePassword(data, password)` | 密码是否正确（异步；未加密返回 `true`，错密返回 `false`） |
+| `decryptOoxmlPackage(data, password)` | 解密得到普通 zip（高级用法，预览一般用不到） |
+| `clearPasswordCache()` | 清空会话内记住的密码 |
 
 ## 文件识别规则
 

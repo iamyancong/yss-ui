@@ -16,7 +16,7 @@ YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
 ### ✨ Features
 
-- **YFilePreview 加密文档**：识别 Office「加密文档」（OLE + `EncryptedPackage`，常见于带密码的 xlsx / docx / pptx），预览时显示「文档已加密」密码输入（对齐 WPS / Excel），解密后再渲染；新增 `password`（业务已知密码可直接传入自动打开、不弹密码框）、`rememberPassword`（默认 `true`，会话内切换文件无需重输；`false` 则每次都要输入）、`FilePreviewItem.password`、实例方法 `submitPassword`、工具方法 `clearPasswordCache`，以及状态 `password-required`。下载仍保存加密原件。依赖可选包 `ooxml-encryption@1.0.0`（Agile 加密）。
+- **YFilePreview 加密文档**：识别 Office「加密文档」（OLE + `EncryptedPackage`，常见于带密码的 xlsx / docx / pptx），预览时显示「文档已加密」密码输入（对齐 WPS / Excel），解密后再渲染；新增 `password`（业务已知密码可直接传入自动打开、不弹密码框）、`rememberPassword`（默认 `true`，会话内切换文件无需重输；`false` 则每次都要输入）、`FilePreviewItem.password`、实例方法 `submitPassword`、工具方法 `clearPasswordCache` / `isOfficeFileEncrypted` / `verifyOfficeFilePassword` / `decryptOoxmlPackage`（业务层上传校验可复用，从 `@yss-ui/components/file-preview` 导出），以及状态 `password-required`。下载仍保存加密原件。依赖可选包 `ooxml-encryption@1.0.0`（Agile 加密）。
 - **YFilePreview Excel 冻结过宽**：当冻结列总宽度几乎占满预览区、横向滚动条被挤没时，打开 / 切表 / 视口变窄会自动缩小到刚好能横向滚动（只缩小不放大，保留冻结），并显示提示条「冻结列较宽，已自动缩小以便横向滚动」。
 
 ### 🐛 Bug Fixes
@@ -29,7 +29,7 @@ YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
 ### 📝 Documentation
 
-- **YFilePreview**：新增「加密文档（密码）」说明，同步 Props / 状态 / 依赖表与识别规则。
+- **YFilePreview**：新增「加密文档（密码）」与业务侧工具函数说明，同步 Props / 状态 / 依赖表与识别规则。
 - **YFilePreview**：补充 Excel 冻结列过宽时自动缩小的缩放行为说明。
 
 ---

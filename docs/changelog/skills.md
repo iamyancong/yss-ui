@@ -16,7 +16,7 @@ YSS AI Skills（`@yss-ui/skills`）的版本更新记录。
 
 ### ✨ Features
 
-- **component-selection-imports**：补充 YFilePreview 对 Office「加密文档」密码预览的说明（依赖 `ooxml-encryption`；默认 `rememberPassword` 会话内切换无需重输）。
+- **component-selection-imports**：补充 YFilePreview 对 Office「加密文档」的说明：密码预览、`password` 直开、`rememberPassword`，以及业务侧 `isOfficeFileEncrypted` / `verifyOfficeFilePassword`（从 `@yss-ui/components/file-preview` 导入）。
 
 ---
 

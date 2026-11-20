@@ -300,6 +300,9 @@ importers:
       numfmt:
         specifier: 3.2.6
         version: 3.2.6
+      ooxml-encryption:
+        specifier: 1.0.0
+        version: 1.0.0
       prettier:
         specifier: ^3.8.3
         version: 3.8.3
@@ -331,9 +334,6 @@ importers:
       ant-design-vue:
         specifier: ^4.0.7
         version: 4.2.6(vue@3.5.29)
-      ooxml-encryption:
-        specifier: 1.0.0
-        version: 1.0.0
       rtf.js:
         specifier: 3.0.9
         version: 3.0.9
@@ -16759,7 +16759,8 @@ packages:
     resolution: {integrity: sha512-lissRAzUJaLmze7zg6X3Bzbyo1BQsldREEmqUXS2bLcqim3Vtr7FheagcWsXqJPNM78K2KrPmN69CADkg8SNcA==}
     engines: {node: '>=20'}
     requiresBuild: true
-    dev: true
+    dev: false
+    optional: true
 
   /open@8.4.2:
     resolution: {integrity: sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==}

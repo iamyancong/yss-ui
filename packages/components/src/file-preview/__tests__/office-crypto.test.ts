@@ -3,18 +3,28 @@ import { detectFileType } from '../utils/detect';
 import {
   decryptOoxmlPackage,
   InvalidPasswordError,
+  isOfficeFileEncrypted,
   sniffOleEncrypted,
+  verifyOfficeFilePassword,
 } from '../utils/office-crypto';
 import { loadFixture, xlsxBuffer } from './helpers';
 
 const encryptedBytes = () => new Uint8Array(loadFixture('xlsx-encrypted.xlsx'));
 
 describe('file-preview office crypto', () => {
-  it('sniffOleEncrypted 识别 OOXML 加密信封', () => {
+  it('sniffOleEncrypted / isOfficeFileEncrypted 识别 OOXML 加密信封', () => {
     expect(sniffOleEncrypted(encryptedBytes())).toBe(true);
-    expect(sniffOleEncrypted(new Uint8Array(xlsxBuffer()))).toBe(false);
+    expect(isOfficeFileEncrypted(encryptedBytes())).toBe(true);
+    expect(isOfficeFileEncrypted(xlsxBuffer())).toBe(false);
     expect(sniffOleEncrypted(new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0, 0, 0, 0]))).toBe(false);
   });
+
+  it('verifyOfficeFilePassword：未加密为 true，正确密码 true，错误密码 false', async () => {
+    expect(await verifyOfficeFilePassword(xlsxBuffer(), 'any')).toBe(true);
+    expect(await verifyOfficeFilePassword(encryptedBytes(), 'yss-test')).toBe(true);
+    expect(await verifyOfficeFilePassword(encryptedBytes(), 'wrong')).toBe(false);
+    expect(await verifyOfficeFilePassword(encryptedBytes(), '   ')).toBe(false);
+  }, 15_000);
 
   it('加密 xlsx 识别为需要密码，而不是内容不符', () => {
     const result = detectFileType('secret.xlsx', undefined, encryptedBytes());
@@ -44,8 +54,6 @@ describe('file-preview office crypto', () => {
   });
 
   it('错误密码抛出 InvalidPasswordError', async () => {
-    await expect(decryptOoxmlPackage(encryptedBytes(), 'wrong-password')).rejects.toBeInstanceOf(
-      InvalidPasswordError
-    );
+    await expect(decryptOoxmlPackage(encryptedBytes(), 'wrong-password')).rejects.toBeInstanceOf(InvalidPasswordError);
   });
 });

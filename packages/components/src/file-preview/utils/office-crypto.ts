@@ -49,6 +49,26 @@ export function sniffOleEncrypted(bytes: Uint8Array): boolean {
   return indexOfBytes(bytes, ENCRYPTED_PACKAGE_UTF16) !== -1;
 }
 
+const toUint8Array = (data: ArrayBuffer | Uint8Array): Uint8Array =>
+  data instanceof Uint8Array ? data : new Uint8Array(data);
+
+/**
+ * 业务侧：检测文件是否为 Office「加密文档」（xlsx / docx / pptx 密码保护）。
+ * 只读文件头，不解密、不校验密码。
+ *
+ * @param data - 文件字节（`File` / `Blob` 请先 `arrayBuffer()`）
+ * @returns 是否加密
+ *
+ * @example
+ * ```ts
+ * import { isOfficeFileEncrypted } from '@yss-ui/components/file-preview';
+ * const encrypted = isOfficeFileEncrypted(await file.arrayBuffer());
+ * ```
+ */
+export function isOfficeFileEncrypted(data: ArrayBuffer | Uint8Array): boolean {
+  return sniffOleEncrypted(toUint8Array(data));
+}
+
 /** 密码错误 */
 export class InvalidPasswordError extends Error {
   constructor(message = 'Invalid password') {
@@ -117,5 +137,42 @@ export async function decryptOoxmlPackage(data: ArrayBuffer | Uint8Array, passwo
       throw new UnsupportedEncryptionError(message);
     }
     throw err instanceof Error ? err : new Error(message);
+  }
+}
+
+/**
+ * 业务侧：校验打开密码是否正确。
+ * - 未加密：返回 `true`（无需密码即可打开）
+ * - 加密且密码正确：返回 `true`
+ * - 加密且密码错误 / 空密码：返回 `false`
+ * - 加密算法不受支持或缺依赖：抛出对应错误（`UnsupportedEncryptionError` / `MissingDependencyError`）
+ *
+ * @param data - 文件字节
+ * @param password - 待校验的打开密码
+ * @returns 密码是否可用
+ *
+ * @example
+ * ```ts
+ * import { isOfficeFileEncrypted, verifyOfficeFilePassword } from '@yss-ui/components/file-preview';
+ * const buf = await file.arrayBuffer();
+ * if (isOfficeFileEncrypted(buf) && !(await verifyOfficeFilePassword(buf, pwd))) {
+ *   message.error('密码错误');
+ * }
+ * ```
+ */
+export async function verifyOfficeFilePassword(
+  data: ArrayBuffer | Uint8Array,
+  password: string
+): Promise<boolean> {
+  const bytes = toUint8Array(data);
+  if (!sniffOleEncrypted(bytes)) return true;
+  const trimmed = password.trim();
+  if (!trimmed) return false;
+  try {
+    await decryptOoxmlPackage(bytes, trimmed);
+    return true;
+  } catch (err) {
+    if (err instanceof InvalidPasswordError) return false;
+    throw err;
   }
 }
