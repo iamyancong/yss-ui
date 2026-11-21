@@ -19,6 +19,16 @@ function getGitSha() {
   }
 }
 
+function getCommitMessage(sha) {
+  try {
+    return execSync(`git log -1 --pretty=%B ${sha}`, { encoding: 'utf8' }).trim();
+  } catch {
+    return '';
+  }
+}
+
+const SKIP_CI_REGEX = /\[(skip\s+ci|ci\s+skip|no\s+ci|skip\s+actions|actions\s+skip)\]|\*\*\*NO_CI\*\*\*/i;
+
 const targetSha = process.env.TARGET_SHA || process.env.GITHUB_SHA || getGitSha();
 const repo = process.env.GITHUB_REPOSITORY || 'iamyancong/yss-ui';
 const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
@@ -83,6 +93,20 @@ async function main() {
 
     if (ciRuns.length === 0) {
       notFoundCount += 1;
+      const commitMsg = getCommitMessage(targetSha);
+
+      // 1. 若当前 commit 的提交信息命中 GitHub Actions skip 指令，秒级明确拦截，严禁死等
+      if (SKIP_CI_REGEX.test(commitMsg)) {
+        console.error(`\n[verify-ci] ❌ 严正拦截：检测到待验证 Commit (${targetSha.slice(0, 7)}) 提交信息中包含跳过 CI 指令 (如 [skip ci])！`);
+        console.error(`[verify-ci] Commit 标题: ${commitMsg.split('\n')[0]}`);
+        console.error('[verify-ci] GitHub Actions 已按全局规则自动跳过了该 Commit 的 push 流水线。');
+        console.error('[verify-ci] 由于缺少前置测试与构建校验保障，发版流程已自动终止。');
+        console.error('[verify-ci] 解决建议：');
+        console.error('  1. 提交一条不带 [skip ci] 的新 Commit 并推送到 main 分支，让 CI 正常执行通过；');
+        console.error('  2. 或在 GitHub Actions 页面手动运行一次 "CI / CD Pipeline" 成功后再执行发版。\n');
+        process.exit(1);
+      }
+
       if (notFoundCount > 6) {
         // 超过约 1.5 分钟还没找到
         log('⚠️ 未在当前 Commit 上检索到 CI / CD Pipeline 记录。');
@@ -90,6 +114,17 @@ async function main() {
       } else {
         log(`⏳ 正在检索当前 Commit 的 CI 运行记录... (尝试 ${notFoundCount})`);
       }
+
+      // 若超过 12 次（约 3 分钟）仍未发现任何 CI 记录，大概率未触发 CI，及时终止避免白白消耗 Actions 分钟数
+      if (notFoundCount >= 12) {
+        console.error(`\n[verify-ci] ❌ 在当前 Commit (${targetSha.slice(0, 7)}) 上连续等待 3 分钟未检索到任何 CI / CD Pipeline 运行记录！`);
+        console.error('[verify-ci] 可能原因：');
+        console.error('  1. 该提交通过跳过钩子或非触发分支推入，未生成 push 事件；');
+        console.error('  2. GitHub Actions 调度系统故障或延迟超限。');
+        console.error('[verify-ci] 请前往 GitHub Actions 检查 "CI / CD Pipeline" 是否已被触发，确认成功后再发版。\n');
+        process.exit(1);
+      }
+
       await sleep(pollIntervalMs);
       continue;
     }
