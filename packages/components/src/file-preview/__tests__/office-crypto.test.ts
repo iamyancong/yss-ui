@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { extractEncryptionInfo, parseAgileEncryptionXml, verifyAgileKey } from '../utils/agile-verifier';
 import { detectFileType } from '../utils/detect';
 import {
   decryptOoxmlPackage,
@@ -7,6 +8,7 @@ import {
   sniffOleEncrypted,
   verifyOfficeFilePassword,
 } from '../utils/office-crypto';
+import { clearPasswordCache } from '../utils/password-cache';
 import { loadFixture, xlsxBuffer } from './helpers';
 
 const encryptedBytes = () => new Uint8Array(loadFixture('xlsx-encrypted.xlsx'));
@@ -25,6 +27,44 @@ describe('file-preview office crypto', () => {
     expect(await verifyOfficeFilePassword(encryptedBytes(), 'wrong')).toBe(false);
     expect(await verifyOfficeFilePassword(encryptedBytes(), '   ')).toBe(false);
   }, 15_000);
+
+  it('verifyOfficeFilePassword：二次校验同一文件与密码命中内存缓存，毫秒级即返回', async () => {
+    clearPasswordCache();
+    const bytes = encryptedBytes();
+    // 第一次验证：写入缓存
+    expect(await verifyOfficeFilePassword(bytes, 'yss-test')).toBe(true);
+    const start = performance.now();
+    const res = await verifyOfficeFilePassword(bytes, 'yss-test');
+    const elapsed = performance.now() - start;
+    expect(res).toBe(true);
+    expect(elapsed).toBeLessThan(50); // 缓存命中应在 50ms 内（通常 < 1ms）
+  }, 15_000);
+
+  it('parseAgileEncryptionXml 拒绝非 Agile 或参数异常的 EncryptionInfo', () => {
+    const encInfo = extractEncryptionInfo(encryptedBytes());
+    expect(encInfo).not.toBeNull();
+    expect(parseAgileEncryptionXml(encInfo!)).not.toBeNull();
+
+    // 伪造旧版 Standard Encryption 3.2 头
+    const standard = new Uint8Array(encInfo!);
+    standard[0] = 3;
+    standard[1] = 0;
+    standard[2] = 2;
+    standard[3] = 0;
+    expect(parseAgileEncryptionXml(standard)).toBeNull();
+  });
+
+  it('WebCrypto subtle 不可用时显式抛错而非误判为密码错误', async () => {
+    const encInfo = extractEncryptionInfo(encryptedBytes())!;
+    const agileKey = parseAgileEncryptionXml(encInfo)!;
+    const originalCrypto = globalThis.crypto;
+    vi.stubGlobal('crypto', {});
+    try {
+      await expect(verifyAgileKey(agileKey, 'yss-test')).rejects.toThrow(/WebCrypto subtle/i);
+    } finally {
+      vi.stubGlobal('crypto', originalCrypto);
+    }
+  });
 
   it('加密 xlsx 识别为需要密码，而不是内容不符', () => {
     const result = detectFileType('secret.xlsx', undefined, encryptedBytes());

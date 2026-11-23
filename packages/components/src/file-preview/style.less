@@ -164,6 +164,38 @@
   &__password-input {
     width: 100%;
     margin-bottom: 8px;
+
+    // 密文状态：采用 -webkit-text-security 屏蔽字符，彻底规避浏览器将 input 识别为账户密码
+    &--masked input {
+      -webkit-text-security: disc !important;
+    }
+
+    // 彻底清除浏览器密码记忆/自动填充（autofill）带来的淡蓝/黄色填充背景
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active {
+      box-shadow: 0 0 0 1000px var(--yss-file-preview-bg) inset !important;
+      -webkit-text-fill-color: var(--yss-file-preview-text) !important;
+      transition: background-color 50000s ease-in-out 0s;
+      caret-color: var(--yss-file-preview-text);
+    }
+
+    input {
+      background-color: transparent !important;
+    }
+  }
+
+  &__password-toggle {
+    font-size: 14px;
+    color: var(--yss-file-preview-text-secondary);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: var(--yss-file-preview-text);
+    }
   }
 
   &__password-error {

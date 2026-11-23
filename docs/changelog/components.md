@@ -10,6 +10,20 @@ toc: content
 
 YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
+## v1.12.1
+
+`2026-11-23`
+
+### ⚡ Performance
+
+- **YFilePreview 密码校验性能优化**：`verifyOfficeFilePassword` 改为轻量级 Agile `EncryptionInfo` 解析 + Verifier 校验，避免为仅校验密码而对整包文件做 HMAC 与 AES 全量解密；引入内联 Web Worker（`inlineWorkers` 构建机制）在后台线程执行 10 万次 PBKDF 哈希迭代，消除浏览器主线程 1~2 秒卡顿，并打通会话级密码缓存使同一文件重复校验毫秒级返回（非 Agile 加密与参数不支持场景仍兜底走原解密路径保持异常契约，Worker 不可用或异常时自动平滑退回主线程）。
+
+### 💄 Styles
+
+- **YFilePreview 密码输入框体验优化**：密码卡片改用基础文本输入配合 `-webkit-text-security: disc` 掩码与自定义眼睛切换按钮，并设置 `autocomplete="off"` 及密码管理器屏蔽属性，彻底避免浏览器弹出「无用户名 / 管理密码」下拉与地址栏钥匙图标；同时覆写 `:-webkit-autofill` 样式消除自动填充淡蓝底色。
+
+---
+
 ## v1.12.0
 
 `2026-11-19`

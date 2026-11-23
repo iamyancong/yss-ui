@@ -4,6 +4,8 @@
  */
 import { MissingDependencyError } from '../errors';
 import { MAGIC_NUMBER_MAP } from '../constant';
+import { extractEncryptionInfo, parseAgileEncryptionXml, verifyAgilePasswordWithWorker } from './agile-verifier';
+import { fingerprintEncryptedFile, getCachedPassword, setCachedPassword } from './password-cache';
 
 const OOXML_ENCRYPTED_TYPES = new Set(['docx', 'xlsx', 'pptx']);
 
@@ -160,16 +162,32 @@ export async function decryptOoxmlPackage(data: ArrayBuffer | Uint8Array, passwo
  * }
  * ```
  */
-export async function verifyOfficeFilePassword(
-  data: ArrayBuffer | Uint8Array,
-  password: string
-): Promise<boolean> {
+export async function verifyOfficeFilePassword(data: ArrayBuffer | Uint8Array, password: string): Promise<boolean> {
   const bytes = toUint8Array(data);
   if (!sniffOleEncrypted(bytes)) return true;
   const trimmed = password.trim();
   if (!trimmed) return false;
+
+  const fingerprint = fingerprintEncryptedFile(bytes);
+  if (getCachedPassword(fingerprint) === trimmed) {
+    return true;
+  }
+
+  // 1. 优先轻量验证：只读取并校验标准 Agile EncryptionInfo，在 Web Worker 中校验 Verifier，不解密正文，主线程零卡顿
+  const encInfo = extractEncryptionInfo(bytes);
+  const agileKey = encInfo ? parseAgileEncryptionXml(encInfo) : null;
+  if (agileKey) {
+    const valid = await verifyAgilePasswordWithWorker(agileKey, trimmed);
+    if (valid) {
+      setCachedPassword(fingerprint, trimmed);
+    }
+    return valid;
+  }
+
+  // 2. 兜底：若不是标准 Agile 结构或参数不受支持，退回原有完整解密（保证按契约抛出 UnsupportedEncryptionError 等）
   try {
     await decryptOoxmlPackage(bytes, trimmed);
+    setCachedPassword(fingerprint, trimmed);
     return true;
   } catch (err) {
     if (err instanceof InvalidPasswordError) return false;

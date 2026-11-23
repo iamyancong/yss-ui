@@ -2,6 +2,8 @@
 import {
   ApiOutlined,
   CloseCircleOutlined,
+  EyeInvisibleOutlined,
+  EyeOutlined,
   FileOutlined,
   LockOutlined,
   QuestionCircleOutlined,
@@ -64,6 +66,7 @@ const containerRef = ref<HTMLElement | null>(null);
 /** 密码输入框当前值 */
 const passwordInput = ref('');
 const passwordInputRef = ref<{ focus?: () => void } | null>(null);
+const passwordVisible = ref(false);
 
 const {
   status,
@@ -109,10 +112,12 @@ watch(
   async value => {
     if (value !== 'password-required') {
       passwordInput.value = '';
+      passwordVisible.value = false;
       return;
     }
     // 已通过 props.password 自动尝试时，输入框保持空白
     if (props.password?.trim()) passwordInput.value = '';
+    passwordVisible.value = false;
     await nextTick();
     passwordInputRef.value?.focus?.();
   }
@@ -121,11 +126,15 @@ watch(
 const handlePasswordConfirm = async () => {
   if (passwordUnlocking.value) return;
   const ok = await submitPassword(passwordInput.value);
-  if (ok) passwordInput.value = '';
+  if (ok) {
+    passwordInput.value = '';
+    passwordVisible.value = false;
+  }
 };
 
 const handlePasswordCancel = () => {
   passwordInput.value = '';
+  passwordVisible.value = false;
   cancelPassword();
 };
 
@@ -386,16 +395,32 @@ defineExpose<FilePreviewExpose>({
           </div>
           <div class="yss-file-preview__password-title">{{ t('passwordRequiredTitle') }}</div>
           <div class="yss-file-preview__password-desc">{{ t('passwordRequiredDesc') }}</div>
-          <Input.Password
+          <Input
             ref="passwordInputRef"
             v-model:value="passwordInput"
             class="yss-file-preview__password-input"
+            :class="{ 'yss-file-preview__password-input--masked': !passwordVisible }"
             size="large"
             :placeholder="t('passwordPlaceholder')"
             :disabled="passwordUnlocking"
-            autocomplete="current-password"
+            autocomplete="off"
+            spellcheck="false"
+            data-form-type="other"
+            data-1password-ignore="true"
+            data-lpignore="true"
             @keydown="handlePasswordKeydown"
-          />
+          >
+            <template #suffix>
+              <component
+                :is="passwordVisible ? EyeOutlined : EyeInvisibleOutlined"
+                class="yss-file-preview__password-toggle"
+                aria-hidden="true"
+                @mousedown.prevent
+                @mouseup.prevent
+                @click="passwordVisible = !passwordVisible"
+              />
+            </template>
+          </Input>
           <div v-if="passwordError" class="yss-file-preview__password-error" role="alert">
             {{ passwordError }}
           </div>

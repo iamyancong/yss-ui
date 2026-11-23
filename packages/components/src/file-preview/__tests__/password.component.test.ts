@@ -182,4 +182,28 @@ describe('YFilePreview 加密文档密码', { timeout: 25_000 }, () => {
 
     wrapper.unmount();
   });
+
+  it('密码框禁用浏览器密码管理器嗅探并支持点击眼睛切换掩码', async () => {
+    const wrapper = mount(FilePreview, {
+      props: {
+        source: loadFixture('xlsx-encrypted.xlsx'),
+        fileName: 'secret.xlsx',
+      },
+    });
+    await flushPromises();
+
+    const inputWrap = wrapper.find('.yss-file-preview__password-input');
+    const input = inputWrap.find('input');
+    expect(input.attributes('type')).toBe('text');
+    expect(input.attributes('autocomplete')).toBe('off');
+    expect(inputWrap.classes()).toContain('yss-file-preview__password-input--masked');
+
+    await wrapper.find('.yss-file-preview__password-toggle').trigger('click');
+    expect(inputWrap.classes()).not.toContain('yss-file-preview__password-input--masked');
+
+    await wrapper.find('.yss-file-preview__password-toggle').trigger('click');
+    expect(inputWrap.classes()).toContain('yss-file-preview__password-input--masked');
+
+    wrapper.unmount();
+  });
 });

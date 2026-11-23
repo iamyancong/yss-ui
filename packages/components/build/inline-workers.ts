@@ -15,6 +15,10 @@ export const inlineWorkers = (root: string): Plugin => {
       resolve(root, 'src/file-preview/renderers/image/preview-worker-factory.ts'),
       resolve(root, 'build/image-preview-worker-factory.ts'),
     ],
+    [
+      resolve(root, 'src/file-preview/utils/verifier-worker-factory.ts'),
+      resolve(root, 'build/office-verifier-worker-factory.ts'),
+    ],
   ]);
   const inline = new Set(swaps.values());
   return {
