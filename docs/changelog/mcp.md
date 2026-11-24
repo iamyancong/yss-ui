@@ -10,6 +10,15 @@ toc: content
 
 YSS MCP 文档服务（`@yss-ui/mcp`）的版本更新记录。
 
+## v0.13.2
+
+`2026-11-24`
+
+### 📝 Documentation
+
+- **索引同步**: 同步 `@yss-ui/components@1.12.2` 的 YFilePreview 加密文档明文 HTTP 支持与性能优化文档索引。
+
+---
 ## v0.13.1
 
 `2026-11-23`

@@ -1602,7 +1602,7 @@ rtf.js 的转换对简单的矢量图（矩形、椭圆、多边形、文字）�
 
 ## 加密文档（密码）
 
-带打开密码的 xlsx / docx / pptx 会显示密码框，解密后再预览（依赖 `ooxml-encryption`，随 `optionalDependencies` 安装）。仅支持现代 Office **Agile** 加密；旧版 Standard / 证书加密会提示下载后用本地软件打开。下载始终是**加密原件**。
+带打开密码的 xlsx / docx / pptx 会显示密码框，解密后再预览（标准 Agile 加密由组件库内置零依赖纯 JS 密码学内核并在后台 Web Worker 中按需加载执行，**HTTPS 与内网/测试明文 HTTP 均开箱可用**，不再受限于 `crypto.subtle` 安全上下文；非标准布局兜底依赖可选包 `ooxml-encryption`）。仅支持现代 Office **Agile** 加密；旧版 Standard / 证书加密会提示下载后用本地软件打开。下载始终是**加密原件**。
 
 | 场景 | 用法 |
 | --- | --- |

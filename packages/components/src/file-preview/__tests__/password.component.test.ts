@@ -206,4 +206,29 @@ describe('YFilePreview 加密文档密码', { timeout: 25_000 }, () => {
 
     wrapper.unmount();
   });
+
+  it('明文 HTTP 非安全上下文（crypto.subtle 不可用）下传入密码仍可正常自动解锁', async () => {
+    const originalCrypto = globalThis.crypto;
+    vi.stubGlobal('crypto', {});
+    try {
+      const wrapper = mount(FilePreview, {
+        props: {
+          source: loadFixture('xlsx-encrypted.xlsx'),
+          fileName: 'secret.xlsx',
+          password: 'yss-test',
+        },
+      });
+      await vi.waitFor(
+        () => {
+          expect(wrapper.classes()).toContain('yss-file-preview--ready');
+        },
+        { timeout: 10_000 }
+      );
+      expect(wrapper.text()).not.toContain('WebCrypto');
+      expect(wrapper.emitted('loaded')?.[0]?.[0]).toMatchObject({ fileType: 'xlsx' });
+      wrapper.unmount();
+    } finally {
+      vi.stubGlobal('crypto', originalCrypto);
+    }
+  });
 });

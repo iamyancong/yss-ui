@@ -10,6 +10,20 @@ toc: content
 
 YSS UI 组件库（`@yss-ui/components`）的版本更新记录。
 
+## v1.12.2
+
+`2026-11-24`
+
+### 🐛 Bug Fixes
+
+- **YFilePreview 明文 HTTP 加密文档支持**：内置零依赖纯 JS 密码学内核（FIPS 180-4 SHA-1/256/384/512、RFC 2104 流式 HMAC 与 FIPS 197 AES-128/192/256-CBC T-table 解密），解决内网与测试环境（如 `http://192.168.x.x`）因缺少浏览器安全上下文 `crypto.subtle` 导致加密 Office 文档报 `WebCrypto subtle API is unavailable` 无法解锁的问题；HTTP 下遇到旧版 Standard 加密也统一抛出 `UnsupportedEncryptionError` 友好提示。
+
+### ⚡ Performance
+
+- **YFilePreview 加密验密与整包解密全链路提速**：10 万次 Agile PBKDF 迭代采用单块零分配（Zero-Allocation）原地压缩快路径，避开 10 万次跨边界 `subtle.digest` 调度开销，单次验密与解密速度较旧版提升约 7~8 倍；将整包解密（HMAC 校验 + 预展开单份 AES 轮密钥 + 4KB 分段原地写入）一并迁入后台 Web Worker 并以 Transferable 双向零拷贝传输，大文件解密主线程零卡顿，且密码学内核与 Worker 均改为按需动态加载，普通非加密文件预览 0 字节体积增量。
+
+---
+
 ## v1.12.1
 
 `2026-11-23`

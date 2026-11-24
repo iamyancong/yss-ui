@@ -1,10 +1,14 @@
 /**
  * OOXML 密码加密（Excel / Word / PowerPoint「加密文档」）检测与解密。
  * 现代 Office 把加密后的 zip 包放进 OLE 复合文档的 EncryptedPackage 流，需密码解开后再按普通 xlsx/docx/pptx 预览。
+ *
+ * 模块边界：
+ * - 文件头嗅探（`isOoxmlType` / `sniffOleEncrypted` / `isOfficeFileEncrypted`）零额外依赖、同步极速执行；
+ * - 验密与解密引擎（含纯 JS 密码学内核与内联 Web Worker）全部通过动态 `import()` 按需加载，
+ *   普通非加密文件预览 0 字节开销，且在明文 HTTP（无 `crypto.subtle`）与 HTTPS 环境下均可正常工作。
  */
 import { MissingDependencyError } from '../errors';
 import { MAGIC_NUMBER_MAP } from '../constant';
-import { extractEncryptionInfo, parseAgileEncryptionXml, verifyAgilePasswordWithWorker } from './agile-verifier';
 import { fingerprintEncryptedFile, getCachedPassword, setCachedPassword } from './password-cache';
 
 const OOXML_ENCRYPTED_TYPES = new Set(['docx', 'xlsx', 'pptx']);
@@ -90,6 +94,17 @@ export class UnsupportedEncryptionError extends Error {
 type DecryptWorkbook = (input: Uint8Array, password: string) => Promise<Uint8Array>;
 
 let decryptWorkbookLoader: Promise<DecryptWorkbook> | null = null;
+let agileVerifierLoader: Promise<typeof import('./agile-verifier')> | null = null;
+
+const loadAgileVerifier = () => {
+  if (!agileVerifierLoader) {
+    agileVerifierLoader = import('./agile-verifier').catch(err => {
+      agileVerifierLoader = null;
+      throw err;
+    });
+  }
+  return agileVerifierLoader;
+};
 
 const loadDecryptWorkbook = (): Promise<DecryptWorkbook> => {
   if (!decryptWorkbookLoader) {
@@ -110,19 +125,11 @@ const loadDecryptWorkbook = (): Promise<DecryptWorkbook> => {
   return decryptWorkbookLoader;
 };
 
-/**
- * 用密码解密 OOXML 加密文件，返回普通 zip 包字节（可直接当 xlsx/docx/pptx 预览）。
- *
- * @param data - 加密文件内容（OLE 信封）
- * @param password - 打开密码
- * @returns 解密后的 OOXML zip
- */
-export async function decryptOoxmlPackage(data: ArrayBuffer | Uint8Array, password: string): Promise<ArrayBuffer> {
-  const input = data instanceof Uint8Array ? data : new Uint8Array(data);
+/** 兜底路径：通过可选依赖 ooxml-encryption 解密（仅当内置 OLE/Agile 路径无法识别时触发） */
+async function decryptViaOoxmlFallback(input: Uint8Array, password: string): Promise<ArrayBuffer> {
   const decryptWorkbook = await loadDecryptWorkbook();
   try {
     const unlocked = await decryptWorkbook(input, password);
-    // 拷贝到独立 ArrayBuffer，避免 SharedArrayBuffer / 视图偏移问题
     return unlocked.buffer.slice(unlocked.byteOffset, unlocked.byteOffset + unlocked.byteLength) as ArrayBuffer;
   } catch (err) {
     const code = (err as { code?: string } | null)?.code;
@@ -140,6 +147,46 @@ export async function decryptOoxmlPackage(data: ArrayBuffer | Uint8Array, passwo
     }
     throw err instanceof Error ? err : new Error(message);
   }
+}
+
+/**
+ * 用密码解密 OOXML 加密文件，返回普通 zip 包字节（可直接当 xlsx/docx/pptx 预览）。
+ * 优先走内置零依赖 Agile 解密引擎 + Web Worker（同时支持 HTTPS 与明文 HTTP，主线程零卡顿）。
+ *
+ * @param data - 加密文件内容（OLE 信封）
+ * @param password - 打开密码
+ * @returns 解密后的 OOXML zip
+ */
+export async function decryptOoxmlPackage(data: ArrayBuffer | Uint8Array, password: string): Promise<ArrayBuffer> {
+  const input = toUint8Array(data);
+  const agile = await loadAgileVerifier();
+  const streams = agile.extractOleStreams(input, ['EncryptionInfo', 'EncryptedPackage']);
+
+  if (streams) {
+    const encInfo = streams.get('EncryptionInfo')!;
+    const encPkg = streams.get('EncryptedPackage')!;
+    const parsed = agile.parseAgileEncryptionInfo(encInfo);
+    if (parsed.kind !== 'agile') {
+      // 明确识别为旧版 Standard / 证书加密或不支持的 Agile 参数，直接抛出 UnsupportedEncryptionError（HTTP 下同样清晰提示）
+      throw new UnsupportedEncryptionError(parsed.reason);
+    }
+
+    try {
+      return await agile.decryptAgileWithWorker(input, encInfo, encPkg, password);
+    } catch (err) {
+      if (err instanceof agile.AgileDecryptError) {
+        if (err.code === 'invalidPassword') throw new InvalidPasswordError(err.message);
+        throw new UnsupportedEncryptionError(err.message);
+      }
+      throw err instanceof Error ? err : new Error(String(err));
+    }
+  }
+
+  // 非标准 OLE 布局兜底：在安全上下文下可尝试可选依赖 ooxml-encryption，HTTP 下明确按不支持/损坏抛出
+  if (!globalThis.crypto?.subtle) {
+    throw new UnsupportedEncryptionError('Invalid or unsupported encrypted Office package');
+  }
+  return decryptViaOoxmlFallback(input, password);
 }
 
 /**
@@ -173,18 +220,23 @@ export async function verifyOfficeFilePassword(data: ArrayBuffer | Uint8Array, p
     return true;
   }
 
-  // 1. 优先轻量验证：只读取并校验标准 Agile EncryptionInfo，在 Web Worker 中校验 Verifier，不解密正文，主线程零卡顿
-  const encInfo = extractEncryptionInfo(bytes);
-  const agileKey = encInfo ? parseAgileEncryptionXml(encInfo) : null;
-  if (agileKey) {
-    const valid = await verifyAgilePasswordWithWorker(agileKey, trimmed);
-    if (valid) {
-      setCachedPassword(fingerprint, trimmed);
+  const agile = await loadAgileVerifier();
+  const encInfo = agile.extractEncryptionInfo(bytes);
+  if (encInfo) {
+    const parsed = agile.parseAgileEncryptionInfo(encInfo);
+    if (parsed.kind === 'agile') {
+      // 1. 优先轻量验证：仅读取 EncryptionInfo 流，在 Web Worker 中校验 Verifier（支持 HTTP & HTTPS，不碰正文，主线程零卡顿）
+      const valid = await agile.verifyAgilePasswordWithWorker(parsed.info.passwordKey, trimmed);
+      if (valid) {
+        setCachedPassword(fingerprint, trimmed);
+      }
+      return valid;
     }
-    return valid;
+    // 明确识别为旧版 Standard / 证书加密：直接按契约抛出 UnsupportedEncryptionError
+    throw new UnsupportedEncryptionError(parsed.reason);
   }
 
-  // 2. 兜底：若不是标准 Agile 结构或参数不受支持，退回原有完整解密（保证按契约抛出 UnsupportedEncryptionError 等）
+  // 2. 兜底：若 OLE 提取失败，走完整解密兜底以保持错误契约一致
   try {
     await decryptOoxmlPackage(bytes, trimmed);
     setCachedPassword(fingerprint, trimmed);

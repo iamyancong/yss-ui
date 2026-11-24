@@ -68,6 +68,15 @@ export default defineConfig({
           if (id.startsWith(`${root}file-preview/shared/`)) return;
           /** 超大图片的尺寸读取与缩小（含内联 Worker）只在打开图片时按需加载 */
           if (id.startsWith(`${root}file-preview/renderers/image/`)) return;
+          /** Office 加密文档的密码学内核、验密/解密调度与 Worker 只在打开加密文件时按需加载 */
+          if (
+            id.startsWith(`${root}file-preview/crypto/`) ||
+            id === `${root}file-preview/utils/agile-verifier.ts` ||
+            id === `${root}file-preview/utils/verifier-worker.ts` ||
+            id === `${root}file-preview/utils/verifier-worker-factory.ts`
+          ) {
+            return;
+          }
           const component = id.slice(root.length).split('/')[0];
           if (!component || component.includes('.') || component === 'locale' || component === 'sheet') return;
           return `components/${component}`;
